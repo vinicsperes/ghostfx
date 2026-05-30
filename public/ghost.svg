@@ -1,0 +1,8 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Ghost Body -->
+  <path d="M25 45C25 31.1929 36.1929 20 50 20C63.8071 20 75 31.1929 75 45V75C75 75 70 70 65 70C60 70 55 75 50 75C45 75 40 70 35 70C30 70 25 75 25 75V45Z" stroke="black" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Left Eye (Pill) -->
+  <rect x="38" y="42" width="10" height="4" rx="2" fill="black"/>
+  <!-- Right Eye (Diamond - placeholder for LED) -->
+  <path d="M58 44L62 38L66 44L62 50L58 44Z" fill="black"/>
+</svg>
