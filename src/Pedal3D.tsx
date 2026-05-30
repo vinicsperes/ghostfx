@@ -1253,66 +1253,57 @@ function Footswitch3D({
 
 function SideJack({ position, metal }: { position: [number, number, number], metal: string }) {
   const isLeft = position[0] < 0;
+  const chrome = "#d6d6da";
 
   return (
     <group position={position} rotation={[0, 0, isLeft ? -Math.PI / 2 : Math.PI / 2]}>
 
-      <mesh position={[0, -0.03, 0]}>
-        <cylinderGeometry args={[0.032, 0.032, 0.16, 24]} />
-        <meshStandardMaterial color="#060606" roughness={0.55} metalness={0.4} />
+      <mesh position={[0, 0.26, 0]} castShadow>
+        <cylinderGeometry args={[0.06, 0.06, 0.14, 20]} />
+        <meshStandardMaterial color="#0a0a0a" roughness={0.62} metalness={0.18} />
       </mesh>
 
-      <mesh position={[0, -0.094, 0]}>
-        <cylinderGeometry args={[0.05, 0.05, 0.016, 24]} />
-        <meshStandardMaterial color="#dcdce0" metalness={0.95} roughness={0.12} />
-      </mesh>
-
-      <mesh position={[0, -0.045, 0]} castShadow>
-        <cylinderGeometry args={[0.05, 0.05, 0.082, 24]} />
-        <meshStandardMaterial color={metal} metalness={0.9} roughness={0.32} />
-      </mesh>
-      {[-0.074, -0.059, -0.044, -0.029, -0.014].map((y, i) => (
-        <mesh key={`t${i}`} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.05, 0.0038, 6, 24]} />
-          <meshStandardMaterial color={metal} metalness={0.92} roughness={0.26} />
+      {[-0.024, 0.024].map((dx, i) => (
+        <mesh key={`lug${i}`} position={[dx, 0.34, 0]} castShadow>
+          <boxGeometry args={[0.016, 0.03, 0.05]} />
+          <meshStandardMaterial color="#c9b070" metalness={0.78} roughness={0.24} />
         </mesh>
       ))}
+
+      <mesh position={[0, 0.135, 0]}>
+        <cylinderGeometry args={[0.05, 0.05, 0.17, 24]} />
+        <meshStandardMaterial color={chrome} metalness={0.92} roughness={0.30} />
+      </mesh>
+      {[0.058, 0.078, 0.098, 0.118, 0.138, 0.158, 0.178, 0.198].map((y, i) => (
+        <mesh key={`t${i}`} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.05, 0.0035, 6, 24]} />
+          <meshStandardMaterial color={chrome} metalness={0.9} roughness={0.26} />
+        </mesh>
+      ))}
+
+      <mesh position={[0, 0.043, 0]}>
+        <cylinderGeometry args={[0.074, 0.074, 0.006, 24]} />
+        <meshStandardMaterial color={metal} metalness={0.85} roughness={0.24} />
+      </mesh>
 
       <mesh position={[0, 0.014, 0]} castShadow>
-        <cylinderGeometry args={[0.078, 0.078, 0.03, 6]} />
-        <meshStandardMaterial color={metal} metalness={0.95} roughness={0.12} />
-      </mesh>
-      <mesh position={[0, 0.035, 0]}>
-        <cylinderGeometry args={[0.066, 0.066, 0.006, 16]} />
-        <meshStandardMaterial color="#b8b8a8" metalness={0.7} roughness={0.35} />
+        <cylinderGeometry args={[0.066, 0.066, 0.05, 6]} />
+        <meshStandardMaterial color={chrome} metalness={0.95} roughness={0.16} />
       </mesh>
 
-      <mesh position={[0, 0.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.05, 0.013, 8, 24]} />
-        <meshStandardMaterial color="#cfcfc4" metalness={0.78} roughness={0.26} />
+      <mesh position={[0, -0.012, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.046, 0.009, 10, 28]} />
+        <meshStandardMaterial color={chrome} metalness={0.95} roughness={0.12} />
       </mesh>
 
-      <mesh position={[0, 0.20, -0.055]} castShadow>
-        <boxGeometry args={[0.06, 0.36, 0.012]} />
-        <meshStandardMaterial color="#cfcfc4" metalness={0.78} roughness={0.26} />
+      <mesh position={[0, 0.018, 0]}>
+        <cylinderGeometry args={[0.04, 0.04, 0.064, 24]} />
+        <meshStandardMaterial color="#040404" roughness={0.92} metalness={0} />
       </mesh>
-
-      <mesh position={[0, 0.16, -0.02]} rotation={[0.42, 0, 0]} castShadow>
-        <boxGeometry args={[0.016, 0.21, 0.006]} />
-        <meshStandardMaterial color="#caa24a" metalness={0.72} roughness={0.3} />
+      <mesh position={[0, 0.05, 0]}>
+        <cylinderGeometry args={[0.028, 0.028, 0.04, 16]} />
+        <meshBasicMaterial color="#000000" />
       </mesh>
-
-      <mesh position={[0, 0.135, -0.042]} rotation={[0.14, 0, 0]} castShadow>
-        <boxGeometry args={[0.022, 0.16, 0.006]} />
-        <meshStandardMaterial color="#caa24a" metalness={0.72} roughness={0.3} />
-      </mesh>
-
-      {[-0.017, 0.017].map((dx, i) => (
-        <mesh key={`l${i}`} position={[dx, 0.34, -0.072]} castShadow>
-          <boxGeometry args={[0.02, 0.042, 0.01]} />
-          <meshStandardMaterial color="#c9b070" metalness={0.78} roughness={0.22} />
-        </mesh>
-      ))}
     </group>
   );
 }
@@ -1478,27 +1469,6 @@ function ICDip({ x, z, pins = 8, rot = 0, color = "#101010" }: {
   );
 }
 
-function SMDComp({ x, z, w = 0.030, d = 0.015, color = "#c0b080", rot = 0 }: {
-  x: number; z: number; w?: number; d?: number; color?: string; rot?: number;
-}) {
-  return (
-    <group position={[x, PCB_BH / 2 + 0.005, z]} rotation={[0, rot, 0]}>
-      <mesh>
-        <boxGeometry args={[w, 0.010, d]} />
-        <meshStandardMaterial color={color} roughness={0.55} />
-      </mesh>
-      <mesh position={[-w / 2 + 0.004, 0, 0]}>
-        <boxGeometry args={[0.007, 0.012, d]} />
-        <meshStandardMaterial color="#aaaaaa" metalness={0.72} roughness={0.20} />
-      </mesh>
-      <mesh position={[w / 2 - 0.004, 0, 0]}>
-        <boxGeometry args={[0.007, 0.012, d]} />
-        <meshStandardMaterial color="#aaaaaa" metalness={0.72} roughness={0.20} />
-      </mesh>
-    </group>
-  );
-}
-
 function THResistor({ x, z, rot = 0, b1 = "#c02010", b2 = "#101010", b3 = "#e0a020" }: {
   x: number; z: number; rot?: number; b1?: string; b2?: string; b3?: string;
 }) {
@@ -1576,82 +1546,118 @@ function BoxCap({ x, z, rot = 0, color = "#1a4fa0" }: { x: number; z: number; ro
   );
 }
 
+const SILK = "#d8d8cc";
+
+function SilkRect({ x, z, w, d, y, t = 0.0045 }: {
+  x: number; z: number; w: number; d: number; y: number; t?: number;
+}) {
+  const h = 0.002;
+  return (
+    <group position={[x, y, z]}>
+      <mesh position={[0, 0, -d / 2]}><boxGeometry args={[w, h, t]} /><meshBasicMaterial color={SILK} /></mesh>
+      <mesh position={[0, 0,  d / 2]}><boxGeometry args={[w, h, t]} /><meshBasicMaterial color={SILK} /></mesh>
+      <mesh position={[-w / 2, 0, 0]}><boxGeometry args={[t, h, d]} /><meshBasicMaterial color={SILK} /></mesh>
+      <mesh position={[ w / 2, 0, 0]}><boxGeometry args={[t, h, d]} /><meshBasicMaterial color={SILK} /></mesh>
+    </group>
+  );
+}
+
+function SilkRing({ x, z, r, y }: { x: number; z: number; r: number; y: number }) {
+  return (
+    <mesh position={[x, y, z]} rotation={[Math.PI / 2, 0, 0]}>
+      <torusGeometry args={[r, 0.0022, 4, 28]} />
+      <meshBasicMaterial color={SILK} />
+    </mesh>
+  );
+}
+
 function PCBBoard({ w, l }: { w: number; l: number }) {
   const TH = 0.003;
   const top = PCB_BH / 2 + TH / 2;
+  const hatchY = top - 0.0007;
+  const silkY = top + 0.0024;
 
-  const [ec1x, ec1z] = [-w * 0.32, -l * 0.38];
-  const [ec2x, ec2z] = [ w * 0.08, -l * 0.36];
-  const [ec3x, ec3z] = [ w * 0.38, -l * 0.28];
-  const [ic1x, ic1z] = [-w * 0.10, -l * 0.06];
-  const [ic2x, ic2z] = [ w * 0.22,  l * 0.16];
-  const [r1x,  r1z]  = [-w * 0.33,  l * 0.06];
-  const [r2x,  r2z]  = [ w * 0.36, -l * 0.12];
-  const [r3x,  r3z]  = [-w * 0.16,  l * 0.28];
-  const [r4x,  r4z]  = [ w * 0.38,  l * 0.22];
-  const [r5x,  r5z]  = [-w * 0.38, -l * 0.20];
-  const [dc1x, dc1z] = [ w * 0.10,  l * 0.38];
-  const [dc2x, dc2z] = [-w * 0.24,  l * 0.42];
-  const [dc3x, dc3z] = [ w * 0.26, -l * 0.22];
-  const [s1x,  s1z]  = [ w * 0.02, -l * 0.22];
-  const [s2x,  s2z]  = [ w * 0.14, -l * 0.30];
-  const [s3x,  s3z]  = [-w * 0.07,  l * 0.18];
-  const [t1x,  t1z]  = [ w * 0.20, -l * 0.02];
-  const [t2x,  t2z]  = [-w * 0.30,  l * 0.22];
-  const [bc1x, bc1z] = [ w * 0.30,  l * 0.04];
-  const [bc2x, bc2z] = [-w * 0.02, -l * 0.40];
+  const railX = w / 2 - 0.10;
+
+  const capZ = -l * 0.37;
+  const ec1x = -w * 0.30, ec2x = -w * 0.10, ec3x = w * 0.10, ec4x = w * 0.30;
+
+  const icZ = -l * 0.03;
+  const ic1x = -w * 0.17, ic2x = w * 0.14;
+
+  const raZ = -l * 0.19;
+  const raX = [-w * 0.30, -w * 0.15, 0, w * 0.15, w * 0.30];
+  const rbZ = l * 0.13;
+  const rbX = [-w * 0.24, -w * 0.08, w * 0.08, w * 0.24];
+
+  const bcZ = l * 0.31;
+  const bc1x = -w * 0.27, bc2x = 0, bc3x = w * 0.27;
+
+  const dc1x = -w * 0.36, dc1z = l * 0.03;
+  const dc2x =  w * 0.34, dc2z = l * 0.04;
+  const dc3x = -w * 0.02, dc3z = -l * 0.27;
+
+  const t1x = w * 0.34, t1z = -l * 0.07;
+  const t2x = -w * 0.36, t2z = -l * 0.11;
 
   type Seg = { x1: number; z1: number; x2: number; z2: number; tw: number };
   const segs: Seg[] = [
-    { x1: -w/2+0.03, z1: -l/2+0.04, x2:  w/2-0.03, z2: -l/2+0.04, tw: 0.028 },
-    { x1: -w/2+0.03, z1:  l/2-0.04, x2:  w/2-0.03, z2:  l/2-0.04, tw: 0.028 },
-    { x1: -w/2+0.03, z1: -l/2+0.04, x2: -w/2+0.03, z2:  l/2-0.04, tw: 0.018 },
-    { x1: ec1x, z1: ec1z, x2: ec2x, z2: ec2z, tw: 0.022 },
-    { x1: ec2x, z1: ec2z, x2: ec3x, z2: ec3z, tw: 0.018 },
-    { x1: ec1x, z1: ec1z, x2: ic1x, z2: ic1z, tw: 0.015 },
-    { x1: ic1x, z1: ic1z, x2: r1x,  z2: r1z,  tw: 0.013 },
-    { x1: ic1x, z1: ic1z, x2: r3x,  z2: r3z,  tw: 0.013 },
-    { x1: ic1x, z1: ic1z, x2: s1x,  z2: s1z,  tw: 0.011 },
-    { x1: ic2x, z1: ic2z, x2: r2x,  z2: r2z,  tw: 0.012 },
-    { x1: ic2x, z1: ic2z, x2: r4x,  z2: r4z,  tw: 0.012 },
-    { x1: ic2x, z1: ic2z, x2: dc1x, z2: dc1z, tw: 0.013 },
-    { x1: r3x,  z1: r3z,  x2: dc1x, z2: dc1z, tw: 0.012 },
-    { x1: r3x,  z1: r3z,  x2: dc2x, z2: dc2z, tw: 0.010 },
-    { x1: dc3x, z1: dc3z, x2: ec3x, z2: ec3z, tw: 0.013 },
-    { x1: r2x,  z1: r2z,  x2: ec3x, z2: ec3z, tw: 0.011 },
-    { x1: s1x,  z1: s1z,  x2: s2x,  z2: s2z,  tw: 0.010 },
-    { x1: s2x,  z1: s2z,  x2: dc3x, z2: dc3z, tw: 0.010 },
-    { x1: s3x,  z1: s3z,  x2: r5x,  z2: r5z,  tw: 0.010 },
-    { x1: r1x,  z1: r1z,  x2: r5x,  z2: r5z,  tw: 0.011 },
-    { x1: t1x,  z1: t1z,  x2: ic2x, z2: ic2z, tw: 0.012 },
-    { x1: t1x,  z1: t1z,  x2: bc1x, z2: bc1z, tw: 0.011 },
-    { x1: t2x,  z1: t2z,  x2: r3x,  z2: r3z,  tw: 0.010 },
-    { x1: bc2x, z1: bc2z, x2: ec2x, z2: ec2z, tw: 0.012 },
-    { x1: bc1x, z1: bc1z, x2: r4x,  z2: r4z,  tw: 0.010 },
-    { x1: -w/2+0.06, z1: -l*0.16, x2:  w/2-0.06, z2: -l*0.16, tw: 0.034 },
-    { x1: -w/2+0.06, z1:  l*0.30, x2:  w/2-0.06, z2:  l*0.30, tw: 0.034 },
-    { x1:  w/2-0.09, z1: -l/2+0.05, x2:  w/2-0.09, z2:  l/2-0.05, tw: 0.024 },
-    { x1: -w/2+0.09, z1: -l/2+0.05, x2: -w/2+0.09, z2:  l/2-0.05, tw: 0.024 },
+    { x1: -railX, z1: -l / 2 + 0.06, x2:  railX, z2: -l / 2 + 0.06, tw: 0.030 },
+    { x1: -railX, z1:  l / 2 - 0.06, x2:  railX, z2:  l / 2 - 0.06, tw: 0.030 },
+    { x1: -railX, z1: -l / 2 + 0.06, x2: -railX, z2:  l / 2 - 0.06, tw: 0.022 },
+    { x1:  railX, z1: -l / 2 + 0.06, x2:  railX, z2:  l / 2 - 0.06, tw: 0.022 },
+
+    { x1: ec1x, z1: capZ, x2: ec4x, z2: capZ, tw: 0.024 },
+    { x1: ec1x, z1: capZ, x2: raX[0], z2: raZ, tw: 0.013 },
+    { x1: ec4x, z1: capZ, x2: raX[4], z2: raZ, tw: 0.013 },
+    { x1: dc3x, z1: dc3z, x2: ec2x, z2: capZ, tw: 0.012 },
+
+    { x1: raX[0], z1: raZ, x2: raX[4], z2: raZ, tw: 0.014 },
+    { x1: rbX[0], z1: rbZ, x2: rbX[3], z2: rbZ, tw: 0.014 },
+    { x1: bc1x, z1: bcZ, x2: bc3x, z2: bcZ, tw: 0.018 },
+
+    { x1: ic1x, z1: icZ, x2: ic1x, z2: -l * 0.30, tw: 0.016 },
+    { x1: ic2x, z1: icZ, x2: ic2x, z2: -l * 0.30, tw: 0.016 },
+    { x1: ic1x, z1: icZ, x2: raX[1], z2: raZ, tw: 0.013 },
+    { x1: ic2x, z1: icZ, x2: raX[3], z2: raZ, tw: 0.013 },
+    { x1: ic1x, z1: icZ, x2: rbX[0], z2: rbZ, tw: 0.013 },
+    { x1: ic2x, z1: icZ, x2: rbX[3], z2: rbZ, tw: 0.013 },
+    { x1: raX[2], z1: raZ, x2: ic1x, z2: icZ, tw: 0.011 },
+
+    { x1: rbX[1], z1: rbZ, x2: bc1x, z2: bcZ, tw: 0.012 },
+    { x1: rbX[2], z1: rbZ, x2: bc3x, z2: bcZ, tw: 0.012 },
+
+    { x1: t1x, z1: t1z, x2: ic2x, z2: icZ, tw: 0.012 },
+    { x1: t2x, z1: t2z, x2: ic1x, z2: icZ, tw: 0.012 },
+    { x1: dc1x, z1: dc1z, x2: ic1x, z2: icZ, tw: 0.011 },
+    { x1: dc2x, z1: dc2z, x2: ic2x, z2: icZ, tw: 0.011 },
   ];
 
   type Conn = { px: number; pz: number; nx: number; nz: number };
   const conns: Conn[] = [
-    { px: -0.55, pz: -1.12, nx: ec1x, nz: ec1z },
-    { px:  0.02, pz: -1.12, nx: ec2x, nz: ec2z },
-    { px:  0.55, pz: -1.12, nx: ec3x, nz: ec3z },
-    { px: -0.26, pz: -0.72, nx: ic1x, nz: ic1z },
-    { px:  0.30, pz: -0.72, nx: dc3x, nz: dc3z },
-    { px:  0.14, pz:  1.05, nx: dc1x, nz: dc1z },
-    { px: -0.14, pz:  1.05, nx: dc2x, nz: dc2z },
-    { px: -0.78, pz: -0.05, nx: ic1x, nz: ic1z },
-    { px:  0.78, pz:  0.05, nx: ic2x, nz: ic2z },
-    { px:  0.07, pz: -0.30, nx: ec2x, nz: ec2z },
-    { px: -0.07, pz: -0.30, nx: r5x,  nz: r5z  },
-    { px:  0.14, pz:  0.22, nx: ic2x, nz: ic2z },
-    { px:  0.02, pz:  0.22, nx: ic1x, nz: ic1z },
+    { px: -0.55, pz: -1.12, nx: ec1x, nz: capZ },
+    { px:  0.02, pz: -1.12, nx: ec2x, nz: capZ },
+    { px:  0.55, pz: -1.12, nx: ec4x, nz: capZ },
+    { px: -0.26, pz: -0.72, nx: raX[1], nz: raZ },
+    { px:  0.30, pz: -0.72, nx: raX[3], nz: raZ },
+    { px:  0.14, pz:  1.05, nx: bc2x + 0.10, nz: bcZ },
+    { px: -0.14, pz:  1.05, nx: bc2x - 0.10, nz: bcZ },
+    { px: -0.78, pz: -0.05, nx: ic1x, nz: icZ },
+    { px:  0.78, pz:  0.05, nx: ic2x, nz: icZ },
+    { px:  0.07, pz: -0.30, nx: dc3x, nz: dc3z },
+    { px: -0.07, pz: -0.30, nx: raX[2], nz: raZ },
+    { px:  0.14, pz:  0.22, nx: rbX[2], nz: rbZ },
+    { px:  0.02, pz:  0.22, nx: rbX[1], nz: rbZ },
   ];
   conns.forEach(({ px, pz, nx, nz }) =>
     segs.push({ x1: px, z1: pz, x2: nx, z2: nz, tw: 0.012 }));
+
+  const hatchLines: { x: number; z: number; hor: boolean; len: number }[] = [];
+  const hatchSpan = 0.075;
+  for (let z = -l / 2 + 0.12; z <= l / 2 - 0.12; z += hatchSpan)
+    hatchLines.push({ x: 0, z, hor: true, len: railX * 2 });
+  for (let x = -railX; x <= railX; x += hatchSpan)
+    hatchLines.push({ x, z: 0, hor: false, len: l - 0.24 });
 
   return (
     <group>
@@ -1659,6 +1665,13 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
         <boxGeometry args={[w, PCB_BH, l]} />
         <meshStandardMaterial color="#0e3a1c" roughness={0.65} metalness={0.08} />
       </mesh>
+
+      {hatchLines.map(({ x, z, hor, len }, i) => (
+        <mesh key={`h${i}`} position={[x, hatchY, z]}>
+          <boxGeometry args={hor ? [len, 0.0022, 0.006] : [0.006, 0.0022, len]} />
+          <meshStandardMaterial color={PCB_CU} roughness={0.4} metalness={0.55} transparent opacity={0.45} />
+        </mesh>
+      ))}
 
       {segs.map(({ x1, z1, x2, z2, tw }, i) => {
         const hLen = Math.abs(x2 - x1);
@@ -1705,26 +1718,39 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
         </mesh>
       ))}
 
-      <ElCap x={ec1x} z={ec1z} h={0.22} r={0.068} color="#1a3a6a" />
-      <ElCap x={ec2x} z={ec2z} h={0.20} r={0.062} color="#1a1a1a" />
-      <ElCap x={ec3x} z={ec3z} h={0.16} r={0.046} color="#2a4a1a" />
-      <ICDip x={ic1x} z={ic1z} pins={8} />
-      <ICDip x={ic2x} z={ic2z} pins={8} rot={Math.PI * 0.15} color="#1c1c1c" />
-      <THResistor x={r1x} z={r1z} />
-      <THResistor x={r2x} z={r2z} rot={Math.PI * 0.3} b1="#e0a010" b2="#101010" b3="#c02010" />
-      <THResistor x={r3x} z={r3z} rot={Math.PI / 2} />
-      <THResistor x={r4x} z={r4z} b1="#101010" b2="#e0a010" b3="#a0a010" />
-      <THResistor x={r5x} z={r5z} rot={Math.PI * 0.7} b1="#202080" b2="#c02010" b3="#e0a020" />
+      <SilkRect x={0} z={0} w={w - 0.10} d={l - 0.10} y={silkY} t={0.005} />
+      <SilkRect x={ic1x} z={icZ} w={0.16} d={0.30} y={silkY} />
+      <SilkRect x={ic2x} z={icZ} w={0.16} d={0.30} y={silkY} />
+      <SilkRing x={ec1x} z={capZ} r={0.082} y={silkY} />
+      <SilkRing x={ec2x} z={capZ} r={0.076} y={silkY} />
+      <SilkRing x={ec3x} z={capZ} r={0.076} y={silkY} />
+      <SilkRing x={ec4x} z={capZ} r={0.060} y={silkY} />
+      {raX.map((rx, i) => <SilkRect key={`sra${i}`} x={rx} z={raZ} w={0.05} d={0.13} y={silkY} t={0.003} />)}
+      {rbX.map((rx, i) => <SilkRect key={`srb${i}`} x={rx} z={rbZ} w={0.05} d={0.13} y={silkY} t={0.003} />)}
+
+      <ElCap x={ec1x} z={capZ} h={0.24} r={0.072} color="#1a3a6a" />
+      <ElCap x={ec2x} z={capZ} h={0.22} r={0.066} color="#1a1a1a" />
+      <ElCap x={ec3x} z={capZ} h={0.22} r={0.066} color="#1a3a6a" />
+      <ElCap x={ec4x} z={capZ} h={0.16} r={0.048} color="#2a4a1a" />
+      <ICDip x={ic1x} z={icZ} pins={8} />
+      <ICDip x={ic2x} z={icZ} pins={8} color="#1c1c1c" />
+      <THResistor x={raX[0]} z={raZ} />
+      <THResistor x={raX[1]} z={raZ} b1="#c02010" b2="#101010" b3="#e0a020" />
+      <THResistor x={raX[2]} z={raZ} b1="#202080" b2="#c02010" b3="#e0a020" />
+      <THResistor x={raX[3]} z={raZ} b1="#101010" b2="#e0a010" b3="#a0a010" />
+      <THResistor x={raX[4]} z={raZ} />
+      <THResistor x={rbX[0]} z={rbZ} b1="#e0a010" b2="#101010" b3="#c02010" />
+      <THResistor x={rbX[1]} z={rbZ} />
+      <THResistor x={rbX[2]} z={rbZ} b1="#202080" b2="#c02010" b3="#e0a020" />
+      <THResistor x={rbX[3]} z={rbZ} b1="#101010" b2="#e0a010" b3="#a0a010" />
       <DiscCap x={dc1x} z={dc1z} />
       <DiscCap x={dc2x} z={dc2z} color="#c8a050" />
       <DiscCap x={dc3x} z={dc3z} color="#b8c070" />
-      <SMDComp x={s1x} z={s1z} />
-      <SMDComp x={s2x} z={s2z} color="#a08060" rot={Math.PI / 2} />
-      <SMDComp x={s3x} z={s3z} w={0.025} d={0.012} />
-      <Transistor x={t1x} z={t1z} rot={Math.PI * 0.1} />
-      <Transistor x={t2x} z={t2z} rot={Math.PI * 0.6} />
-      <BoxCap x={bc1x} z={bc1z} rot={Math.PI * 0.5} color="#1a4fa0" />
-      <BoxCap x={bc2x} z={bc2z} color="#7a1010" />
+      <Transistor x={t1x} z={t1z} />
+      <Transistor x={t2x} z={t2z} />
+      <BoxCap x={bc1x} z={bcZ} color="#1a4fa0" />
+      <BoxCap x={bc2x} z={bcZ} color="#7a1010" />
+      <BoxCap x={bc3x} z={bcZ} color="#1a4fa0" />
     </group>
   );
 }
