@@ -1652,12 +1652,29 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   conns.forEach(({ px, pz, nx, nz }) =>
     segs.push({ x1: px, z1: pz, x2: nx, z2: nz, tw: 0.012 }));
 
-  const hatchLines: { x: number; z: number; hor: boolean; len: number }[] = [];
-  const hatchSpan = 0.075;
-  for (let z = -l / 2 + 0.12; z <= l / 2 - 0.12; z += hatchSpan)
-    hatchLines.push({ x: 0, z, hor: true, len: railX * 2 });
-  for (let x = -railX; x <= railX; x += hatchSpan)
-    hatchLines.push({ x, z: 0, hor: false, len: l - 0.24 });
+  const groundTex = useMemo(() => {
+    const cw = 256;
+    const ch = Math.round(cw * (l / w));
+    const c = document.createElement("canvas");
+    c.width = cw;
+    c.height = ch;
+    const ctx = c.getContext("2d")!;
+    ctx.strokeStyle = "rgba(200,154,60,0.62)";
+    ctx.lineWidth = 1.6;
+    const nx = 22;
+    const nz = Math.round(nx * (l / w));
+    for (let i = 1; i < nx; i++) {
+      const px = (i / nx) * cw;
+      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, ch); ctx.stroke();
+    }
+    for (let j = 1; j < nz; j++) {
+      const py = (j / nz) * ch;
+      ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(cw, py); ctx.stroke();
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.anisotropy = 4;
+    return t;
+  }, [w, l]);
 
   return (
     <group>
@@ -1666,12 +1683,10 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
         <meshStandardMaterial color="#0e3a1c" roughness={0.65} metalness={0.08} />
       </mesh>
 
-      {hatchLines.map(({ x, z, hor, len }, i) => (
-        <mesh key={`h${i}`} position={[x, hatchY, z]}>
-          <boxGeometry args={hor ? [len, 0.0022, 0.006] : [0.006, 0.0022, len]} />
-          <meshStandardMaterial color={PCB_CU} roughness={0.4} metalness={0.55} transparent opacity={0.45} />
-        </mesh>
-      ))}
+      <mesh position={[0, hatchY, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[w - 0.16, l - 0.16]} />
+        <meshBasicMaterial map={groundTex} transparent opacity={0.5} depthWrite={false} />
+      </mesh>
 
       {segs.map(({ x1, z1, x2, z2, tw }, i) => {
         const hLen = Math.abs(x2 - x1);
