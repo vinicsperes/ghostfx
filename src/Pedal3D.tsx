@@ -1258,50 +1258,50 @@ function SideJack({ position, metal }: { position: [number, number, number], met
   return (
     <group position={position} rotation={[0, 0, isLeft ? -Math.PI / 2 : Math.PI / 2]}>
 
-      <mesh position={[0, 0.26, 0]} castShadow>
-        <cylinderGeometry args={[0.06, 0.06, 0.14, 20]} />
+      <mesh position={[0, 0.28, 0]} castShadow>
+        <cylinderGeometry args={[0.078, 0.078, 0.16, 20]} />
         <meshStandardMaterial color="#0a0a0a" roughness={0.62} metalness={0.18} />
       </mesh>
 
-      {[-0.024, 0.024].map((dx, i) => (
-        <mesh key={`lug${i}`} position={[dx, 0.34, 0]} castShadow>
-          <boxGeometry args={[0.016, 0.03, 0.05]} />
+      {[-0.03, 0.03].map((dx, i) => (
+        <mesh key={`lug${i}`} position={[dx, 0.37, 0]} castShadow>
+          <boxGeometry args={[0.02, 0.036, 0.06]} />
           <meshStandardMaterial color="#c9b070" metalness={0.78} roughness={0.24} />
         </mesh>
       ))}
 
-      <mesh position={[0, 0.135, 0]}>
-        <cylinderGeometry args={[0.05, 0.05, 0.17, 24]} />
+      <mesh position={[0, 0.15, 0]}>
+        <cylinderGeometry args={[0.064, 0.064, 0.19, 24]} />
         <meshStandardMaterial color={chrome} metalness={0.92} roughness={0.30} />
       </mesh>
-      {[0.058, 0.078, 0.098, 0.118, 0.138, 0.158, 0.178, 0.198].map((y, i) => (
+      {[0.066, 0.090, 0.114, 0.138, 0.162, 0.186, 0.210, 0.234].map((y, i) => (
         <mesh key={`t${i}`} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.05, 0.0035, 6, 24]} />
+          <torusGeometry args={[0.064, 0.0042, 6, 24]} />
           <meshStandardMaterial color={chrome} metalness={0.9} roughness={0.26} />
         </mesh>
       ))}
 
       <mesh position={[0, 0.043, 0]}>
-        <cylinderGeometry args={[0.074, 0.074, 0.006, 24]} />
+        <cylinderGeometry args={[0.096, 0.096, 0.007, 24]} />
         <meshStandardMaterial color={metal} metalness={0.85} roughness={0.24} />
       </mesh>
 
-      <mesh position={[0, 0.014, 0]} castShadow>
-        <cylinderGeometry args={[0.066, 0.066, 0.05, 6]} />
+      <mesh position={[0, 0.011, 0]} castShadow>
+        <cylinderGeometry args={[0.086, 0.086, 0.058, 6]} />
         <meshStandardMaterial color={chrome} metalness={0.95} roughness={0.16} />
       </mesh>
 
-      <mesh position={[0, -0.012, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.046, 0.009, 10, 28]} />
+      <mesh position={[0, -0.018, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.060, 0.011, 10, 28]} />
         <meshStandardMaterial color={chrome} metalness={0.95} roughness={0.12} />
       </mesh>
 
-      <mesh position={[0, 0.018, 0]}>
-        <cylinderGeometry args={[0.04, 0.04, 0.064, 24]} />
+      <mesh position={[0, 0.016, 0]}>
+        <cylinderGeometry args={[0.052, 0.052, 0.074, 24]} />
         <meshStandardMaterial color="#040404" roughness={0.92} metalness={0} />
       </mesh>
-      <mesh position={[0, 0.05, 0]}>
-        <cylinderGeometry args={[0.028, 0.028, 0.04, 16]} />
+      <mesh position={[0, 0.054, 0]}>
+        <cylinderGeometry args={[0.036, 0.036, 0.05, 16]} />
         <meshBasicMaterial color="#000000" />
       </mesh>
     </group>
