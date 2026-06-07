@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createDistortionCurve, mapDelayTime, mapFeedback } from "../audio/dsp";
+import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback } from "../audio/dsp";
 
 export type EffectsState = "idle" | "bypass" | "active";
 
@@ -85,8 +85,14 @@ export function useEffects({
       preFilter.type = "highpass";
       preFilter.frequency.value = 140;
 
+      const midEmphasis = ctx.createBiquadFilter();
+      midEmphasis.type = "peaking";
+      midEmphasis.frequency.value = 700;
+      midEmphasis.Q.value = 0.8;
+      midEmphasis.gain.value = 4;
+
       const preGain = ctx.createGain();
-      preGain.gain.value = 1 + drive * 4;
+      preGain.gain.value = mapDrivePreGain(drive);
 
       const driveNode = ctx.createWaveShaper();
       driveNode.curve = createDistortionCurve(drive);
@@ -114,25 +120,34 @@ export function useEffects({
       const wetGain = ctx.createGain();
       wetGain.gain.value = echo * 0.5;
 
+      const reverbDamping = ctx.createBiquadFilter();
+      reverbDamping.type = "lowpass";
+      reverbDamping.frequency.value = 3200;
+
       const reverbDelay1 = ctx.createDelay(0.1);
-      reverbDelay1.delayTime.value = 0.023;
+      reverbDelay1.delayTime.value = 0.0233;
       const reverbFB1 = ctx.createGain();
-      reverbFB1.gain.value = 0.5;
+      reverbFB1.gain.value = 0.72;
 
       const reverbDelay2 = ctx.createDelay(0.1);
-      reverbDelay2.delayTime.value = 0.037;
+      reverbDelay2.delayTime.value = 0.0371;
       const reverbFB2 = ctx.createGain();
-      reverbFB2.gain.value = 0.45;
+      reverbFB2.gain.value = 0.68;
+
+      const reverbDelay3 = ctx.createDelay(0.1);
+      reverbDelay3.delayTime.value = 0.0531;
+      const reverbFB3 = ctx.createGain();
+      reverbFB3.gain.value = 0.64;
 
       const reverbWet = ctx.createGain();
       reverbWet.gain.value = reverb * 0.5;
 
       const limiter = ctx.createDynamicsCompressor();
-      limiter.threshold.value = -3.0;
-      limiter.knee.value = 0;
+      limiter.threshold.value = -1.5;
+      limiter.knee.value = 3;
       limiter.ratio.value = 20;
       limiter.attack.value = 0.003;
-      limiter.release.value = 0.05;
+      limiter.release.value = 0.1;
 
       const masterGain = ctx.createGain();
       masterGain.gain.value = 0;
@@ -149,7 +164,8 @@ export function useEffects({
       src.connect(monoSum);
       monoSum.connect(bypassGain);
       monoSum.connect(preFilter);
-      preFilter.connect(preGain);
+      preFilter.connect(midEmphasis);
+      midEmphasis.connect(preGain);
       preGain.connect(driveNode);
       driveNode.connect(toneFilter);
 
@@ -161,15 +177,22 @@ export function useEffects({
       feedbackGain.connect(wetGain);
       wetGain.connect(effectsGain);
 
-      toneFilter.connect(reverbDelay1);
+      toneFilter.connect(reverbDamping);
+
+      reverbDamping.connect(reverbDelay1);
       reverbDelay1.connect(reverbFB1);
       reverbFB1.connect(reverbDelay1);
       reverbDelay1.connect(reverbWet);
 
-      toneFilter.connect(reverbDelay2);
+      reverbDamping.connect(reverbDelay2);
       reverbDelay2.connect(reverbFB2);
       reverbFB2.connect(reverbDelay2);
       reverbDelay2.connect(reverbWet);
+
+      reverbDamping.connect(reverbDelay3);
+      reverbDelay3.connect(reverbFB3);
+      reverbFB3.connect(reverbDelay3);
+      reverbDelay3.connect(reverbWet);
 
       reverbWet.connect(effectsGain);
 
@@ -221,7 +244,7 @@ export function useEffects({
     const { drive: driveNode, preGain } = nodesRef.current;
     if (driveNode) driveNode.curve = createDistortionCurve(drive);
     if (preGain && ctxRef.current)
-      preGain.gain.setTargetAtTime(1 + drive * 4, ctxRef.current.currentTime, 0.05);
+      preGain.gain.setTargetAtTime(mapDrivePreGain(drive), ctxRef.current.currentTime, 0.05);
   }, [drive]);
 
   useEffect(() => {

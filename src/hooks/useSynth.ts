@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createDistortionCurve, mapDelayTime, mapFeedback } from "../audio/dsp";
+import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback } from "../audio/dsp";
 
 export const NOTE_KEYS: Record<string, { freq: number; note: string; black?: true }> = {
   a: { freq: 261.63, note: "C4" },
@@ -22,6 +22,7 @@ export const NOTE_KEYS: Record<string, { freq: number; note: string; black?: tru
 
 type SynthNodes = {
   input: GainNode;
+  preGain: GainNode;
   drive: WaveShaperNode;
   tone: BiquadFilterNode;
   delay: DelayNode;
@@ -52,7 +53,16 @@ export function useSynth({
     ctxRef.current = ctx;
 
     const input = ctx.createGain();
-    input.gain.value = 1.2;
+    input.gain.value = 1.0;
+
+    const midEmphasis = ctx.createBiquadFilter();
+    midEmphasis.type = "peaking";
+    midEmphasis.frequency.value = 700;
+    midEmphasis.Q.value = 0.8;
+    midEmphasis.gain.value = 4;
+
+    const preGain = ctx.createGain();
+    preGain.gain.value = mapDrivePreGain(p.drive);
 
     const driveNode = ctx.createWaveShaper();
     driveNode.curve = createDistortionCurve(p.drive);
@@ -71,19 +81,25 @@ export function useSynth({
     const wetGain = ctx.createGain();
     wetGain.gain.value = p.echo * 0.5;
 
-    const rev1 = ctx.createDelay(0.1); rev1.delayTime.value = 0.023;
-    const revFB1 = ctx.createGain(); revFB1.gain.value = 0.5;
-    const rev2 = ctx.createDelay(0.1); rev2.delayTime.value = 0.037;
-    const revFB2 = ctx.createGain(); revFB2.gain.value = 0.45;
+    const reverbDamping = ctx.createBiquadFilter();
+    reverbDamping.type = "lowpass"; reverbDamping.frequency.value = 3200;
+    const rev1 = ctx.createDelay(0.1); rev1.delayTime.value = 0.0233;
+    const revFB1 = ctx.createGain(); revFB1.gain.value = 0.72;
+    const rev2 = ctx.createDelay(0.1); rev2.delayTime.value = 0.0371;
+    const revFB2 = ctx.createGain(); revFB2.gain.value = 0.68;
+    const rev3 = ctx.createDelay(0.1); rev3.delayTime.value = 0.0531;
+    const revFB3 = ctx.createGain(); revFB3.gain.value = 0.64;
     const reverbWet = ctx.createGain(); reverbWet.gain.value = p.reverb * 0.5;
 
     const master = ctx.createGain(); master.gain.value = p.masterVolume * 0.55;
 
     const limiter = ctx.createDynamicsCompressor();
-    limiter.threshold.value = -3; limiter.knee.value = 0;
-    limiter.ratio.value = 20; limiter.attack.value = 0.003; limiter.release.value = 0.05;
+    limiter.threshold.value = -1.5; limiter.knee.value = 3;
+    limiter.ratio.value = 20; limiter.attack.value = 0.003; limiter.release.value = 0.1;
 
-    input.connect(driveNode);
+    input.connect(midEmphasis);
+    midEmphasis.connect(preGain);
+    preGain.connect(driveNode);
     driveNode.connect(toneFilter);
     toneFilter.connect(master);
     toneFilter.connect(delayNode);
@@ -91,13 +107,15 @@ export function useSynth({
     feedbackGain.connect(delayNode);
     feedbackGain.connect(wetGain);
     wetGain.connect(master);
-    toneFilter.connect(rev1); rev1.connect(revFB1); revFB1.connect(rev1); rev1.connect(reverbWet);
-    toneFilter.connect(rev2); rev2.connect(revFB2); revFB2.connect(rev2); rev2.connect(reverbWet);
+    toneFilter.connect(reverbDamping);
+    reverbDamping.connect(rev1); rev1.connect(revFB1); revFB1.connect(rev1); rev1.connect(reverbWet);
+    reverbDamping.connect(rev2); rev2.connect(revFB2); revFB2.connect(rev2); rev2.connect(reverbWet);
+    reverbDamping.connect(rev3); rev3.connect(revFB3); revFB3.connect(rev3); rev3.connect(reverbWet);
     reverbWet.connect(master);
     master.connect(limiter);
     limiter.connect(ctx.destination);
 
-    const nodes: SynthNodes = { input, drive: driveNode, tone: toneFilter, delay: delayNode, feedback: feedbackGain, wet: wetGain, reverbWet, master };
+    const nodes: SynthNodes = { input, preGain, drive: driveNode, tone: toneFilter, delay: delayNode, feedback: feedbackGain, wet: wetGain, reverbWet, master };
     nodesRef.current = nodes;
     return { ctx, nodes };
   }, []);
@@ -106,6 +124,7 @@ export function useSynth({
     const n = nodesRef.current; const ctx = ctxRef.current;
     if (!n || !ctx) return;
     const t = ctx.currentTime;
+    n.preGain.gain.setTargetAtTime(mapDrivePreGain(drive), t, 0.05);
     n.drive.curve = createDistortionCurve(drive);
     n.tone.frequency.setTargetAtTime(500 * Math.pow(16, tone), t, 0.05);
     n.delay.delayTime.setTargetAtTime(mapDelayTime(echo), t, 0.05);

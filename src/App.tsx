@@ -7,11 +7,11 @@ import LoadingScreen from "./LoadingScreen";
 import WarningModal from "./WarningModal";
 
 const PRESETS = [
-  { name: "CLEAN",   drive: 0.10, echo: 0.20, tone: 0.65, reverb: 0.15, master: 0.75 },
-  { name: "CRUNCH",  drive: 0.65, echo: 0.25, tone: 0.55, reverb: 0.10, master: 0.75 },
-  { name: "HEAVY",   drive: 0.90, echo: 0.15, tone: 0.40, reverb: 0.05, master: 0.80 },
-  { name: "FRUS",    drive: 0.08, echo: 0.15, tone: 0.82, reverb: 0.62, master: 0.80 },
-  { name: "GHOST",   drive: 0.50, echo: 0.45, tone: 0.50, reverb: 0.60, master: 0.75 },
+  { name: "CLEAN",   drive: 0.06, echo: 0.12, tone: 0.70, reverb: 0.30, master: 0.80 },
+  { name: "CRUNCH",  drive: 0.42, echo: 0.18, tone: 0.52, reverb: 0.16, master: 0.78 },
+  { name: "HEAVY",   drive: 0.85, echo: 0.08, tone: 0.40, reverb: 0.10, master: 0.82 },
+  { name: "FRUS",    drive: 0.04, echo: 0.30, tone: 0.85, reverb: 0.72, master: 0.82 },
+  { name: "GHOST",   drive: 0.55, echo: 0.48, tone: 0.50, reverb: 0.58, master: 0.76 },
 ] as const;
 
 function readUrlParams() {
