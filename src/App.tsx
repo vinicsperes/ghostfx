@@ -14,17 +14,6 @@ const PRESETS = [
   { name: "GHOST",   drive: 0.55, echo: 0.48, tone: 0.50, reverb: 0.58, master: 0.76 },
 ] as const;
 
-function readUrlParams() {
-  const p = new URLSearchParams(window.location.search);
-  return {
-    drive:  parseFloat(p.get("d") ?? "0.50"),
-    echo:   parseFloat(p.get("e") ?? "0.45"),
-    tone:   parseFloat(p.get("t") ?? "0.50"),
-    reverb: parseFloat(p.get("r") ?? "0.60"),
-    master: parseFloat(p.get("m") ?? "0.75"),
-  };
-}
-
 function hexToRgb(h: string): [number, number, number] {
   return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
 }
@@ -52,22 +41,11 @@ export default function App() {
   const presetIdxRef = useRef<number | null>(4);
   useEffect(() => { presetIdxRef.current = presetIdx; }, [presetIdx]);
   const [audioLevel, setAudioLevel] = useState(0);
-  const init = readUrlParams();
-  const [drive, setDrive] = useState(init.drive);
-  const [echo, setEcho] = useState(init.echo);
-  const [tone, setTone] = useState(init.tone);
-  const [reverb, setReverb] = useState(init.reverb);
-  const [masterVolume, setMasterVolume] = useState(init.master);
-
-  useEffect(() => {
-    const p = new URLSearchParams();
-    p.set("d", drive.toFixed(2));
-    p.set("e", echo.toFixed(2));
-    p.set("t", tone.toFixed(2));
-    p.set("r", reverb.toFixed(2));
-    p.set("m", masterVolume.toFixed(2));
-    window.history.replaceState({}, "", `?${p}`);
-  }, [drive, echo, tone, reverb, masterVolume]);
+  const [drive, setDrive] = useState(0.55);
+  const [echo, setEcho] = useState(0.48);
+  const [tone, setTone] = useState(0.50);
+  const [reverb, setReverb] = useState(0.58);
+  const [masterVolume, setMasterVolume] = useState(0.76);
 
   const applyPreset = useCallback((preset: typeof PRESETS[number]) => {
     setDrive(preset.drive);
