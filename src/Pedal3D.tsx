@@ -384,8 +384,8 @@ function PedalBody({
 
       {(() => {
         const topY = H / 2;
-        const POT_LUG_Y = topY - 0.25;
-        const POT_LUG_Z = -0.185;
+        const POT_LUG_Y = topY - 0.21;
+        const POT_LUG_Z = -0.10;
         const SW_LUG_Y = topY - 0.335;
         const BAT_Y = 0.10;
         const LED_Y = topY - 0.06;
@@ -1310,12 +1310,12 @@ function SideJack({ position, metal }: { position: [number, number, number], met
 }
 
 function PotBody({ x, z, topY }: { x: number; z: number; topY: number }) {
-  // pot Alpha 16mm: corpo ø16 × ~7.5mm, bushing roscado ø7mm, lugs com pitch 5mm
-  const bodyR = 0.215;
-  const bodyH = 0.20;
+  // pot 9mm PCB-mount (padrão em pedal compacto de 5 knobs): can ø9.5 × ~6mm, bushing M7
+  const bodyR = 0.128;
+  const bodyH = 0.16;
   const bodyCY = topY - 0.025 - bodyH / 2;
   const canBottom = bodyCY - bodyH / 2;
-  const lugZ = -(bodyR - 0.03);
+  const lugZ = -(bodyR - 0.025);
   return (
     <group position={[x, 0, z]}>
       <mesh position={[0, topY - 0.025, 0]}>
@@ -1323,16 +1323,16 @@ function PotBody({ x, z, topY }: { x: number; z: number; topY: number }) {
         <meshStandardMaterial color="#caa83c" metalness={0.8} roughness={0.3} />
       </mesh>
       <mesh position={[0, bodyCY, 0]} castShadow>
-        <cylinderGeometry args={[bodyR, bodyR, bodyH, 24]} />
-        <meshStandardMaterial color="#9a9a9a" metalness={0.82} roughness={0.32} />
+        <cylinderGeometry args={[bodyR, bodyR, bodyH, 20]} />
+        <meshStandardMaterial color="#8a8a90" metalness={0.78} roughness={0.38} />
       </mesh>
       <mesh position={[0, canBottom + 0.007, 0]}>
-        <cylinderGeometry args={[bodyR + 0.006, bodyR + 0.006, 0.014, 24]} />
+        <cylinderGeometry args={[bodyR + 0.006, bodyR + 0.006, 0.014, 20]} />
         <meshStandardMaterial color="#777" metalness={0.7} roughness={0.4} />
       </mesh>
-      {[-0.135, 0, 0.135].map((dx, i) => (
-        <mesh key={i} position={[dx, canBottom - 0.026, lugZ]}>
-          <boxGeometry args={[0.036, 0.058, 0.012]} />
+      {[-0.067, 0, 0.067].map((dx, i) => (
+        <mesh key={i} position={[dx, canBottom - 0.020, lugZ]}>
+          <boxGeometry args={[0.026, 0.046, 0.010]} />
           <meshStandardMaterial color="#c9b070" metalness={0.78} roughness={0.22} />
         </mesh>
       ))}
@@ -1764,18 +1764,18 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
       <SilkRect x={0} z={0} w={w - 0.10} d={l - 0.10} y={silkY} t={0.005} />
       <SilkRect x={ic1x} z={icZ} w={0.24} d={0.30} y={silkY} />
       <SilkRect x={ic2x} z={icZ} w={0.24} d={0.30} y={silkY} />
-      <SilkRing x={ec1x} z={capZ} r={0.125} y={silkY} />
-      <SilkRing x={ec2x} z={capZ} r={0.102} y={silkY} />
-      <SilkRing x={ec3x} z={capZ} r={0.102} y={silkY} />
-      <SilkRing x={ec4x} z={capZ} r={0.084} y={silkY} />
+      <SilkRing x={ec1x} z={capZ} r={0.102} y={silkY} />
+      <SilkRing x={ec2x} z={capZ} r={0.084} y={silkY} />
+      <SilkRing x={ec3x} z={capZ} r={0.084} y={silkY} />
+      <SilkRing x={ec4x} z={capZ} r={0.070} y={silkY} />
       {raX.map((rx, i) => <SilkRect key={`sra${i}`} x={rx} z={raZ} w={0.08} d={0.30} y={silkY} t={0.003} />)}
       {rbX.map((rx, i) => <SilkRect key={`srb${i}`} x={rx} z={rbZ} w={0.08} d={0.30} y={silkY} t={0.003} />)}
 
-      {/* 100µF ø8×11.5 · 47µF ø6.3×11 · 10µF ø5×11 */}
-      <ElCap x={ec1x} z={capZ} h={0.31} r={0.107} color="#1a3a6a" />
-      <ElCap x={ec2x} z={capZ} h={0.30} r={0.085} color="#1a1a1a" />
-      <ElCap x={ec3x} z={capZ} h={0.30} r={0.085} color="#1a3a6a" />
-      <ElCap x={ec4x} z={capZ} h={0.29} r={0.067} color="#2a4a1a" />
+      {/* low-voltage 16V: 100µF ø6.3×11 · 47µF ø5×11 · 10µF ø4×7 */}
+      <ElCap x={ec1x} z={capZ} h={0.30} r={0.085} color="#1a3a6a" />
+      <ElCap x={ec2x} z={capZ} h={0.29} r={0.067} color="#1a1a1a" />
+      <ElCap x={ec3x} z={capZ} h={0.29} r={0.067} color="#1a3a6a" />
+      <ElCap x={ec4x} z={capZ} h={0.20} r={0.054} color="#2a4a1a" />
       <ICDip x={ic1x} z={icZ} pins={8} />
       <ICDip x={ic2x} z={icZ} pins={8} color="#1c1c1c" />
       <THResistor x={raX[0]} z={raZ} />
