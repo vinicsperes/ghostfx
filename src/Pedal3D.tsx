@@ -345,8 +345,8 @@ function PedalBody({
         />
       </RoundedBox>
 
-      <SideJack position={[-W / 2 - 0.04, 0, 0]} metal={palette.metal} />
-      <SideJack position={[W / 2 + 0.04, 0, 0]} metal={palette.metal} />
+      <SideJack position={[-W / 2 - 0.04, 0.12, 0]} metal={palette.metal} />
+      <SideJack position={[W / 2 + 0.04, 0.12, 0]} metal={palette.metal} />
 
       <group position={[0, H / 2 + 0.02, 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
 
@@ -415,8 +415,8 @@ function PedalBody({
             <Wire start={[ 0.135, SW_LUG_Y, FSZ - 0.135]} end={[ 0.14, PAD_Y, 1.05]} color="#22aa3a" />
             <Wire start={[-0.135, SW_LUG_Y, FSZ - 0.135]} end={[-0.14, PAD_Y, 1.05]} color="#3a6ad0" />
 
-            <Wire start={[-0.76, 0.0, -0.09]} end={[-0.78, PAD_Y, -0.05]} color="#3a8ade" sag={0.03} />
-            <Wire start={[ 0.76, 0.0, -0.09]} end={[ 0.78, PAD_Y,  0.05]} color="#3a8ade" sag={0.03} />
+            <Wire start={[-0.62, 0.18, 0.0]} end={[-0.78, PAD_Y, -0.05]} color="#3a8ade" sag={0.04} />
+            <Wire start={[ 0.62, 0.18, 0.0]} end={[ 0.78, PAD_Y,  0.05]} color="#3a8ade" sag={0.04} />
 
             <Wire start={[0.092, LED_Y, 0.165]} end={[ 0.14, PAD_Y, 0.22]} color="#d02020" r={0.008} />
             <Wire start={[0.052, LED_Y, 0.165]} end={[ 0.02, PAD_Y, 0.22]} color="#181818" r={0.008} />
@@ -1256,53 +1256,49 @@ function SideJack({ position, metal }: { position: [number, number, number], met
   const isLeft = position[0] < 0;
   const chrome = "#d6d6da";
 
+  // 1/4" real: porca sextavada 14mm + arruela na face externa, bushing ø9.5mm
+  // atravessando a parede, furo ø6.35mm; dentro, corpo fechado ø~14mm com lugs.
+  // Eixo local +y aponta para dentro do gabinete.
   return (
     <group position={position} rotation={[0, 0, isLeft ? -Math.PI / 2 : Math.PI / 2]}>
 
-      <mesh position={[0, 0.28, 0]} castShadow>
-        <cylinderGeometry args={[0.078, 0.078, 0.16, 20]} />
+      <mesh position={[0, 0.26, 0]} castShadow>
+        <cylinderGeometry args={[0.19, 0.19, 0.32, 20]} />
         <meshStandardMaterial color="#0a0a0a" roughness={0.62} metalness={0.18} />
       </mesh>
+      <mesh position={[0, 0.425, 0]}>
+        <cylinderGeometry args={[0.15, 0.15, 0.02, 16]} />
+        <meshStandardMaterial color="#141414" roughness={0.7} metalness={0.05} />
+      </mesh>
 
-      {[-0.03, 0.03].map((dx, i) => (
-        <mesh key={`lug${i}`} position={[dx, 0.37, 0]} castShadow>
-          <boxGeometry args={[0.02, 0.036, 0.06]} />
+      {[-0.07, 0.07].map((dx, i) => (
+        <mesh key={`lug${i}`} position={[dx, 0.465, 0]} castShadow>
+          <boxGeometry args={[0.034, 0.055, 0.012]} />
           <meshStandardMaterial color="#c9b070" metalness={0.78} roughness={0.24} />
         </mesh>
       ))}
 
-      <mesh position={[0, 0.15, 0]}>
-        <cylinderGeometry args={[0.064, 0.064, 0.19, 24]} />
-        <meshStandardMaterial color={chrome} metalness={0.92} roughness={0.30} />
+      <mesh position={[0, 0.02, 0]}>
+        <cylinderGeometry args={[0.128, 0.128, 0.16, 20]} />
+        <meshStandardMaterial color={chrome} metalness={0.9} roughness={0.28} />
       </mesh>
-      {[0.066, 0.090, 0.114, 0.138, 0.162, 0.186, 0.210, 0.234].map((y, i) => (
-        <mesh key={`t${i}`} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.064, 0.0042, 6, 24]} />
-          <meshStandardMaterial color={chrome} metalness={0.9} roughness={0.26} />
-        </mesh>
-      ))}
 
-      <mesh position={[0, 0.043, 0]}>
-        <cylinderGeometry args={[0.096, 0.096, 0.007, 24]} />
+      <mesh position={[0, 0.012, 0]}>
+        <cylinderGeometry args={[0.165, 0.165, 0.012, 20]} />
         <meshStandardMaterial color={metal} metalness={0.85} roughness={0.24} />
       </mesh>
 
-      <mesh position={[0, 0.011, 0]} castShadow>
-        <cylinderGeometry args={[0.086, 0.086, 0.058, 6]} />
+      <mesh position={[0, -0.025, 0]} castShadow>
+        <cylinderGeometry args={[0.20, 0.20, 0.065, 6]} />
         <meshStandardMaterial color={chrome} metalness={0.95} roughness={0.16} />
       </mesh>
 
-      <mesh position={[0, -0.018, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.060, 0.011, 10, 28]} />
-        <meshStandardMaterial color={chrome} metalness={0.95} roughness={0.12} />
+      <mesh position={[0, -0.062, 0]}>
+        <cylinderGeometry args={[0.128, 0.128, 0.014, 20]} />
+        <meshStandardMaterial color={chrome} metalness={0.92} roughness={0.20} />
       </mesh>
-
-      <mesh position={[0, 0.016, 0]}>
-        <cylinderGeometry args={[0.052, 0.052, 0.074, 24]} />
-        <meshStandardMaterial color="#040404" roughness={0.92} metalness={0} />
-      </mesh>
-      <mesh position={[0, 0.054, 0]}>
-        <cylinderGeometry args={[0.036, 0.036, 0.05, 16]} />
+      <mesh position={[0, -0.058, 0]}>
+        <cylinderGeometry args={[0.085, 0.085, 0.024, 16]} />
         <meshBasicMaterial color="#000000" />
       </mesh>
     </group>
@@ -1713,7 +1709,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
 
       <mesh position={[0, hatchY, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[w - 0.16, l - 0.16]} />
-        <meshBasicMaterial map={groundTex} transparent opacity={0.22} depthWrite={false} />
+        <meshBasicMaterial map={groundTex} transparent opacity={0.36} depthWrite={false} />
       </mesh>
 
       {segs.map(({ x1, z1, x2, z2, tw }, i) => {
