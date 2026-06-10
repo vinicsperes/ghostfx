@@ -1349,7 +1349,7 @@ function SwitchBody({ x, z, topY }: { x: number; z: number; topY: number }) {
     <group position={[x, 0, z]}>
       <mesh position={[0, cy, 0]} castShadow>
         <boxGeometry args={[w, h, d]} />
-        <meshStandardMaterial color="#2a7ab0" metalness={0.12} roughness={0.55} />
+        <meshStandardMaterial color="#1a5fa8" metalness={0.05} roughness={0.72} />
       </mesh>
       {[-0.135, 0, 0.135].flatMap((lx) =>
         [-0.135, 0, 0.135].map((lz) => (
@@ -1687,8 +1687,8 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
     c.width = cw;
     c.height = ch;
     const ctx = c.getContext("2d")!;
-    ctx.strokeStyle = "rgba(200,154,60,0.62)";
-    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = "rgba(140,108,42,0.45)";
+    ctx.lineWidth = 1.2;
     const nx = 22;
     const nz = Math.round(nx * (l / w));
     for (let i = 1; i < nx; i++) {
@@ -1713,7 +1713,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
 
       <mesh position={[0, hatchY, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[w - 0.16, l - 0.16]} />
-        <meshBasicMaterial map={groundTex} transparent opacity={0.5} depthWrite={false} />
+        <meshBasicMaterial map={groundTex} transparent opacity={0.22} depthWrite={false} />
       </mesh>
 
       {segs.map(({ x1, z1, x2, z2, tw }, i) => {
@@ -1792,9 +1792,9 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
       <DiscCap x={dc3x} z={dc3z} color="#b8c070" />
       <Transistor x={t1x} z={t1z} />
       <Transistor x={t2x} z={t2z} />
-      <BoxCap x={bc1x} z={bcZ} color="#1a4fa0" />
-      <BoxCap x={bc2x} z={bcZ} color="#7a1010" />
-      <BoxCap x={bc3x} z={bcZ} color="#1a4fa0" />
+      <BoxCap x={bc1x} z={bcZ} />
+      <BoxCap x={bc2x} z={bcZ} />
+      <BoxCap x={bc3x} z={bcZ} />
     </group>
   );
 }
