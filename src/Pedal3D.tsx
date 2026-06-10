@@ -384,8 +384,9 @@ function PedalBody({
 
       {(() => {
         const topY = H / 2;
-        const POT_LUG_Y = topY - 0.17;
-        const SW_LUG_Y = topY - 0.17;
+        const POT_LUG_Y = topY - 0.25;
+        const POT_LUG_Z = -0.185;
+        const SW_LUG_Y = topY - 0.335;
         const BAT_Y = 0.10;
         const LED_Y = topY - 0.06;
         const PAD_Y = -0.066;
@@ -405,14 +406,14 @@ function PedalBody({
             <Wire start={[ 0.035, BAT_Y, -0.24]} end={[ 0.07, PAD_Y, -0.30]} color="#d02020" sag={0.03} />
             <Wire start={[-0.035, BAT_Y, -0.24]} end={[-0.07, PAD_Y, -0.30]} color="#181818" sag={0.03} />
 
-            <Wire start={[kp.drive[0],  POT_LUG_Y, kp.drive[2]]}  end={[-0.55, PAD_Y, -1.12]} color="#202020" />
-            <Wire start={[kp.echo[0],   POT_LUG_Y, kp.echo[2]]}   end={[ 0.02, PAD_Y, -1.12]} color="#22aa3a" />
-            <Wire start={[kp.reverb[0], POT_LUG_Y, kp.reverb[2]]} end={[ 0.55, PAD_Y, -1.12]} color="#e0b020" />
-            <Wire start={[kp.tone[0],   POT_LUG_Y, kp.tone[2]]}   end={[-0.26, PAD_Y, -0.72]} color="#9d4edd" />
-            <Wire start={[kp.master[0], POT_LUG_Y, kp.master[2]]} end={[ 0.30, PAD_Y, -0.72]} color="#c040b0" />
+            <Wire start={[kp.drive[0],  POT_LUG_Y, kp.drive[2]  + POT_LUG_Z]} end={[-0.55, PAD_Y, -1.12]} color="#202020" />
+            <Wire start={[kp.echo[0],   POT_LUG_Y, kp.echo[2]   + POT_LUG_Z]} end={[ 0.02, PAD_Y, -1.12]} color="#22aa3a" />
+            <Wire start={[kp.reverb[0], POT_LUG_Y, kp.reverb[2] + POT_LUG_Z]} end={[ 0.55, PAD_Y, -1.12]} color="#e0b020" />
+            <Wire start={[kp.tone[0],   POT_LUG_Y, kp.tone[2]   + POT_LUG_Z]} end={[-0.26, PAD_Y, -0.72]} color="#9d4edd" />
+            <Wire start={[kp.master[0], POT_LUG_Y, kp.master[2] + POT_LUG_Z]} end={[ 0.30, PAD_Y, -0.72]} color="#c040b0" />
 
-            <Wire start={[ 0.06, SW_LUG_Y, FSZ - 0.06]} end={[ 0.14, PAD_Y, 1.05]} color="#22aa3a" />
-            <Wire start={[-0.06, SW_LUG_Y, FSZ - 0.06]} end={[-0.14, PAD_Y, 1.05]} color="#3a6ad0" />
+            <Wire start={[ 0.135, SW_LUG_Y, FSZ - 0.135]} end={[ 0.14, PAD_Y, 1.05]} color="#22aa3a" />
+            <Wire start={[-0.135, SW_LUG_Y, FSZ - 0.135]} end={[-0.14, PAD_Y, 1.05]} color="#3a6ad0" />
 
             <Wire start={[-0.76, 0.0, -0.09]} end={[-0.78, PAD_Y, -0.05]} color="#3a8ade" sag={0.03} />
             <Wire start={[ 0.76, 0.0, -0.09]} end={[ 0.78, PAD_Y,  0.05]} color="#3a8ade" sag={0.03} />
@@ -1309,14 +1310,16 @@ function SideJack({ position, metal }: { position: [number, number, number], met
 }
 
 function PotBody({ x, z, topY }: { x: number; z: number; topY: number }) {
-  const bodyR = 0.085;
-  const bodyH = 0.11;
+  // pot Alpha 16mm: corpo ø16 × ~7.5mm, bushing roscado ø7mm, lugs com pitch 5mm
+  const bodyR = 0.215;
+  const bodyH = 0.20;
   const bodyCY = topY - 0.025 - bodyH / 2;
   const canBottom = bodyCY - bodyH / 2;
+  const lugZ = -(bodyR - 0.03);
   return (
     <group position={[x, 0, z]}>
       <mesh position={[0, topY - 0.025, 0]}>
-        <cylinderGeometry args={[0.05, 0.05, 0.05, 16]} />
+        <cylinderGeometry args={[0.094, 0.094, 0.05, 16]} />
         <meshStandardMaterial color="#caa83c" metalness={0.8} roughness={0.3} />
       </mesh>
       <mesh position={[0, bodyCY, 0]} castShadow>
@@ -1324,12 +1327,12 @@ function PotBody({ x, z, topY }: { x: number; z: number; topY: number }) {
         <meshStandardMaterial color="#9a9a9a" metalness={0.82} roughness={0.32} />
       </mesh>
       <mesh position={[0, canBottom + 0.007, 0]}>
-        <cylinderGeometry args={[bodyR + 0.006, bodyR + 0.006, 0.012, 24]} />
+        <cylinderGeometry args={[bodyR + 0.006, bodyR + 0.006, 0.014, 24]} />
         <meshStandardMaterial color="#777" metalness={0.7} roughness={0.4} />
       </mesh>
-      {[-0.032, 0, 0.032].map((dx, i) => (
-        <mesh key={i} position={[dx, canBottom - 0.016, 0]}>
-          <boxGeometry args={[0.009, 0.034, 0.013]} />
+      {[-0.135, 0, 0.135].map((dx, i) => (
+        <mesh key={i} position={[dx, canBottom - 0.026, lugZ]}>
+          <boxGeometry args={[0.036, 0.058, 0.012]} />
           <meshStandardMaterial color="#c9b070" metalness={0.78} roughness={0.22} />
         </mesh>
       ))}
@@ -1338,19 +1341,20 @@ function PotBody({ x, z, topY }: { x: number; z: number; topY: number }) {
 }
 
 function SwitchBody({ x, z, topY }: { x: number; z: number; topY: number }) {
-  const w = 0.20, d = 0.20, h = 0.11;
+  // 3PDT: corpo ~17.6 × 17.6mm, 9 lugs em grade de ~5mm
+  const w = 0.47, d = 0.47, h = 0.28;
   const cy = topY - 0.025 - h / 2;
-  const lugY = cy - h / 2 - 0.016;
+  const lugY = cy - h / 2 - 0.030;
   return (
     <group position={[x, 0, z]}>
       <mesh position={[0, cy, 0]} castShadow>
         <boxGeometry args={[w, h, d]} />
-        <meshStandardMaterial color="#d8c298" metalness={0.12} roughness={0.6} />
+        <meshStandardMaterial color="#2a7ab0" metalness={0.12} roughness={0.55} />
       </mesh>
-      {[-0.06, 0, 0.06].flatMap((lx) =>
-        [-0.06, 0, 0.06].map((lz) => (
+      {[-0.135, 0, 0.135].flatMap((lx) =>
+        [-0.135, 0, 0.135].map((lz) => (
           <mesh key={`${lx}_${lz}`} position={[lx, lugY, lz]}>
-            <boxGeometry args={[0.013, 0.034, 0.013]} />
+            <boxGeometry args={[0.034, 0.060, 0.012]} />
             <meshStandardMaterial color="#c9b070" metalness={0.78} roughness={0.22} />
           </mesh>
         ))
@@ -1435,31 +1439,33 @@ function ElCap({ x, z, h = 0.18, r = 0.055, color = "#1a1a1a" }: {
 function ICDip({ x, z, pins = 8, rot = 0, color = "#101010" }: {
   x: number; z: number; pins?: number; rot?: number; color?: string;
 }) {
+  // DIP: corpo 6.35mm de largura, pitch 2.54mm — DIP-8 9.8mm, DIP-16 19.3mm
   const half = pins / 2;
-  const chipW = 0.10;
-  const chipL = half * 0.055 + 0.015;
-  const chipH = 0.038;
-  const topY = PCB_BH / 2 + chipH / 2;
+  const chipW = 0.171;
+  const chipL = half * 0.066;
+  const chipH = 0.089;
+  const seatY = PCB_BH / 2 + 0.012;
+  const topY = seatY + chipH / 2;
   return (
     <group position={[x, 0, z]} rotation={[0, rot, 0]}>
       <mesh position={[0, topY, 0]} castShadow>
         <boxGeometry args={[chipW, chipH, chipL]} />
         <meshStandardMaterial color={color} roughness={0.65} metalness={0.04} />
       </mesh>
-      <mesh position={[0, topY + chipH / 2 + 0.0005, -chipL / 2 + 0.022]}>
-        <cylinderGeometry args={[0.009, 0.009, 0.001, 10]} />
+      <mesh position={[0, topY + chipH / 2 + 0.0005, -chipL / 2 + 0.030]}>
+        <cylinderGeometry args={[0.016, 0.016, 0.001, 12]} />
         <meshBasicMaterial color="#383838" />
       </mesh>
       {Array.from({ length: half }, (_, i) => {
-        const pz = -chipL / 2 + 0.030 + i * 0.055;
+        const pz = -chipL / 2 + 0.033 + i * 0.066;
         return (
           <group key={i}>
-            <mesh position={[-chipW / 2 - 0.013, PCB_BH / 2 + 0.005, pz]}>
-              <boxGeometry args={[0.026, 0.010, 0.011]} />
+            <mesh position={[-chipW / 2 - 0.012, (seatY + PCB_BH / 2) / 2 + 0.004, pz]}>
+              <boxGeometry args={[0.024, 0.030, 0.014]} />
               <meshStandardMaterial color="#b0b0b0" metalness={0.88} roughness={0.12} />
             </mesh>
-            <mesh position={[chipW / 2 + 0.013, PCB_BH / 2 + 0.005, pz]}>
-              <boxGeometry args={[0.026, 0.010, 0.011]} />
+            <mesh position={[chipW / 2 + 0.012, (seatY + PCB_BH / 2) / 2 + 0.004, pz]}>
+              <boxGeometry args={[0.024, 0.030, 0.014]} />
               <meshStandardMaterial color="#b0b0b0" metalness={0.88} roughness={0.12} />
             </mesh>
           </group>
@@ -1472,55 +1478,74 @@ function ICDip({ x, z, pins = 8, rot = 0, color = "#101010" }: {
 function THResistor({ x, z, rot = 0, b1 = "#c02010", b2 = "#101010", b3 = "#e0a020" }: {
   x: number; z: number; rot?: number; b1?: string; b2?: string; b3?: string;
 }) {
-  const bL = 0.052;
-  const bR = 0.015;
-  const bodyY = PCB_BH / 2 + bR;
+  // 1/4W axial: corpo 6.3 × ø2.3mm, espaçamento de furos 10.16mm (escala 1u = 37.2mm)
+  const bL = 0.17;
+  const bR = 0.031;
+  const legZ = 0.1365;
+  const bodyY = PCB_BH / 2 + bR + 0.004;
   return (
     <group position={[x, 0, z]} rotation={[0, rot, 0]}>
-      <mesh position={[0, bodyY, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[bR, bR, bL, 10]} />
+      <mesh position={[0, bodyY, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <cylinderGeometry args={[bR, bR, bL, 12]} />
         <meshStandardMaterial color="#e8d8b0" roughness={0.6} />
       </mesh>
-      {([0, 0.010, 0.022] as const).map((dz, i) => (
-        <mesh key={i} position={[0, bodyY, -bL / 2 + 0.014 + dz]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[bR + 0.0015, bR + 0.0015, 0.006, 10]} />
-          <meshBasicMaterial color={i === 0 ? b1 : i === 1 ? b2 : b3} />
+      {([-0.055, -0.030, -0.005, 0.055] as const).map((dz, i) => (
+        <mesh key={i} position={[0, bodyY, dz]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[bR + 0.0015, bR + 0.0015, 0.012, 12]} />
+          <meshBasicMaterial color={i === 0 ? b1 : i === 1 ? b2 : i === 2 ? b3 : "#c8a030"} />
         </mesh>
       ))}
-      <mesh position={[0, PCB_BH / 2 + 0.006, bL / 2 + 0.018]}>
-        <boxGeometry args={[0.003, 0.012, 0.034]} />
-        <meshStandardMaterial color="#d0d0d0" metalness={0.88} roughness={0.12} />
-      </mesh>
-      <mesh position={[0, PCB_BH / 2 + 0.006, -bL / 2 - 0.018]}>
-        <boxGeometry args={[0.003, 0.012, 0.034]} />
-        <meshStandardMaterial color="#d0d0d0" metalness={0.88} roughness={0.12} />
-      </mesh>
+      {([1, -1] as const).map((s) => (
+        <group key={s}>
+          <mesh position={[0, bodyY, s * (bL / 2 + (legZ - bL / 2) / 2)]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.008, 0.008, legZ - bL / 2, 8]} />
+            <meshStandardMaterial color="#d0d0d0" metalness={0.88} roughness={0.12} />
+          </mesh>
+          <mesh position={[0, (bodyY + PCB_BH / 2) / 2, s * legZ]}>
+            <cylinderGeometry args={[0.008, 0.008, bodyY - PCB_BH / 2, 8]} />
+            <meshStandardMaterial color="#d0d0d0" metalness={0.88} roughness={0.12} />
+          </mesh>
+        </group>
+      ))}
     </group>
   );
 }
 
-function DiscCap({ x, z, color = "#d4b86a" }: { x: number; z: number; color?: string }) {
+function DiscCap({ x, z, rot = 0, color = "#d4b86a" }: { x: number; z: number; rot?: number; color?: string }) {
+  // disco cerâmico ø6mm em pé sobre duas pernas (pitch 5mm)
+  const r = 0.078;
+  const legX = 0.0675;
+  const discY = PCB_BH / 2 + r + 0.024;
   return (
-    <group position={[x, PCB_BH / 2 + 0.014, z]}>
-      <mesh castShadow>
-        <cylinderGeometry args={[0.024, 0.020, 0.010, 14]} />
+    <group position={[x, 0, z]} rotation={[0, rot, 0]}>
+      <mesh position={[0, discY, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <cylinderGeometry args={[r, r, 0.034, 18]} />
         <meshStandardMaterial color={color} roughness={0.55} metalness={0.05} />
       </mesh>
+      {([-legX, legX] as const).map((lx, i) => (
+        <mesh key={i} position={[lx, (discY - r * 0.4 + PCB_BH / 2) / 2, 0]}>
+          <cylinderGeometry args={[0.008, 0.008, discY - r * 0.4 - PCB_BH / 2, 8]} />
+          <meshStandardMaterial color="#d0d0d0" metalness={0.88} roughness={0.12} />
+        </mesh>
+      ))}
     </group>
   );
 }
 
 function Transistor({ x, z, rot = 0 }: { x: number; z: number; rot?: number }) {
-  const h = 0.07;
+  // TO-92: ø4.5mm × 4.5mm de corpo, erguido ~1.5mm acima da placa nas pernas
+  const h = 0.12;
+  const standoff = 0.04;
+  const bodyCY = PCB_BH / 2 + standoff + h / 2;
   return (
     <group position={[x, 0, z]} rotation={[0, rot, 0]}>
-      <mesh position={[0, PCB_BH / 2 + h / 2, 0]} castShadow scale={[1, 1, 0.62]}>
-        <cylinderGeometry args={[0.034, 0.034, h, 16]} />
+      <mesh position={[0, bodyCY, 0]} castShadow scale={[1, 1, 0.62]}>
+        <cylinderGeometry args={[0.060, 0.060, h, 16]} />
         <meshStandardMaterial color="#141414" roughness={0.55} metalness={0.06} />
       </mesh>
-      {[-0.018, 0, 0.018].map((dx, i) => (
-        <mesh key={i} position={[dx, PCB_BH / 2 + 0.002, 0.012]}>
-          <boxGeometry args={[0.005, 0.010, 0.024]} />
+      {[-0.034, 0, 0.034].map((dx, i) => (
+        <mesh key={i} position={[dx, (PCB_BH / 2 + bodyCY - h / 2) / 2, 0]}>
+          <cylinderGeometry args={[0.008, 0.008, standoff + 0.004, 8]} />
           <meshStandardMaterial color="#c0c0c4" metalness={0.85} roughness={0.18} />
         </mesh>
       ))}
@@ -1528,17 +1553,20 @@ function Transistor({ x, z, rot = 0 }: { x: number; z: number; rot?: number }) {
   );
 }
 
-function BoxCap({ x, z, rot = 0, color = "#1a4fa0" }: { x: number; z: number; rot?: number; color?: string }) {
-  const h = 0.05;
+function BoxCap({ x, z, rot = 0, color = "#b02818" }: { x: number; z: number; rot?: number; color?: string }) {
+  // film box estilo WIMA: 7.2mm de comprimento, pitch 5mm
+  const w = 0.194;
+  const h = 0.16;
+  const d = 0.067;
   return (
     <group position={[x, 0, z]} rotation={[0, rot, 0]}>
-      <mesh position={[0, PCB_BH / 2 + h / 2, 0]} castShadow>
-        <boxGeometry args={[0.07, h, 0.026]} />
+      <mesh position={[0, PCB_BH / 2 + h / 2 + 0.006, 0]} castShadow>
+        <boxGeometry args={[w, h, d]} />
         <meshStandardMaterial color={color} roughness={0.5} metalness={0.05} />
       </mesh>
-      {[-0.022, 0.022].map((dx, i) => (
-        <mesh key={i} position={[dx, PCB_BH / 2 + 0.003, 0.020]}>
-          <boxGeometry args={[0.004, 0.010, 0.026]} />
+      {[-0.0675, 0.0675].map((dx, i) => (
+        <mesh key={i} position={[dx, PCB_BH / 2 + 0.005, 0]}>
+          <cylinderGeometry args={[0.008, 0.008, 0.014, 8]} />
           <meshStandardMaterial color="#c0c0c4" metalness={0.85} roughness={0.18} />
         </mesh>
       ))}
@@ -1590,7 +1618,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   const rbZ = l * 0.13;
   const rbX = [-w * 0.24, -w * 0.08, w * 0.08, w * 0.24];
 
-  const bcZ = l * 0.31;
+  const bcZ = l * 0.24;
   const bc1x = -w * 0.27, bc2x = 0, bc3x = w * 0.27;
 
   const dc1x = -w * 0.36, dc1z = l * 0.03;
@@ -1734,19 +1762,20 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
       ))}
 
       <SilkRect x={0} z={0} w={w - 0.10} d={l - 0.10} y={silkY} t={0.005} />
-      <SilkRect x={ic1x} z={icZ} w={0.16} d={0.30} y={silkY} />
-      <SilkRect x={ic2x} z={icZ} w={0.16} d={0.30} y={silkY} />
-      <SilkRing x={ec1x} z={capZ} r={0.082} y={silkY} />
-      <SilkRing x={ec2x} z={capZ} r={0.076} y={silkY} />
-      <SilkRing x={ec3x} z={capZ} r={0.076} y={silkY} />
-      <SilkRing x={ec4x} z={capZ} r={0.060} y={silkY} />
-      {raX.map((rx, i) => <SilkRect key={`sra${i}`} x={rx} z={raZ} w={0.05} d={0.13} y={silkY} t={0.003} />)}
-      {rbX.map((rx, i) => <SilkRect key={`srb${i}`} x={rx} z={rbZ} w={0.05} d={0.13} y={silkY} t={0.003} />)}
+      <SilkRect x={ic1x} z={icZ} w={0.24} d={0.30} y={silkY} />
+      <SilkRect x={ic2x} z={icZ} w={0.24} d={0.30} y={silkY} />
+      <SilkRing x={ec1x} z={capZ} r={0.125} y={silkY} />
+      <SilkRing x={ec2x} z={capZ} r={0.102} y={silkY} />
+      <SilkRing x={ec3x} z={capZ} r={0.102} y={silkY} />
+      <SilkRing x={ec4x} z={capZ} r={0.084} y={silkY} />
+      {raX.map((rx, i) => <SilkRect key={`sra${i}`} x={rx} z={raZ} w={0.08} d={0.30} y={silkY} t={0.003} />)}
+      {rbX.map((rx, i) => <SilkRect key={`srb${i}`} x={rx} z={rbZ} w={0.08} d={0.30} y={silkY} t={0.003} />)}
 
-      <ElCap x={ec1x} z={capZ} h={0.24} r={0.072} color="#1a3a6a" />
-      <ElCap x={ec2x} z={capZ} h={0.22} r={0.066} color="#1a1a1a" />
-      <ElCap x={ec3x} z={capZ} h={0.22} r={0.066} color="#1a3a6a" />
-      <ElCap x={ec4x} z={capZ} h={0.16} r={0.048} color="#2a4a1a" />
+      {/* 100µF ø8×11.5 · 47µF ø6.3×11 · 10µF ø5×11 */}
+      <ElCap x={ec1x} z={capZ} h={0.31} r={0.107} color="#1a3a6a" />
+      <ElCap x={ec2x} z={capZ} h={0.30} r={0.085} color="#1a1a1a" />
+      <ElCap x={ec3x} z={capZ} h={0.30} r={0.085} color="#1a3a6a" />
+      <ElCap x={ec4x} z={capZ} h={0.29} r={0.067} color="#2a4a1a" />
       <ICDip x={ic1x} z={icZ} pins={8} />
       <ICDip x={ic2x} z={icZ} pins={8} color="#1c1c1c" />
       <THResistor x={raX[0]} z={raZ} />
