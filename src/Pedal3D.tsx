@@ -1779,8 +1779,8 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
     c.width = cw;
     c.height = ch;
     const ctx = c.getContext("2d")!;
-    ctx.strokeStyle = "rgba(140,108,42,0.45)";
-    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = "rgba(175,136,54,0.62)";
+    ctx.lineWidth = 1.4;
     const nx = 22;
     const nz = Math.round(nx * (l / w));
     for (let i = 1; i < nx; i++) {
@@ -1805,7 +1805,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
 
       <mesh position={[0, hatchY, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[w - 0.16, l - 0.16]} />
-        <meshBasicMaterial map={groundTex} transparent opacity={0.36} depthWrite={false} />
+        <meshBasicMaterial map={groundTex} transparent opacity={0.46} depthWrite={false} />
       </mesh>
 
       {segs.map(({ x1, z1, x2, z2, tw }, i) => {
@@ -1868,8 +1868,8 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
       <ElCap x={ec2x} z={capZ} h={0.29} r={0.067} color="#1a1a1a" />
       <ElCap x={ec3x} z={capZ} h={0.29} r={0.067} color="#1a3a6a" />
       <ElCap x={ec4x} z={capZ} h={0.20} r={0.054} color="#2a4a1a" />
-      <ICDip x={ic1x} z={icZ} pins={8} label="JRC4558D" />
-      <ICDip x={ic2x} z={icZ} pins={16} color="#1c1c1c" label="PT2399" />
+      <ICDip x={ic1x} z={icZ} pins={8} label="GH4558D" />
+      <ICDip x={ic2x} z={icZ} pins={16} color="#1c1c1c" label="ECTO-399" />
       <Diode x={dgX} z={dg1z} />
       <Diode x={dgX} z={dg2z} />
       <Diode x={dpX} z={dpZ} rot={Math.PI / 2} kind="power" />
