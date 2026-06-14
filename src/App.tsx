@@ -40,7 +40,6 @@ export default function App() {
   const [presetIdx, setPresetIdx] = useState<number | null>(4);
   const presetIdxRef = useRef<number | null>(4);
   useEffect(() => { presetIdxRef.current = presetIdx; }, [presetIdx]);
-  const [audioLevel, setAudioLevel] = useState(0);
   const [drive, setDrive] = useState(0.55);
   const [echo, setEcho] = useState(0.48);
   const [tone, setTone] = useState(0.50);
@@ -90,12 +89,6 @@ export default function App() {
   const getLevelRef = useRef(fx.getLevel);
   const getWaveformRef = useRef(fx.getWaveform);
   useEffect(() => { getLevelRef.current = fx.getLevel; getWaveformRef.current = fx.getWaveform; }, [fx.getLevel, fx.getWaveform]);
-  useEffect(() => {
-    let id: number;
-    const poll = () => { setAudioLevel(getLevelRef.current()); id = requestAnimationFrame(poll); };
-    id = requestAnimationFrame(poll);
-    return () => cancelAnimationFrame(id);
-  }, []);
 
   const handleTap = useCallback(() => {
     fx.toggle();
@@ -351,7 +344,7 @@ export default function App() {
           <VUMeter label="ECHO"   value={echo}         accent={themeColor} />
           <VUMeter label="TONE"   value={tone}         accent={themeColor} />
           <VUMeter label="REVERB" value={reverb}       accent={themeColor} />
-          <VUMeter label="VOLUME" value={masterVolume} accent={themeColor} highlight liveLevel={isActive ? audioLevel : undefined} />
+          <VUMeter label="VOLUME" value={masterVolume} accent={themeColor} highlight liveLevelRef={isActive ? getLevelRef : undefined} />
         </div>
 
         <div className="flex flex-col pointer-events-auto" style={{ gap: 8 }}>
@@ -808,18 +801,33 @@ function VUMeter({
   value,
   accent,
   highlight = false,
-  liveLevel,
+  liveLevelRef,
 }: {
   label: string;
   value: number;
   accent: string;
   highlight?: boolean;
-  liveLevel?: number;
+  liveLevelRef?: { current: () => number };
 }) {
-  const displayValue = liveLevel !== undefined ? liveLevel : value;
-  const pct = Math.round(value * 100);
+  // nível ao vivo fica local e quantizado em segmentos: re-renderiza só este
+  // componente, e só quando o número de segmentos acesos muda — nunca o App a 60Hz
   const segments = 16;
-  const filled = Math.round(displayValue * segments);
+  const [liveFilled, setLiveFilled] = useState<number | null>(null);
+  useEffect(() => {
+    if (!liveLevelRef) { setLiveFilled(null); return; }
+    let raf = 0;
+    let last = -1;
+    const tick = () => {
+      const f = Math.round(Math.min(1, liveLevelRef.current()) * segments);
+      if (f !== last) { last = f; setLiveFilled(f); }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [liveLevelRef]);
+
+  const pct = Math.round(value * 100);
+  const filled = liveFilled !== null ? liveFilled : Math.round(value * segments);
 
   return (
     <div className="flex items-center" style={{ gap: 8 }}>
