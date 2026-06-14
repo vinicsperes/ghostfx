@@ -1779,9 +1779,9 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
     c.width = cw;
     c.height = ch;
     const ctx = c.getContext("2d")!;
-    ctx.strokeStyle = "rgba(175,136,54,0.62)";
-    ctx.lineWidth = 1.4;
-    const nx = 22;
+    ctx.strokeStyle = "rgba(165,130,52,0.55)";
+    ctx.lineWidth = 1.1;
+    const nx = 30;
     const nz = Math.round(nx * (l / w));
     for (let i = 1; i < nx; i++) {
       const px = (i / nx) * cw;
