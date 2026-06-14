@@ -347,7 +347,7 @@ function PedalBody({
 
       <SideJack position={[-W / 2 - 0.04, 0.08, 0]} metal={palette.metal} />
       <SideJack position={[W / 2 + 0.04, 0.08, 0]} metal={palette.metal} />
-      <DCJack z={-L / 2 - 0.04} />
+      <DCJack x={0.62} z={-L / 2 - 0.04} />
       <HangTag />
 
       <group position={[0, H / 2 + 0.02, 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -389,7 +389,6 @@ function PedalBody({
         const POT_LUG_Y = topY - 0.21;
         const POT_LUG_Z = -0.10;
         const SW_LUG_Y = topY - 0.335;
-        const BAT_Y = 0.10;
         const LED_Y = topY - 0.06;
         const PAD_Y = -0.066;
         return (
@@ -401,27 +400,33 @@ function PedalBody({
             <PotBody x={kp.tone[0]}   z={kp.tone[2]}   topY={topY} />
             <PotBody x={kp.master[0]} z={kp.master[2]} topY={topY} />
             <SwitchBody x={0} z={FSZ} topY={topY} />
-            <group rotation={[0, Math.PI, 0]}>
-              <Battery9V x={0} z={0.05} />
-            </group>
+            <Battery9V />
 
-            <Wire start={[ 0.035, BAT_Y, -0.24]} end={[ 0.07, PAD_Y, -0.30]} color="#d02020" sag={0.03} />
-            <Wire start={[-0.035, BAT_Y, -0.24]} end={[-0.07, PAD_Y, -0.30]} color="#181818" sag={0.03} />
+            {/* bateria → pads de força, contornando a beirada da placa */}
+            <Wire start={[0.34, -0.24, -1.26]} mid={[0.56,  0.00, -1.03]} end={[0.62, PAD_Y, -0.97]} color="#d02020" />
+            <Wire start={[0.34, -0.24, -1.38]} mid={[0.40, -0.02, -1.05]} end={[0.45, PAD_Y, -0.97]} color="#181818" />
+            {/* DC jack → mesmos pads */}
+            <Wire start={[0.70, 0.14, -1.39]} mid={[0.72,  0.02, -1.06]} end={[0.62, PAD_Y, -0.97]} color="#d02020" r={0.009} />
+            <Wire start={[0.54, 0.14, -1.39]} mid={[0.50, -0.01, -1.07]} end={[0.45, PAD_Y, -0.97]} color="#181818" r={0.009} />
 
-            <Wire start={[kp.drive[0],  POT_LUG_Y, kp.drive[2]  + POT_LUG_Z]} end={[-0.55, PAD_Y, -1.12]} color="#202020" />
-            <Wire start={[kp.echo[0],   POT_LUG_Y, kp.echo[2]   + POT_LUG_Z]} end={[ 0.02, PAD_Y, -1.12]} color="#22aa3a" />
-            <Wire start={[kp.reverb[0], POT_LUG_Y, kp.reverb[2] + POT_LUG_Z]} end={[ 0.55, PAD_Y, -1.12]} color="#e0b020" />
-            <Wire start={[kp.tone[0],   POT_LUG_Y, kp.tone[2]   + POT_LUG_Z]} end={[-0.26, PAD_Y, -0.72]} color="#9d4edd" />
-            <Wire start={[kp.master[0], POT_LUG_Y, kp.master[2] + POT_LUG_Z]} end={[ 0.30, PAD_Y, -0.72]} color="#c040b0" />
+            <Wire start={[kp.drive[0],  POT_LUG_Y, kp.drive[2]  + POT_LUG_Z]} end={[-0.55, PAD_Y, -0.98]} color="#202020" />
+            <Wire start={[kp.echo[0],   POT_LUG_Y, kp.echo[2]   + POT_LUG_Z]} end={[ 0.02, PAD_Y, -0.98]} color="#22aa3a" />
+            <Wire start={[kp.reverb[0], POT_LUG_Y, kp.reverb[2] + POT_LUG_Z]} end={[ 0.55, PAD_Y, -0.98]} color="#e0b020" />
+            <Wire start={[kp.tone[0],   POT_LUG_Y, kp.tone[2]   + POT_LUG_Z]} end={[-0.26, PAD_Y, -0.72]} color="#e8e8e8" />
+            <Wire start={[kp.master[0], POT_LUG_Y, kp.master[2] + POT_LUG_Z]} end={[ 0.30, PAD_Y, -0.72]} color="#d02020" />
 
+            {/* true bypass no 3PDT: coluna direita = input, esquerda = output, frente = LED + jumper */}
             <Wire start={[ 0.135, SW_LUG_Y, FSZ - 0.135]} end={[ 0.14, PAD_Y, 1.05]} color="#22aa3a" />
             <Wire start={[-0.135, SW_LUG_Y, FSZ - 0.135]} end={[-0.14, PAD_Y, 1.05]} color="#3a6ad0" />
+            <Wire start={[ 0.70, 0.11, 0.02]} end={[ 0.155, SW_LUG_Y + 0.02, FSZ]} color="#e8e8e8" sag={0.06} r={0.009} />
+            <Wire start={[ 0.135, SW_LUG_Y, FSZ + 0.135]} end={[-0.135, SW_LUG_Y, FSZ + 0.135]} color="#d02020" sag={0.05} r={0.009} />
+            <Wire start={[-0.135, SW_LUG_Y + 0.02, FSZ]} end={[-0.135, SW_LUG_Y - 0.02, FSZ - 0.135]} color="#181818" sag={0.03} r={0.009} />
+            <Wire start={[0, SW_LUG_Y, FSZ + 0.135]} end={[0.02, PAD_Y, 0.30]} color="#181818" sag={0.05} r={0.009} />
 
             <Wire start={[-0.70, 0.11, 0.0]} end={[-0.78, PAD_Y, -0.05]} color="#3a8ade" sag={0.04} />
-            <Wire start={[ 0.70, 0.11, 0.0]} end={[ 0.78, PAD_Y,  0.05]} color="#3a8ade" sag={0.04} />
 
-            <Wire start={[0.092, LED_Y, 0.165]} end={[ 0.14, PAD_Y, 0.22]} color="#d02020" r={0.008} />
-            <Wire start={[0.052, LED_Y, 0.165]} end={[ 0.02, PAD_Y, 0.22]} color="#181818" r={0.008} />
+            <Wire start={[0.092, LED_Y, 0.165]} end={[ 0.14, PAD_Y, 0.30]} color="#d02020" r={0.008} />
+            <Wire start={[0.052, LED_Y, 0.165]} end={[ 0.02, PAD_Y, 0.30]} color="#181818" r={0.008} />
           </group>
         );
       })()}
@@ -1491,25 +1496,25 @@ function HangTag() {
   );
 }
 
-function DCJack({ z }: { z: number }) {
+function DCJack({ x = 0, z }: { x?: number; z: number }) {
   // jack DC 2.1mm na traseira: rosca ø12mm + porca, pino central, corpo plástico interno
   return (
-    <group position={[0, 0.16, z]} rotation={[Math.PI / 2, 0, 0]}>
+    <group position={[x, 0.16, z]} rotation={[Math.PI / 2, 0, 0]}>
       <mesh position={[0, -0.04, 0]}>
-        <cylinderGeometry args={[0.155, 0.155, 0.18, 16]} />
-        <meshStandardMaterial color="#101010" roughness={0.5} metalness={0.3} />
+        <cylinderGeometry args={[0.118, 0.118, 0.14, 16]} />
+        <meshStandardMaterial color="#101010" roughness={0.55} metalness={0.25} />
       </mesh>
-      <mesh position={[0, -0.10, 0]} castShadow>
-        <cylinderGeometry args={[0.195, 0.195, 0.055, 6]} />
-        <meshStandardMaterial color="#181818" roughness={0.45} metalness={0.4} />
+      <mesh position={[0, -0.094, 0]} castShadow>
+        <cylinderGeometry args={[0.148, 0.148, 0.045, 6]} />
+        <meshStandardMaterial color="#1a1a1e" roughness={0.55} metalness={0.3} />
       </mesh>
-      <mesh position={[0, -0.132, 0]}>
-        <cylinderGeometry args={[0.082, 0.082, 0.02, 12]} />
+      <mesh position={[0, -0.118, 0]}>
+        <cylinderGeometry args={[0.070, 0.070, 0.028, 14]} />
         <meshBasicMaterial color="#000000" />
       </mesh>
-      <mesh position={[0, -0.124, 0]}>
-        <cylinderGeometry args={[0.026, 0.026, 0.05, 8]} />
-        <meshStandardMaterial color="#c0c0c4" metalness={0.9} roughness={0.2} />
+      <mesh position={[0, -0.112, 0]}>
+        <cylinderGeometry args={[0.016, 0.016, 0.034, 8]} />
+        <meshStandardMaterial color="#b8b8bc" metalness={0.9} roughness={0.25} />
       </mesh>
       <mesh position={[0, 0.13, 0]} castShadow>
         <boxGeometry args={[0.28, 0.20, 0.22]} />
@@ -1579,24 +1584,35 @@ function SwitchBody({ x, z, topY }: { x: number; z: number; topY: number }) {
   );
 }
 
-function Battery9V({ x, z }: { x: number; z: number }) {
-  const cy = 0.05;
+function Battery9V() {
+  // 9V compacta (~75% da régua — tamanho cheio dominava a cena), deitada no
+  // vão traseiro do chassi, enfiada sob a beirada da placa; snap fino na ponta
+  const cx = -0.20, cy = -0.305, cz = -1.32;
   return (
-    <group position={[x, 0, z]}>
-      <mesh position={[0, cy, 0]} castShadow>
-        <boxGeometry args={[0.17, 0.17, 0.34]} />
-        <meshStandardMaterial color="#202024" roughness={0.55} metalness={0.2} />
+    <group position={[cx, cy, cz]}>
+      <mesh castShadow>
+        <boxGeometry args={[0.98, 0.34, 0.50]} />
+        <meshStandardMaterial color="#15151a" roughness={0.5} metalness={0.25} />
       </mesh>
-      <mesh position={[0, cy + 0.05, 0.18]}>
-        <boxGeometry args={[0.12, 0.06, 0.02]} />
-        <meshStandardMaterial color="#3a3a40" roughness={0.5} metalness={0.3} />
+      <mesh position={[0.24, 0, 0]}>
+        <boxGeometry args={[0.28, 0.342, 0.502]} />
+        <meshStandardMaterial color="#c9a23c" roughness={0.45} metalness={0.35} />
       </mesh>
-      {[-0.035, 0.035].map((dx, i) => (
-        <mesh key={i} position={[dx, cy + 0.05, 0.19]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.014, 0.014, 0.02, 12]} />
-          <meshStandardMaterial color="#c0c0c4" metalness={0.85} roughness={0.25} />
-        </mesh>
-      ))}
+      <Text position={[0.0, 0.172, 0]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.10} color="#e8e6da" anchorX="center" anchorY="middle" letterSpacing={0.10}>
+        9V
+      </Text>
+      <mesh position={[0.495, 0.04, 0.12]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.038, 0.038, 0.025, 12]} />
+        <meshStandardMaterial color="#c0c0c4" metalness={0.85} roughness={0.25} />
+      </mesh>
+      <mesh position={[0.495, 0.04, -0.12]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.046, 0.046, 0.025, 6]} />
+        <meshStandardMaterial color="#c0c0c4" metalness={0.85} roughness={0.25} />
+      </mesh>
+      <mesh position={[0.525, 0.02, 0]} castShadow>
+        <boxGeometry args={[0.05, 0.24, 0.42]} />
+        <meshStandardMaterial color="#18181c" roughness={0.6} metalness={0.05} />
+      </mesh>
     </group>
   );
 }
@@ -1879,6 +1895,63 @@ function SilkRect({ x, z, w, d, y, t = 0.0045 }: {
   );
 }
 
+function SilkText({ x, z, y, size = 0.038, children }: {
+  x: number; z: number; y: number; size?: number; children: string;
+}) {
+  return (
+    <Text position={[x, y, z]} rotation={[-Math.PI / 2, 0, 0]} fontSize={size} color={SILK} anchorX="center" anchorY="middle" letterSpacing={0.05}>
+      {children}
+    </Text>
+  );
+}
+
+function BeltonBrick({ x, z }: { x: number; z: number }) {
+  // módulo de reverb estilo Digi-Log mini (33.7×16.8×9.2mm), 6 pinos SIP numa ponta
+  const W = 0.45, L = 0.91, H = 0.25;
+  const topY = PCB_BH / 2 + 0.02 + H;
+
+  // etiqueta desenhada em canvas — texto cravado no plano, sem flutuar
+  const labelTex = useMemo(() => {
+    const c = document.createElement("canvas");
+    c.width = 512; c.height = 320;
+    const ctx = c.getContext("2d")!;
+    ctx.fillStyle = "#e8e6da";
+    ctx.fillRect(0, 0, 512, 320);
+    ctx.strokeStyle = "#b8b4a4";
+    ctx.lineWidth = 6;
+    ctx.strokeRect(10, 10, 492, 300);
+    ctx.fillStyle = "#16161a";
+    ctx.font = "bold 72px 'JetBrains Mono', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("GHOST RV-3", 256, 140);
+    ctx.fillStyle = "#3a3a44";
+    ctx.font = "36px 'JetBrains Mono', monospace";
+    ctx.fillText("DIGI-VERB · LONG DECAY", 256, 215);
+    const t = new THREE.CanvasTexture(c);
+    t.anisotropy = 8;
+    return t;
+  }, []);
+
+  return (
+    <group position={[x, 0, z]}>
+      <mesh position={[0, PCB_BH / 2 + 0.02 + H / 2, 0]} castShadow>
+        <boxGeometry args={[W, H, L]} />
+        <meshStandardMaterial color="#0d0d10" roughness={0.55} metalness={0.10} />
+      </mesh>
+      <mesh position={[0, topY + 0.001, -0.04]} rotation={[-Math.PI / 2, 0, -Math.PI / 2]}>
+        <planeGeometry args={[0.56, 0.35]} />
+        <meshStandardMaterial map={labelTex} roughness={0.85} metalness={0} />
+      </mesh>
+      {Array.from({ length: 6 }, (_, i) => (
+        <mesh key={i} position={[-W / 2 + 0.06 + i * 0.066, PCB_BH / 2 + 0.012, -L / 2 + 0.035]}>
+          <cylinderGeometry args={[0.009, 0.009, 0.05, 8]} />
+          <meshStandardMaterial color="#b0b0b0" metalness={0.88} roughness={0.12} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 function SilkRing({ x, z, r, y }: { x: number; z: number; r: number; y: number }) {
   return (
     <mesh position={[x, y, z]} rotation={[Math.PI / 2, 0, 0]}>
@@ -1896,32 +1969,37 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
 
   const railX = w / 2 - 0.10;
 
-  const capZ = -l * 0.37;
-  const ec1x = -w * 0.30, ec2x = -w * 0.10, ec3x = w * 0.10, ec4x = w * 0.30;
+  // ---- layout por fluxo de sinal (coords locais; mundo = local z + 0.17) ----
+  // alimentação no fundo (lado do DC jack) · input/drive à direita · delay no
+  // centro · reverb (brick) frente-esquerda · saída à esquerda
+  const c100: [number, number] = [0.55, -1.02];
+  const c47:  [number, number] = [0.38, -1.02];
+  const reg:  [number, number] = [0.20, -1.02];
+  const d3:   [number, number] = [0.55, -0.86];
 
-  const icZ = -l * 0.03;
-  const ic1x = -w * 0.17, ic2x = w * 0.14;
+  const q1:    [number, number] = [0.62, -0.45];
+  const rIn:   [number, number] = [0.72, -0.20];
+  const ic1:   [number, number] = [0.38, -0.10];
+  const dg1:   [number, number] = [0.62, 0.00];
+  const dg2:   [number, number] = [0.62, 0.115];
+  const disc1: [number, number] = [0.17, -0.32];
+  const w1:    [number, number] = [0.14, 0.06];
+  const raZ = 0.32;
+  const raX = [0.16, 0.34, 0.52, 0.70];
 
-  const raZ = -l * 0.19;
-  const raX = [-w * 0.30, -w * 0.15, 0, w * 0.15, w * 0.30];
-  const rbZ = l * 0.13;
-  const rbX = [-w * 0.24, -w * 0.08, w * 0.08, w * 0.24];
+  const ic2: [number, number] = [-0.20, 0.00];
+  const ecD: [number, number][] = [[-0.48, -0.28], [-0.48, -0.10], [-0.48, 0.08]];
+  const disc2: [number, number] = [-0.05, 0.38];
+  const disc3: [number, number] = [-0.05, 0.52];
+  const w2: [number, number] = [0.05, -0.85];
+  const w3: [number, number] = [-0.70, -0.72];
+  const rbZ = -0.62;
+  const rbX = [-0.55, -0.35, -0.15, 0.05];
 
-  const bcZ = l * 0.24;
-  const bc1x = -w * 0.27, bc2x = 0, bc3x = w * 0.27;
-
-  const dc1x = -w * 0.36, dc1z = l * 0.03;
-  const dc2x =  w * 0.34, dc2z = l * 0.04;
-  const dc3x = -w * 0.02, dc3z = -l * 0.27;
-
-  const t1x = w * 0.34, t1z = -l * 0.07;
-  const t2x = -w * 0.36, t2z = -l * 0.11;
-
-  // D1/D2: clipping 1N4148 ao lado do opamp · D3: 1N4001 na entrada de força · 78L05 perto do PT2399
-  const dgX = -w * 0.30;
-  const dg1z = -l * 0.007, dg2z = l * 0.043;
-  const dpX = w * 0.327, dpZ = l * 0.20;
-  const regX = w * 0.369, regZ = l * 0.108;
+  const brick: [number, number] = [-0.50, 0.72];
+  const q2:    [number, number] = [-0.64, -0.25];
+  const ecOut: [number, number] = [-0.62, -0.10];
+  const rOut:  [number, number] = [-0.70, 0.10];
 
   type Seg = { x1: number; z1: number; x2: number; z2: number; tw: number };
   const segs: Seg[] = [
@@ -1930,47 +2008,56 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
     { x1: -railX, z1: -l / 2 + 0.06, x2: -railX, z2:  l / 2 - 0.06, tw: 0.022 },
     { x1:  railX, z1: -l / 2 + 0.06, x2:  railX, z2:  l / 2 - 0.06, tw: 0.022 },
 
-    { x1: ec1x, z1: capZ, x2: ec4x, z2: capZ, tw: 0.024 },
-    { x1: ec1x, z1: capZ, x2: raX[0], z2: raZ, tw: 0.013 },
-    { x1: ec4x, z1: capZ, x2: raX[4], z2: raZ, tw: 0.013 },
-    { x1: dc3x, z1: dc3z, x2: ec2x, z2: capZ, tw: 0.012 },
+    // alimentação: DC/bateria → D3 → filtros → 78L05 → trilho 5V do delay
+    { x1: d3[0], z1: d3[1], x2: c100[0], z2: c100[1], tw: 0.018 },
+    { x1: c100[0], z1: c100[1], x2: c47[0], z2: c47[1], tw: 0.020 },
+    { x1: c47[0], z1: c47[1], x2: reg[0], z2: reg[1], tw: 0.018 },
+    { x1: reg[0], z1: reg[1], x2: ic2[0], z2: -0.32, tw: 0.013 },
 
-    { x1: raX[0], z1: raZ, x2: raX[4], z2: raZ, tw: 0.014 },
+    // sinal: input → Q1 → R → IC1 (clipping) → tone → IC2 → brick → Q2 → output
+    { x1: q1[0], z1: q1[1], x2: rIn[0], z2: rIn[1], tw: 0.012 },
+    { x1: rIn[0], z1: rIn[1], x2: ic1[0], z2: ic1[1], tw: 0.012 },
+    { x1: ic1[0], z1: ic1[1], x2: dg1[0], z2: dg1[1], tw: 0.011 },
+    { x1: ic1[0], z1: ic1[1], x2: dg2[0], z2: dg2[1], tw: 0.011 },
+    { x1: ic1[0], z1: ic1[1], x2: disc1[0], z2: disc1[1], tw: 0.011 },
+    { x1: ic1[0], z1: ic1[1], x2: w1[0], z2: w1[1], tw: 0.012 },
+    { x1: w1[0], z1: w1[1], x2: raX[1], z2: raZ, tw: 0.012 },
+    { x1: raX[0], z1: raZ, x2: raX[3], z2: raZ, tw: 0.014 },
+    { x1: raX[0], z1: raZ, x2: ic2[0], z2: ic2[1], tw: 0.012 },
+
+    { x1: ic2[0], z1: ic2[1], x2: ecD[1][0], z2: ecD[1][1], tw: 0.013 },
+    { x1: ic2[0], z1: ic2[1], x2: disc2[0], z2: disc2[1], tw: 0.011 },
     { x1: rbX[0], z1: rbZ, x2: rbX[3], z2: rbZ, tw: 0.014 },
-    { x1: bc1x, z1: bcZ, x2: bc3x, z2: bcZ, tw: 0.018 },
+    { x1: rbX[1], z1: rbZ, x2: ic2[0], z2: -0.32, tw: 0.012 },
 
-    { x1: ic1x, z1: icZ, x2: ic1x, z2: -l * 0.30, tw: 0.016 },
-    { x1: ic2x, z1: icZ, x2: ic2x, z2: -l * 0.30, tw: 0.016 },
-    { x1: ic1x, z1: icZ, x2: raX[1], z2: raZ, tw: 0.013 },
-    { x1: ic2x, z1: icZ, x2: raX[3], z2: raZ, tw: 0.013 },
-    { x1: ic1x, z1: icZ, x2: rbX[0], z2: rbZ, tw: 0.013 },
-    { x1: ic2x, z1: icZ, x2: rbX[3], z2: rbZ, tw: 0.013 },
-    { x1: raX[2], z1: raZ, x2: ic1x, z2: icZ, tw: 0.011 },
-
-    { x1: rbX[1], z1: rbZ, x2: bc1x, z2: bcZ, tw: 0.012 },
-    { x1: rbX[2], z1: rbZ, x2: bc3x, z2: bcZ, tw: 0.012 },
-
-    { x1: t1x, z1: t1z, x2: ic2x, z2: icZ, tw: 0.012 },
-    { x1: t2x, z1: t2z, x2: ic1x, z2: icZ, tw: 0.012 },
-    { x1: dc1x, z1: dc1z, x2: ic1x, z2: icZ, tw: 0.011 },
-    { x1: dc2x, z1: dc2z, x2: ic2x, z2: icZ, tw: 0.011 },
+    { x1: ic2[0], z1: 0.28, x2: brick[0] + 0.10, z2: 0.30, tw: 0.013 },
+    { x1: brick[0], z1: 0.30, x2: q2[0], z2: q2[1], tw: 0.012 },
+    { x1: q2[0], z1: q2[1], x2: ecOut[0], z2: ecOut[1], tw: 0.012 },
+    { x1: q2[0], z1: q2[1], x2: rOut[0], z2: rOut[1], tw: 0.012 },
+    { x1: w3[0], z1: w3[1], x2: rbX[0], z2: rbZ, tw: 0.011 },
+    { x1: w2[0], z1: w2[1], x2: rbX[3], z2: rbZ, tw: 0.011 },
   ];
 
   type Conn = { px: number; pz: number; nx: number; nz: number };
   const conns: Conn[] = [
-    { px: -0.55, pz: -1.12, nx: ec1x, nz: capZ },
-    { px:  0.02, pz: -1.12, nx: ec2x, nz: capZ },
-    { px:  0.55, pz: -1.12, nx: ec4x, nz: capZ },
-    { px: -0.26, pz: -0.72, nx: raX[1], nz: raZ },
-    { px:  0.30, pz: -0.72, nx: raX[3], nz: raZ },
-    { px:  0.14, pz:  1.05, nx: bc2x + 0.10, nz: bcZ },
-    { px: -0.14, pz:  1.05, nx: bc2x - 0.10, nz: bcZ },
-    { px: -0.78, pz: -0.05, nx: ic1x, nz: icZ },
-    { px:  0.78, pz:  0.05, nx: ic2x, nz: icZ },
-    { px:  0.07, pz: -0.30, nx: dc3x, nz: dc3z },
-    { px: -0.07, pz: -0.30, nx: raX[2], nz: raZ },
-    { px:  0.14, pz:  0.22, nx: rbX[2], nz: rbZ },
-    { px:  0.02, pz:  0.22, nx: rbX[1], nz: rbZ },
+    // pots: drive · echo · reverb (fileira de trás) + tone · volume
+    { px: -0.55, pz: -1.15, nx: rbX[0], nz: rbZ },
+    { px:  0.02, pz: -1.15, nx: ic2[0], nz: -0.32 },
+    { px:  0.55, pz: -1.15, nx: w2[0], nz: w2[1] },
+    { px: -0.26, pz: -0.89, nx: rbX[1], nz: rbZ },
+    { px:  0.30, pz: -0.89, nx: rbX[3], nz: rbZ },
+    // footswitch (true bypass send/return)
+    { px:  0.14, pz:  0.88, nx: raX[0], nz: raZ },
+    { px: -0.14, pz:  0.88, nx: brick[0] + 0.225, nz: 0.88 },
+    // jacks
+    { px:  0.78, pz: -0.12, nx: q1[0], nz: q1[1] },
+    { px: -0.78, pz: -0.22, nx: q2[0], nz: q2[1] },
+    // LED
+    { px:  0.14, pz:  0.13, nx: raX[0], nz: raZ },
+    { px:  0.02, pz:  0.13, nx: w1[0], nz: w1[1] },
+    // alimentação (bateria/DC)
+    { px:  0.62, pz: -1.14, nx: d3[0], nz: d3[1] },
+    { px:  0.45, pz: -1.14, nx: c47[0], nz: c47[1] },
   ];
   conns.forEach(({ px, pz, nx, nz }) =>
     segs.push({ x1: px, z1: pz, x2: nx, z2: nz, tw: 0.012 }));
@@ -2057,55 +2144,83 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
       ))}
 
       <SilkRect x={0} z={0} w={w - 0.10} d={l - 0.10} y={silkY} t={0.005} />
-      <SilkRect x={ic1x} z={icZ} w={0.24} d={0.32} y={silkY} />
-      <SilkRect x={ic2x} z={icZ} w={0.24} d={0.58} y={silkY} />
-      <SilkRing x={ec1x} z={capZ} r={0.102} y={silkY} />
-      <SilkRing x={ec2x} z={capZ} r={0.084} y={silkY} />
-      <SilkRing x={ec3x} z={capZ} r={0.084} y={silkY} />
-      <SilkRing x={ec4x} z={capZ} r={0.070} y={silkY} />
+      <SilkRect x={ic1[0]} z={ic1[1]} w={0.24} d={0.34} y={silkY} />
+      <SilkRect x={ic2[0]} z={ic2[1]} w={0.24} d={0.60} y={silkY} />
+      <SilkRect x={brick[0]} z={brick[1]} w={0.49} d={0.95} y={silkY} />
+      <SilkRing x={c100[0]} z={c100[1]} r={0.102} y={silkY} />
+      <SilkRing x={c47[0]} z={c47[1]} r={0.084} y={silkY} />
+      {ecD.map(([ex, ez], i) => <SilkRing key={`secd${i}`} x={ex} z={ez} r={0.070} y={silkY} />)}
+      <SilkRing x={ecOut[0]} z={ecOut[1]} r={0.070} y={silkY} />
       {raX.map((rx, i) => <SilkRect key={`sra${i}`} x={rx} z={raZ} w={0.08} d={0.30} y={silkY} t={0.003} />)}
       {rbX.map((rx, i) => <SilkRect key={`srb${i}`} x={rx} z={rbZ} w={0.08} d={0.30} y={silkY} t={0.003} />)}
 
-      {/* low-voltage 16V: 100µF ø6.3×11 · 47µF ø5×11 · 10µF ø4×7 */}
-      <ElCap x={ec1x} z={capZ} h={0.30} r={0.085} color="#1a3a6a" />
-      <ElCap x={ec2x} z={capZ} h={0.29} r={0.067} color="#1a1a1a" />
-      <ElCap x={ec3x} z={capZ} h={0.29} r={0.067} color="#1a3a6a" />
-      <ElCap x={ec4x} z={capZ} h={0.20} r={0.054} color="#2a4a1a" />
-      <ICDip x={ic1x} z={icZ} pins={8} label="GH4558D" />
-      <ICDip x={ic2x} z={icZ} pins={16} color="#1c1c1c" label="ECTO-399" />
-      <Diode x={dgX} z={dg1z} />
-      <Diode x={dgX} z={dg2z} />
-      <Diode x={dpX} z={dpZ} rot={Math.PI / 2} kind="power" />
-      <Transistor x={regX} z={regZ} rot={Math.PI} />
+      {/* designadores */}
+      {raX.map((rx, i) => <SilkText key={`dra${i}`} x={rx} z={raZ + 0.21} y={silkY}>{`R${i + 1}`}</SilkText>)}
+      {rbX.map((rx, i) => <SilkText key={`drb${i}`} x={rx} z={rbZ + 0.20} y={silkY}>{`R${i + 5}`}</SilkText>)}
+      <SilkText x={ic1[0]} z={ic1[1] + 0.24} y={silkY}>IC1</SilkText>
+      <SilkText x={ic2[0]} z={ic2[1] + 0.37} y={silkY}>IC2</SilkText>
+      <SilkText x={brick[0]} z={brick[1] - 0.55} y={silkY}>BR1</SilkText>
+      <SilkText x={dg1[0] + 0.12} z={dg1[1]} y={silkY}>D1</SilkText>
+      <SilkText x={dg2[0] + 0.12} z={dg2[1] + 0.06} y={silkY}>D2</SilkText>
+      <SilkText x={d3[0] - 0.14} z={d3[1] + 0.07} y={silkY}>D3</SilkText>
+      <SilkText x={q1[0]} z={q1[1] - 0.12} y={silkY}>Q1</SilkText>
+      <SilkText x={q2[0]} z={q2[1] - 0.12} y={silkY}>Q2</SilkText>
+      <SilkText x={reg[0]} z={reg[1] + 0.13} y={silkY}>REG</SilkText>
+      <SilkText x={0.45} z={0.68} y={silkY} size={0.08}>GHOST FX MK.I</SilkText>
+
+      {/* alimentação: 100µF + 47µF (16V) + 78L05 · saída: 10µF */}
+      <ElCap x={c100[0]} z={c100[1]} h={0.30} r={0.085} color="#1a3a6a" />
+      <ElCap x={c47[0]} z={c47[1]} h={0.29} r={0.067} color="#1a1a1a" />
+      <Transistor x={reg[0]} z={reg[1]} rot={Math.PI} />
+      <Diode x={d3[0]} z={d3[1]} rot={Math.PI / 2} kind="power" />
+
+      {/* input + drive */}
+      <Transistor x={q1[0]} z={q1[1]} rot={-Math.PI / 2} />
+      <THResistor x={rIn[0]} z={rIn[1]} b1="#e0a010" b2="#101010" b3="#c02010" />
+      <ICDip x={ic1[0]} z={ic1[1]} pins={8} label="GH4558D" />
+      <Diode x={dg1[0]} z={dg1[1]} rot={Math.PI / 2} />
+      <Diode x={dg2[0]} z={dg2[1]} rot={Math.PI / 2} />
+      <DiscCap x={disc1[0]} z={disc1[1]} />
+      <BoxCap x={w1[0]} z={w1[1]} />
       <THResistor x={raX[0]} z={raZ} />
       <THResistor x={raX[1]} z={raZ} b1="#c02010" b2="#101010" b3="#e0a020" />
       <THResistor x={raX[2]} z={raZ} b1="#202080" b2="#c02010" b3="#e0a020" />
       <THResistor x={raX[3]} z={raZ} b1="#101010" b2="#e0a010" b3="#a0a010" />
-      <THResistor x={raX[4]} z={raZ} />
+
+      {/* delay */}
+      <ICDip x={ic2[0]} z={ic2[1]} pins={16} color="#1c1c1c" label="ECTO-399" />
+      <ElCap x={ecD[0][0]} z={ecD[0][1]} h={0.20} r={0.054} color="#2a4a1a" />
+      <ElCap x={ecD[1][0]} z={ecD[1][1]} h={0.20} r={0.054} color="#1a3a6a" />
+      <ElCap x={ecD[2][0]} z={ecD[2][1]} h={0.20} r={0.054} color="#1a1a1a" />
+      <DiscCap x={disc2[0]} z={disc2[1]} color="#c8a050" />
+      <DiscCap x={disc3[0]} z={disc3[1]} color="#b8c070" />
+      <BoxCap x={w2[0]} z={w2[1]} />
       <THResistor x={rbX[0]} z={rbZ} b1="#e0a010" b2="#101010" b3="#c02010" />
       <THResistor x={rbX[1]} z={rbZ} />
       <THResistor x={rbX[2]} z={rbZ} b1="#202080" b2="#c02010" b3="#e0a020" />
       <THResistor x={rbX[3]} z={rbZ} b1="#101010" b2="#e0a010" b3="#a0a010" />
-      <DiscCap x={dc1x} z={dc1z} />
-      <DiscCap x={dc2x} z={dc2z} color="#c8a050" />
-      <DiscCap x={dc3x} z={dc3z} color="#b8c070" />
-      <Transistor x={t1x} z={t1z} />
-      <Transistor x={t2x} z={t2z} />
-      <BoxCap x={bc1x} z={bcZ} />
-      <BoxCap x={bc2x} z={bcZ} />
-      <BoxCap x={bc3x} z={bcZ} />
+
+      {/* reverb + saída */}
+      <BeltonBrick x={brick[0]} z={brick[1]} />
+      <Transistor x={q2[0]} z={q2[1]} rot={Math.PI / 2} />
+      <ElCap x={ecOut[0]} z={ecOut[1]} h={0.20} r={0.054} color="#1a3a6a" />
+      <THResistor x={rOut[0]} z={rOut[1]} />
+      <BoxCap x={w3[0]} z={w3[1]} />
     </group>
   );
 }
 
 function Internals({ width, length }: { width: number; length: number; height: number }) {
+  // placa menor que o gabinete (como na vida real) e recuada pra frente,
+  // liberando o fundo pra bateria 9V em escala real
   const PCB_Y = -0.10;
   const PCB_W = width - 0.42;
-  const PCB_L = length - 0.42;
+  const PCB_L = length - 0.76;
+  const PCB_ZOFF = 0.17;
 
   return (
     <group>
-      <group position={[0, PCB_Y, 0]}>
+      <group position={[0, PCB_Y, PCB_ZOFF]}>
         <PCBBoard w={PCB_W} l={PCB_L} />
         {([[-1,-1],[1,-1],[1,1],[-1,1]] as const).map(([sx,sz], j) => (
           <mesh key={j} position={[sx*(PCB_W/2-0.07), PCB_BH/2+0.11, sz*(PCB_L/2-0.07)]}>
