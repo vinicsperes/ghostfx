@@ -102,7 +102,7 @@ export default function Pedal3D({
           enabled={controlsEnabled}
           enableDamping
           dampingFactor={0.05}
-          minDistance={3}
+          minDistance={2.1}
           maxDistance={10}
           enablePan={false}
           minPolarAngle={Math.PI / 6}
