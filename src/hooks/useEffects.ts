@@ -339,10 +339,14 @@ export function useEffects({
     };
   }, []);
 
+  // buffers de leitura reutilizados — chamados a cada frame, alocar aqui vira lixo de GC
+  const scratchRef = useRef<Float32Array<ArrayBuffer> | null>(null);
+  const emptyRef = useRef<Float32Array<ArrayBuffer> | null>(null);
+
   const getWaveform = useCallback((): Float32Array => {
     const analyser = analyserRef.current;
-    if (!analyser) return new Float32Array(128);
-    const buf = new Float32Array(analyser.fftSize);
+    if (!analyser) return (emptyRef.current ??= new Float32Array(128));
+    const buf = (scratchRef.current ??= new Float32Array(analyser.fftSize));
     analyser.getFloatTimeDomainData(buf);
     return buf;
   }, []);
@@ -350,7 +354,7 @@ export function useEffects({
   const getLevel = useCallback((): number => {
     const analyser = analyserRef.current;
     if (!analyser) return 0;
-    const buf = new Float32Array(analyser.fftSize);
+    const buf = (scratchRef.current ??= new Float32Array(analyser.fftSize));
     analyser.getFloatTimeDomainData(buf);
     let peak = 0;
     for (let i = 0; i < buf.length; i++) {
