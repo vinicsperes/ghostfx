@@ -348,6 +348,7 @@ function PedalBody({
       <SideJack position={[-W / 2 - 0.04, 0.08, 0]} metal={palette.metal} />
       <SideJack position={[W / 2 + 0.04, 0.08, 0]} metal={palette.metal} />
       <DCJack z={-L / 2 - 0.04} />
+      <HangTag />
 
       <group position={[0, H / 2 + 0.02, 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
 
@@ -1302,6 +1303,190 @@ function SideJack({ position, metal }: { position: [number, number, number], met
         <cylinderGeometry args={[0.062, 0.062, 0.022, 16]} />
         <meshBasicMaterial color="#000000" />
       </mesh>
+    </group>
+  );
+}
+
+function HangTag() {
+  // hang tag seguindo brand/GhostFX Tag.html, pendurada do footswitch e caída
+  // sobre a face frontal; clicável → github.com/vinicsperes
+  const { tex, redraw } = useMemo(() => {
+    // desenhado em coords 512×800, rasterizado a 3× (spec da tag pede 2–3×)
+    const TAG_DPR = 3;
+    const c = document.createElement("canvas");
+    c.width = 512 * TAG_DPR; c.height = 800 * TAG_DPR;
+    const ctx = c.getContext("2d")!;
+    const t = new THREE.CanvasTexture(c);
+    t.anisotropy = 16;
+
+    const ink = "#14120e", card = "#f6f3ea", red = "#ff3b30", dim = "#56524a";
+    const UNB = "'Unbounded', sans-serif";
+    const MONO = "'Space Mono', monospace";
+    const rr = (x: number, y: number, w: number, h: number, r: number) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    };
+
+    const redraw = () => {
+      ctx.setTransform(TAG_DPR, 0, 0, TAG_DPR, 0, 0);
+      ctx.clearRect(0, 0, 512, 800);
+      ctx.letterSpacing = "0px";
+
+      rr(8, 8, 496, 784, 27);
+      ctx.fillStyle = card;
+      ctx.fill();
+      ctx.strokeStyle = ink;
+      ctx.lineWidth = 5;
+      ctx.stroke();
+
+      // marca: caixa V + nome
+      ctx.lineWidth = 4;
+      ctx.strokeRect(116, 112, 52, 52);
+      ctx.fillStyle = ink;
+      ctx.textAlign = "center";
+      ctx.font = `900 28px ${UNB}`;
+      ctx.fillText("V", 142, 148);
+      ctx.textAlign = "left";
+      ctx.font = `700 20px ${UNB}`;
+      ctx.fillText("VINÍCIUS PERES", 184, 136);
+      ctx.font = `400 11px ${MONO}`;
+      ctx.letterSpacing = "3px";
+      ctx.fillStyle = dim;
+      ctx.fillText("HANDMADE PEDAL WORK", 184, 158);
+      ctx.letterSpacing = "0px";
+
+      ctx.fillStyle = ink;
+      ctx.fillRect(33, 198, 446, 5);
+
+      // FREE
+      ctx.textAlign = "center";
+      ctx.font = `900 150px ${UNB}`;
+      ctx.letterSpacing = "-7px";
+      ctx.fillText("FREE", 252, 360);
+      ctx.letterSpacing = "2px";
+      ctx.font = `400 11px ${MONO}`;
+      ctx.fillStyle = dim;
+      ctx.fillText("OPEN SOURCE · ZERO INSTALL · BROWSER NATIVE", 256, 404);
+      ctx.letterSpacing = "0px";
+
+      // linhas tracejadas: model / handmade / source
+      ctx.strokeStyle = ink;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([7, 7]);
+      for (const y of [440, 490, 540, 590]) {
+        ctx.beginPath(); ctx.moveTo(33, y); ctx.lineTo(479, y); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      const row = (y: number, label: string, value: string, color = ink) => {
+        ctx.letterSpacing = "2px";
+        ctx.fillStyle = ink;
+        ctx.textAlign = "left";
+        ctx.font = `400 15px ${MONO}`;
+        ctx.fillText(label, 39, y);
+        ctx.textAlign = "right";
+        ctx.font = `700 15px ${MONO}`;
+        ctx.fillStyle = color;
+        ctx.fillText(value, 473, y);
+        ctx.letterSpacing = "0px";
+      };
+      row(471, "MODEL", "GHOST FX · MK.I");
+      row(521, "HANDMADE WITH", "♥", red);
+      row(571, "SOURCE", "GITHUB.COM/VINICSPERES");
+
+      // rodapé: barcode + serial
+      ctx.fillStyle = ink;
+      for (let x = 33; x < 243; x += 27) {
+        ctx.fillRect(x, 640, 3, 64);
+        ctx.fillRect(x + 6, 640, 4.5, 64);
+        ctx.fillRect(x + 13.5, 640, 1.5, 64);
+        ctx.fillRect(x + 21, 640, 3, 64);
+      }
+      ctx.textAlign = "right";
+      ctx.letterSpacing = "2px";
+      ctx.font = `700 16px ${MONO}`;
+      ctx.fillText("Nº 001", 473, 662);
+      ctx.font = `400 13px ${MONO}`;
+      ctx.fillText("EST. 2026 · BR", 473, 694);
+      ctx.letterSpacing = "0px";
+
+      // ilhós + furo
+      ctx.strokeStyle = ink;
+      ctx.beginPath(); ctx.arc(256, 62, 26, 0, Math.PI * 2);
+      ctx.lineWidth = 12;
+      ctx.stroke();
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath(); ctx.arc(256, 62, 17, 0, Math.PI * 2); ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+
+      t.needsUpdate = true;
+    };
+    redraw();
+    return { tex: t, redraw };
+  }, []);
+
+  useEffect(() => {
+    // redesenha quando Unbounded/Space Mono chegarem (1º draw cai no fallback);
+    // fonts.ready primeiro: o CSS do Google pode ainda não ter registrado as faces
+    let alive = true;
+    document.fonts.ready
+      .then(() => Promise.all([
+        document.fonts.load("900 150px Unbounded"),
+        document.fonts.load("700 20px Unbounded"),
+        document.fonts.load("700 15px 'Space Mono'"),
+        document.fonts.load("400 11px 'Space Mono'"),
+      ]))
+      .then(() => { if (alive) redraw(); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [redraw]);
+
+  const stringGeo = useMemo(() => {
+    // da base do footswitch, por cima da borda frontal, entrando no ilhós
+    // (termina logo atrás do plano da tag, no centro do furo)
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0.00, 0.50, 1.08),
+      new THREE.Vector3(0.05, 0.50, 1.40),
+      new THREE.Vector3(0.10, 0.45, 1.62),
+      new THREE.Vector3(0.117, 0.36, 1.648),
+      new THREE.Vector3(0.121, 0.295, 1.642),
+      new THREE.Vector3(0.123, 0.262, 1.610),
+    ]);
+    return new THREE.TubeGeometry(curve, 32, 0.006, 6, false);
+  }, []);
+
+  // pivô no ilhós: hover balança a tag no barbante sem o furo sair do fio
+  const EYELET_LOCAL_Y = 0.78 * (0.5 - 62 / 800);
+  const pivot = useRef<THREE.Group>(null);
+  const [hovered, setHovered] = useState(false);
+  useFrame((_, dt) => {
+    const g = pivot.current;
+    if (!g) return;
+    g.rotation.x = THREE.MathUtils.damp(g.rotation.x, hovered ? -0.22 : 0, 6, dt);
+    g.rotation.z = THREE.MathUtils.damp(g.rotation.z, hovered ? -0.13 : -0.07, 6, dt);
+  });
+
+  return (
+    <group
+      onPointerEnter={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = "pointer"; }}
+      onPointerLeave={() => { setHovered(false); document.body.style.cursor = ""; }}
+      onClick={(e) => { e.stopPropagation(); window.open("https://github.com/vinicsperes", "_blank", "noopener"); }}
+    >
+      <mesh geometry={stringGeo}>
+        <meshStandardMaterial color="#cfc8b4" roughness={0.8} metalness={0} />
+      </mesh>
+      <group ref={pivot} position={[0.123, 0.269, 1.62]} rotation={[0, 0, -0.07]}>
+        <mesh position={[0, -EYELET_LOCAL_Y, 0]}>
+          <planeGeometry args={[0.50, 0.78]} />
+          {/* alphaTest sem transparent: renderiza no passe opaco e evita
+              erro de ordenação com o chassi translúcido visto por trás */}
+          <meshStandardMaterial map={tex} alphaTest={0.5} side={THREE.DoubleSide} roughness={0.85} metalness={0} />
+        </mesh>
+      </group>
     </group>
   );
 }
