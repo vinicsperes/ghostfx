@@ -31,8 +31,12 @@ const PALETTE = {
   metal: "#505060",
 };
 
+const WARNING_ACK_KEY = "ghostfx.warningAck";
+
 export default function App() {
-  const [warningDone, setWarningDone] = useState(false);
+  const [warningDone, setWarningDone] = useState(() => {
+    try { return localStorage.getItem(WARNING_ACK_KEY) === "1"; } catch { return false; }
+  });
   const [micDismissed, setMicDismissed] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [keyboardMode, setKeyboardMode] = useState(false);
@@ -135,9 +139,12 @@ export default function App() {
   return (
     <div className="h-screen w-full overflow-hidden relative" style={{ background: PALETTE.bg }}>
       <LoadingScreen />
-      {!warningDone && <WarningModal onDismiss={() => setWarningDone(true)} />}
+      {!warningDone && <WarningModal onDismiss={() => {
+        try { localStorage.setItem(WARNING_ACK_KEY, "1"); } catch { /* ignore */ }
+        setWarningDone(true);
+      }} />}
 
-      <PresetBg presetIdx={presetIdx} />
+      <PresetBg presetIdx={presetIdx} introActive={!warningDone} />
 
       {drive > 0.45 && (
         <div
@@ -1009,6 +1016,10 @@ type GlState = { tLoc: WebGLUniformLocation; rLoc: WebGLUniformLocation; blendLo
 const BLEND_OUT = 550;
 const BLEND_IN  = 750;
 
+// Pattern shown behind the feedback-risk modal (red "danger" tone); on accept the
+// background transitions from this to the active preset (GHOST by default).
+const INTRO_IDX = 2;
+
 function buildShader(gl: WebGLRenderingContext, idx: number, old?: WebGLProgram): GlState {
   if (old) gl.deleteProgram(old);
   const compile = (type: number, src: string) => { const s = gl.createShader(type)!; gl.shaderSource(s, src); gl.compileShader(s); return s; };
@@ -1024,14 +1035,18 @@ function buildShader(gl: WebGLRenderingContext, idx: number, old?: WebGLProgram)
   return { tLoc: gl.getUniformLocation(prog, "u_t")!, rLoc: gl.getUniformLocation(prog, "u_res")!, blendLoc: gl.getUniformLocation(prog, "u_blend")!, prog };
 }
 
-function PresetBg({ presetIdx }: { presetIdx: number | null }) {
+function PresetBg({ presetIdx, introActive = false }: { presetIdx: number | null; introActive?: boolean }) {
+  // While the intro (feedback-risk modal) is up, force the danger pattern; the
+  // moment it clears, effIdx changes and the existing blend animates to the preset.
+  const effIdx = introActive ? INTRO_IDX : presetIdx;
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef     = useRef<WebGLRenderingContext | null>(null);
   const glState   = useRef<GlState | null>(null);
   const rafRef    = useRef(0);
   const startRef  = useRef(performance.now());
 
-  const [canvasOpacity, setCanvasOpacity] = useState(presetIdx !== null ? PRESET_OPACITY[presetIdx] : 0);
+  const [canvasOpacity, setCanvasOpacity] = useState(effIdx !== null ? PRESET_OPACITY[effIdx] : 0);
   const setOpacityRef = useRef(setCanvasOpacity);
   setOpacityRef.current = setCanvasOpacity;
 
@@ -1041,7 +1056,7 @@ function PresetBg({ presetIdx }: { presetIdx: number | null }) {
     blend: number;
     currentIdx: number | null;
     pendingIdx: number | null;
-  }>({ phase: 'in', phaseStart: performance.now(), blend: 0, currentIdx: presetIdx, pendingIdx: null });
+  }>({ phase: 'in', phaseStart: performance.now(), blend: 0, currentIdx: effIdx, pendingIdx: null });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1058,10 +1073,10 @@ function PresetBg({ presetIdx }: { presetIdx: number | null }) {
 
   useEffect(() => {
     const t = tr.current;
-    if (presetIdx === t.currentIdx && t.phase === 'stable') return;
-    t.pendingIdx = presetIdx;
+    if (effIdx === t.currentIdx && t.phase === 'stable') return;
+    t.pendingIdx = effIdx;
     if (t.phase !== 'out') { t.phase = 'out'; t.phaseStart = performance.now(); }
-  }, [presetIdx]);
+  }, [effIdx]);
 
   useEffect(() => {
     const tick = () => {
