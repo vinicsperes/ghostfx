@@ -229,7 +229,7 @@ function SideHint({
   );
 }
 
-const GHOST_ICON = { scale: 0.006, ip: [-0.300, 0.319] as [number, number], lp: [0.072, 0.055] as [number, number] };
+const GHOST_ICON = { scale: 0.0188, ip: [-0.300, 0.319] as [number, number], lp: [0.066, 0.064] as [number, number] };
 
 type PresetVisual = {
   pickguard: { top: string; mid: string; base: string; screw: string };
@@ -352,7 +352,7 @@ function PedalBody({
 
       <group position={[0, H / 2 + 0.02, 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
 
-        <Svg src="/ghost.svg" scale={GHOST_ICON.scale} position={[GHOST_ICON.ip[0], GHOST_ICON.ip[1], 0]} fillMaterial={svgMaterial as any} strokeMaterial={svgMaterial as any} />
+        <Svg src="/ghost-led-solo.svg" scale={GHOST_ICON.scale} position={[GHOST_ICON.ip[0], GHOST_ICON.ip[1], 0]} fillMaterial={svgMaterial as any} strokeMaterial={svgMaterial as any} />
         <group position={[GHOST_ICON.lp[0], GHOST_ICON.lp[1], 0]} rotation={[Math.PI / 2, 0, 0]} scale={0.8}>
           <LED3D position={[0, 0, 0]} color={ledColor} active={ledActive} ink="#000000" />
         </group>

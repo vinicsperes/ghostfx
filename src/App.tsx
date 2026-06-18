@@ -5,6 +5,7 @@ import { useSynth, NOTE_KEYS } from "./hooks/useSynth";
 import Pedal3D from "./Pedal3D";
 import LoadingScreen from "./LoadingScreen";
 import WarningModal from "./WarningModal";
+import GhostMark from "./GhostMark";
 
 const PRESETS = [
   { name: "CLEAN",   drive: 0.06, echo: 0.12, tone: 0.70, reverb: 0.30, master: 0.80 },
@@ -210,7 +211,7 @@ export default function App() {
 
       <div className="absolute inset-0 w-full h-full z-[2]">
         <Pedal3D
-          ledColor={ledColor}
+          ledColor={themeColor}
           isPlaying={isActive}
           onTap={handleTap}
           knobDrive={drive}
@@ -245,11 +246,7 @@ export default function App() {
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2.5">
-            <img
-              src="/ghost.svg"
-              alt=""
-              style={{ width: 28, height: 28, filter: "invert(1) brightness(2)", opacity: 1 }}
-            />
+            <GhostMark variant="solid" size={28} color="#ffffff" ledColor={themeColor} />
             <span
               className="font-[var(--font-display)] tracking-wide"
               style={{ fontSize: 20, color: "#ffffff", lineHeight: 1 }}
