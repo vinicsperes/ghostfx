@@ -821,16 +821,18 @@ void main(){
   float wob=sin(ang*5.0+u_t*.55)*0.013+sin(ang*9.0-u_t*.40)*0.008;
   float r=length(p)+wob;
   float s=cos(r*44.0-u_t*1.60);
-  float band=smoothstep(-0.18,0.18,s);
-  float edge=smoothstep(0.80,1.0,s);
   float pulse=0.82+0.18*sin(u_t*0.90);
-  vec3 dark=vec3(8.,3.,13.)/255.;
-  vec3 ring=vec3(64.,22.,122.)/255.;
-  vec3 glow=vec3(160.,58.,236.)/255.;
-  vec3 col=mix(dark, ring, band);
-  col=mix(col, glow, edge*pulse);
-  col=mix(dark, col, u_blend);
-  gl_FragColor=vec4(col,1.0);
+  float c=smoothstep(-0.30,1.0,s)*pulse;
+  float thresh=mix(1.0,0.30,u_blend);
+  vec4 col;
+  if(c>thresh){
+    float b=pow((c-0.30)/0.70,0.5);
+    col=vec4(b*160./255., b*58./255., b*236./255., b*0.88);
+  } else {
+    float d=(s*0.5+0.5)*0.14;
+    col=vec4(d*16./255., d*5./255., d*30./255., 1.0);
+  }
+  gl_FragColor=col;
 }`;
 
 const CRUNCH_FS = `
