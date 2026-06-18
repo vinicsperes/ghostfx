@@ -1316,15 +1316,15 @@ function HangTag() {
   // hang tag seguindo brand/GhostFX Tag.html, pendurada do footswitch e caída
   // sobre a face frontal; clicável → github.com/vinicsperes
   const { tex, redraw } = useMemo(() => {
-    // desenhado em coords 512×800, rasterizado a 3× (spec da tag pede 2–3×)
+    // desenhado em coords 512×640, rasterizado a 3× (spec da tag pede 2–3×)
     const TAG_DPR = 3;
     const c = document.createElement("canvas");
-    c.width = 512 * TAG_DPR; c.height = 800 * TAG_DPR;
+    c.width = 512 * TAG_DPR; c.height = 640 * TAG_DPR;
     const ctx = c.getContext("2d")!;
     const t = new THREE.CanvasTexture(c);
     t.anisotropy = 16;
 
-    const ink = "#14120e", card = "#f6f3ea", red = "#ff3b30", dim = "#56524a";
+    const ink = "#14120e", card = "#f6f3ea", dim = "#2b2720";
     const UNB = "'Unbounded', sans-serif";
     const MONO = "'Space Mono', monospace";
     const rr = (x: number, y: number, w: number, h: number, r: number) => {
@@ -1337,95 +1337,77 @@ function HangTag() {
       ctx.closePath();
     };
 
-    const redraw = () => {
+    const redraw = (hover = false) => {
       ctx.setTransform(TAG_DPR, 0, 0, TAG_DPR, 0, 0);
-      ctx.clearRect(0, 0, 512, 800);
+      ctx.clearRect(0, 0, 512, 640);
       ctx.letterSpacing = "0px";
 
-      rr(8, 8, 496, 784, 27);
+      rr(8, 8, 496, 624, 27);
       ctx.fillStyle = card;
       ctx.fill();
       ctx.strokeStyle = ink;
       ctx.lineWidth = 5;
       ctx.stroke();
 
-      // marca: caixa V + nome
-      ctx.lineWidth = 4;
-      ctx.strokeRect(116, 112, 52, 52);
-      ctx.fillStyle = ink;
+      // FREE — herói (sem marca no topo)
       ctx.textAlign = "center";
-      ctx.font = `900 28px ${UNB}`;
-      ctx.fillText("V", 142, 148);
-      ctx.textAlign = "left";
-      ctx.font = `700 20px ${UNB}`;
-      ctx.fillText("VINÍCIUS PERES", 184, 136);
-      ctx.font = `400 11px ${MONO}`;
-      ctx.letterSpacing = "3px";
-      ctx.fillStyle = dim;
-      ctx.fillText("HANDMADE PEDAL WORK", 184, 158);
-      ctx.letterSpacing = "0px";
-
       ctx.fillStyle = ink;
-      ctx.fillRect(33, 198, 446, 5);
-
-      // FREE
-      ctx.textAlign = "center";
-      ctx.font = `900 150px ${UNB}`;
+      ctx.font = `900 132px ${UNB}`;
       ctx.letterSpacing = "-7px";
-      ctx.fillText("FREE", 252, 360);
-      ctx.letterSpacing = "2px";
-      ctx.font = `400 11px ${MONO}`;
+      ctx.fillText("FREE", 256, 272);
+      ctx.letterSpacing = "1px";
+      ctx.font = `700 18px ${MONO}`;
       ctx.fillStyle = dim;
-      ctx.fillText("OPEN SOURCE · ZERO INSTALL · BROWSER NATIVE", 256, 404);
+      ctx.fillText("OPEN SOURCE · ZERO INSTALL", 256, 320);
       ctx.letterSpacing = "0px";
 
-      // linhas tracejadas: model / handmade / source
-      ctx.strokeStyle = ink;
-      ctx.lineWidth = 3;
-      ctx.setLineDash([7, 7]);
-      for (const y of [440, 490, 540, 590]) {
-        ctx.beginPath(); ctx.moveTo(33, y); ctx.lineTo(479, y); ctx.stroke();
-      }
-      ctx.setLineDash([]);
-      const row = (y: number, label: string, value: string, color = ink) => {
-        ctx.letterSpacing = "2px";
-        ctx.fillStyle = ink;
-        ctx.textAlign = "left";
-        ctx.font = `400 15px ${MONO}`;
-        ctx.fillText(label, 39, y);
-        ctx.textAlign = "right";
-        ctx.font = `700 15px ${MONO}`;
-        ctx.fillStyle = color;
-        ctx.fillText(value, 473, y);
-        ctx.letterSpacing = "0px";
-      };
-      row(471, "MODEL", "GHOST FX · MK.I");
-      row(521, "HANDMADE WITH", "♥", red);
-      row(571, "SOURCE", "GITHUB.COM/VINICSPERES");
-
-      // rodapé: barcode + serial
+      // link do GitHub — embaixo, acende em verde no hover
       ctx.fillStyle = ink;
-      for (let x = 33; x < 243; x += 27) {
-        ctx.fillRect(x, 640, 3, 64);
-        ctx.fillRect(x + 6, 640, 4.5, 64);
-        ctx.fillRect(x + 13.5, 640, 1.5, 64);
-        ctx.fillRect(x + 21, 640, 3, 64);
-      }
-      ctx.textAlign = "right";
-      ctx.letterSpacing = "2px";
-      ctx.font = `700 16px ${MONO}`;
-      ctx.fillText("Nº 001", 473, 662);
-      ctx.font = `400 13px ${MONO}`;
-      ctx.fillText("EST. 2026 · BR", 473, 694);
+      ctx.fillRect(72, 430, 368, 4);
+      ctx.font = `700 18px ${MONO}`;
+      ctx.fillStyle = dim;
+      ctx.letterSpacing = "6px";
+      ctx.fillText("SOURCE", 256, 468);
       ctx.letterSpacing = "0px";
+      ctx.font = `700 28px ${MONO}`;
+      if (hover) {
+        ctx.fillStyle = "#10a042";
+        ctx.shadowColor = "#41ff77";
+        ctx.shadowBlur = 20;
+      } else {
+        ctx.fillStyle = ink;
+      }
+      ctx.fillText("github.com/vinicsperes", 256, 514);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = ink;
+      ctx.fillRect(72, 544, 368, 4);
+
+      // assinatura: fantasma ciclope (corpo + olho-LED verde)
+      {
+        const gs = 1.35;
+        const gx = 256 - 16 * gs;
+        const gy = 556 - 4 * gs;
+        ctx.save();
+        ctx.translate(gx, gy);
+        ctx.scale(gs, gs);
+        ctx.fillStyle = ink;
+        ctx.fill(new Path2D("M7 27 L7 13.5 C7 7.8 11 4 16 4 C21 4 25 7.8 25 13.5 L25 27 Q22 23.6 19 27 Q16 23.6 13 27 Q10 23.6 7 27 Z"));
+        ctx.fillStyle = "#41ff77";
+        ctx.globalAlpha = 0.28;
+        ctx.beginPath(); ctx.arc(19.4, 13.6, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#10a042";
+        ctx.beginPath(); ctx.arc(19.4, 13.6, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
 
       // ilhós + furo
       ctx.strokeStyle = ink;
-      ctx.beginPath(); ctx.arc(256, 62, 26, 0, Math.PI * 2);
-      ctx.lineWidth = 12;
+      ctx.beginPath(); ctx.arc(256, 54, 24, 0, Math.PI * 2);
+      ctx.lineWidth = 11;
       ctx.stroke();
       ctx.globalCompositeOperation = "destination-out";
-      ctx.beginPath(); ctx.arc(256, 62, 17, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(256, 54, 16, 0, Math.PI * 2); ctx.fill();
       ctx.globalCompositeOperation = "source-over";
 
       t.needsUpdate = true;
@@ -1465,7 +1447,7 @@ function HangTag() {
   }, []);
 
   // pivô no ilhós: hover balança a tag no barbante sem o furo sair do fio
-  const EYELET_LOCAL_Y = 0.78 * (0.5 - 62 / 800);
+  const EYELET_LOCAL_Y = 0.625 * (0.5 - 54 / 640);
   const pivot = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
   useFrame((_, dt) => {
@@ -1474,6 +1456,9 @@ function HangTag() {
     g.rotation.x = THREE.MathUtils.damp(g.rotation.x, hovered ? -0.22 : 0, 6, dt);
     g.rotation.z = THREE.MathUtils.damp(g.rotation.z, hovered ? -0.13 : -0.07, 6, dt);
   });
+
+  // hover acende o link do GitHub em verde (redesenha a textura)
+  useEffect(() => { redraw(hovered); }, [hovered, redraw]);
 
   return (
     <group
@@ -1486,7 +1471,7 @@ function HangTag() {
       </mesh>
       <group ref={pivot} position={[0.123, 0.269, 1.62]} rotation={[0, 0, -0.07]}>
         <mesh position={[0, -EYELET_LOCAL_Y, 0]}>
-          <planeGeometry args={[0.50, 0.78]} />
+          <planeGeometry args={[0.50, 0.625]} />
           {/* alphaTest sem transparent: renderiza no passe opaco e evita
               erro de ordenação com o chassi translúcido visto por trás */}
           <meshStandardMaterial map={tex} alphaTest={0.5} side={THREE.DoubleSide} roughness={0.85} metalness={0} />
