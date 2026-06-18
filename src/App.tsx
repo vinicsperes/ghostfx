@@ -580,7 +580,7 @@ function MicBlockedModal({
 }
 
 const PRESET_META = [
-  { color: "#48cae4", word: "CRYSTAL", chassis: "#020610" },
+  { color: "#8a2be2", word: "OCCULT", chassis: "#09040e" },
   { color: "#f77f00", word: "GRIMY",   chassis: "#0c0602" },
   { color: "#e02828", word: "HOLLOW",  chassis: "#0a0202" },
   { color: "#c8a832", word: "FALCON",  chassis: "#080700" },
@@ -885,20 +885,25 @@ const BG_VS = `attribute vec2 a_pos; void main(){gl_Position=vec4(a_pos,0.,1.);}
 const CLEAN_FS = `
 precision mediump float;
 uniform float u_t; uniform vec2 u_res; uniform float u_blend;
-float tri(float x){return abs(fract(x)-.5)*2.;}
 void main(){
+  // bullseye estilo Zakk Wylde: anéis concêntricos roxos pulsando pra fora,
+  // com ondulação orgânica leve (pintura feita à mão)
   vec2 uv=gl_FragCoord.xy/u_res;
-  float cx=uv.x-.5, cy=.5-uv.y;
-  float ca=cos(u_t*.032), sa=sin(u_t*.032);
-  float rx=cx*ca-cy*sa, ry=cx*sa+cy*ca;
-  float u=(rx+ry)*7., v=(rx-ry)*7.;
-  float val=tri(u)*tri(v)*4.+tri(u*.5+u_t*.13)*tri(v*.5-u_t*.10)*2.;
-  float c=abs(cos(val*2.6));
-  float thresh=mix(1.0,0.80,u_blend);
-  vec4 col;
-  if(c>thresh){float b=pow((c-.80)/.20,.52);col=vec4(b*15./255.,b*130./255.,b*210./255.,b*.88);}
-  else{float d=tri(val*.3)*.25;col=vec4(d*2./255.,d*8./255.,d*22./255.,1.);}
-  gl_FragColor=col;
+  vec2 p=(uv-0.5)*vec2(u_res.x/u_res.y,1.0);
+  float ang=atan(p.y,p.x);
+  float wob=sin(ang*5.0+u_t*.55)*0.013+sin(ang*9.0-u_t*.40)*0.008;
+  float r=length(p)+wob;
+  float s=cos(r*44.0-u_t*1.60);
+  float band=smoothstep(-0.18,0.18,s);
+  float edge=smoothstep(0.80,1.0,s);
+  float pulse=0.82+0.18*sin(u_t*0.90);
+  vec3 dark=vec3(8.,3.,13.)/255.;
+  vec3 ring=vec3(64.,22.,122.)/255.;
+  vec3 glow=vec3(160.,58.,236.)/255.;
+  vec3 col=mix(dark, ring, band);
+  col=mix(col, glow, edge*pulse);
+  col=mix(dark, col, u_blend);
+  gl_FragColor=vec4(col,1.0);
 }`;
 
 const CRUNCH_FS = `

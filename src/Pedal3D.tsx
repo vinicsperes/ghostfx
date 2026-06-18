@@ -240,7 +240,7 @@ type PresetVisual = {
   showArc: boolean;
 };
 const PRESET_VISUALS: PresetVisual[] = [
-  { pickguard: { top: "#0a0a0e", mid: "#0d1a28", base: "#06060a", screw: "#1a2a3a" }, knobTheme: "dark", silk: "#48cae4", ink: "#c8e8f4", knobAccent: "#48cae4", showArc: false },
+  { pickguard: { top: "#0a0710", mid: "#150a22", base: "#050409", screw: "#231334" }, knobTheme: "dark", silk: "#8a2be2", ink: "#e0d4f6", knobAccent: "#8a2be2", showArc: false },
   { pickguard: { top: "#0a0a0e", mid: "#1a0e04", base: "#06060a", screw: "#2a1a08" }, knobTheme: "dark", silk: "#f77f00", ink: "#f4d8b0", knobAccent: "#f77f00", showArc: false },
   { pickguard: { top: "#0a0a0e", mid: "#180808", base: "#06060a", screw: "#2a1010" }, knobTheme: "dark", silk: "#e02828", ink: "#f0b0b0", knobAccent: "#cc2020", showArc: false },
   { pickguard: { top: "#0a0a0e", mid: "#140e00", base: "#06060a", screw: "#281e04" }, knobTheme: "dark", silk: "#c8a832", ink: "#e8d890", knobAccent: "#c8a832", showArc: false },
