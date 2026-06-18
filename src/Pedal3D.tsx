@@ -243,7 +243,7 @@ const PRESET_VISUALS: PresetVisual[] = [
   { pickguard: { top: "#0a0710", mid: "#150a22", base: "#050409", screw: "#231334" }, knobTheme: "dark", silk: "#8a2be2", ink: "#e0d4f6", knobAccent: "#8a2be2", showArc: false },
   { pickguard: { top: "#0c0c0e", mid: "#16161a", base: "#050506", screw: "#2a2a30" }, knobTheme: "dark", silk: "#cdd2da", ink: "#ececf0", knobAccent: "#cdd2da", showArc: false },
   { pickguard: { top: "#0a0a0e", mid: "#180808", base: "#06060a", screw: "#2a1010" }, knobTheme: "dark", silk: "#e02828", ink: "#f0b0b0", knobAccent: "#cc2020", showArc: false },
-  { pickguard: { top: "#0a0a0e", mid: "#140e00", base: "#06060a", screw: "#281e04" }, knobTheme: "dark", silk: "#c8a832", ink: "#e8d890", knobAccent: "#c8a832", showArc: false },
+  { pickguard: { top: "#100806", mid: "#200a04", base: "#090504", screw: "#3a1810" }, knobTheme: "dark", silk: "#ff4a28", ink: "#f8d2c4", knobAccent: "#ff4a28", showArc: false },
   { pickguard: { top: "#0a0a0e", mid: "#1a3520", base: "#06060a", screw: "#3a3a48" }, knobTheme: "dark", silk: "#20f040", ink: "#e0e0ec", knobAccent: "#16a030", showArc: false },
 ];
 

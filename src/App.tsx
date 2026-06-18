@@ -510,7 +510,7 @@ const PRESET_META = [
   { color: "#8a2be2", word: "OCCULT", chassis: "#09040e" },
   { color: "#cdd2da", word: "SNOW",     chassis: "#0a0a0c" },
   { color: "#e02828", word: "HOLLOW",  chassis: "#0a0202" },
-  { color: "#c8a832", word: "FALCON",  chassis: "#080700" },
+  { color: "#ff4a28", word: "PEPPER*", chassis: "#0d0402" },
   { color: "#20f040", word: "HAUNTED", chassis: "#0a0a10" },
 ] as const;
 
