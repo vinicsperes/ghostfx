@@ -1,5 +1,6 @@
 import { useProgress } from "@react-three/drei";
 import { useEffect, useState } from "react";
+import GhostMark from "./GhostMark";
 
 export default function LoadingScreen({ onComplete }: { onComplete?: () => void }) {
   const { progress } = useProgress();
@@ -29,13 +30,12 @@ export default function LoadingScreen({ onComplete }: { onComplete?: () => void 
     >
       <div className="relative flex items-center justify-center">
         <div className="absolute inset-0 blur-3xl bg-[#20f040]/10 rounded-full animate-loading-pulse" />
-        <img
-          src="/ghost.svg"
-          width="72"
-          height="72"
-          alt="Ghost"
+        <GhostMark
+          variant="solid"
+          size={72}
+          color="rgba(231,228,220,0.6)"
+          ledColor="#41ff77"
           className="relative animate-loading-pulse"
-          style={{ filter: "invert(1) brightness(2)" }}
         />
       </div>
 
