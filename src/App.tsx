@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useEffects } from "./hooks/useEffects";
-import { useTuner } from "./hooks/useTuner";
 import { useSynth, NOTE_KEYS } from "./hooks/useSynth";
 import Pedal3D from "./Pedal3D";
 import LoadingScreen from "./LoadingScreen";
@@ -68,7 +67,6 @@ export default function App() {
 
   const fx = useEffects({ drive, echo, tone, reverb, masterVolume });
   useEffect(() => { if (!fx.micBlocked) setMicDismissed(false); }, [fx.micBlocked]);
-  const tuner = useTuner();
   const synth = useSynth({ drive, echo, tone, reverb, masterVolume });
 
   useEffect(() => {
@@ -383,77 +381,6 @@ export default function App() {
             </svg>
             <span className="font-[var(--font-mono)]" style={{ fontSize: 10, letterSpacing: "0.12em" }}>KEYBOARD SYNTH</span>
           </button>
-        </div>
-
-        <div className="flex flex-col pointer-events-auto" style={{ gap: 8 }}>
-          <div className="flex items-center gap-2">
-            <div style={{ width: 8, height: 1, background: themeColor }} />
-            <span className="font-[var(--font-mono)] uppercase tracking-[0.35em]" style={{ fontSize: 9, color: themeColor }}>Tuner</span>
-            <div style={{ flex: 1, height: 1, background: `${themeColor}30` }} />
-          </div>
-
-          {tuner.active ? (
-            <div
-              className="flex items-center justify-between"
-              style={{ padding: "10px 14px", borderRadius: 7, background: "rgba(0,0,0,0.3)", border: `1px solid ${themeColor}20` }}
-            >
-              <span className="font-[var(--font-display)]" style={{
-                fontSize: 28, lineHeight: 1,
-                color: Math.abs(tuner.cents) < 10 ? themeColor : "#f7c94e",
-                transition: "color 200ms",
-                textShadow: Math.abs(tuner.cents) < 10 ? `0 0 16px ${themeColor}88` : "0 0 16px rgba(247,201,78,0.5)",
-              }}>
-                {tuner.note}
-              </span>
-              <div className="flex flex-col items-end gap-2">
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 2 }}>
-                  {Array.from({ length: 9 }).map((_, i) => {
-                    const pos = i - 4;
-                    const threshold = pos * 12.5;
-                    const lit = (tuner.cents > 0 && threshold > 0 && threshold <= tuner.cents) || (tuner.cents < 0 && threshold < 0 && threshold >= tuner.cents);
-                    const isCenter = i === 4;
-                    const inTune = isCenter && Math.abs(tuner.cents) < 10;
-                    return (
-                      <div key={i} style={{
-                        width: isCenter ? 3 : 2,
-                        height: isCenter ? 14 : 8 - Math.abs(pos) * 0.5,
-                        borderRadius: 1,
-                        background: inTune ? themeColor : lit ? "rgba(247,201,78,0.7)" : "rgba(255,255,255,0.07)",
-                        transition: "background 80ms",
-                        boxShadow: inTune ? `0 0 6px ${themeColor}` : "none",
-                      }} />
-                    );
-                  })}
-                </div>
-                <button
-                  onClick={tuner.toggle}
-                  className="font-[var(--font-mono)] transition-all hover:opacity-60"
-                  style={{ fontSize: 7, color: "rgba(255,255,255,0.3)", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.1em" }}
-                >
-                  CLOSE
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={tuner.toggle}
-              className="flex items-center justify-center gap-2 transition-all active:scale-95"
-              style={{
-                width: "100%", height: 40, borderRadius: 7, cursor: "pointer",
-                border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)",
-                color: "rgba(255,255,255,0.35)", transition: "all 180ms ease",
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "rgba(255,255,255,0.35)"; e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M9 18V5l12-2v13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="6" cy="18" r="3" stroke="currentColor" strokeWidth="1.8"/>
-                <circle cx="18" cy="16" r="3" stroke="currentColor" strokeWidth="1.8"/>
-              </svg>
-              <span className="font-[var(--font-mono)]" style={{ fontSize: 9, letterSpacing: "0.12em" }}>TUNER</span>
-            </button>
-          )}
         </div>
 
         <div style={{ flex: 1 }} />
