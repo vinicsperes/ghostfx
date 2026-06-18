@@ -1,0 +1,21 @@
+{
+  "name": "GHOST FX — Signal Processor",
+  "short_name": "GHOST FX",
+  "description": "Browser-based guitar FX — drive, echo, tone & reverb. Zero install, haunted tones.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#060a08",
+  "theme_color": "#060a08",
+  "categories": ["music", "utilities", "entertainment"],
+  "icons": [
+    { "src": "icons/favicon-16.png",  "sizes": "16x16",   "type": "image/png" },
+    { "src": "icons/favicon-32.png",  "sizes": "32x32",   "type": "image/png" },
+    { "src": "icons/icon-180.png",    "sizes": "180x180", "type": "image/png" },
+    { "src": "icons/icon-192.png",    "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png",    "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png","sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
