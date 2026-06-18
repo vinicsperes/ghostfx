@@ -8,7 +8,7 @@ import GhostMark from "./GhostMark";
 
 const PRESETS = [
   { name: "CLEAN",   drive: 0.06, echo: 0.12, tone: 0.70, reverb: 0.30, master: 0.80 },
-  { name: "CRUNCH",  drive: 0.42, echo: 0.18, tone: 0.52, reverb: 0.16, master: 0.78 },
+  { name: "STATIC",  drive: 0.54, echo: 0.22, tone: 0.46, reverb: 0.12, master: 0.78 },
   { name: "HEAVY",   drive: 0.85, echo: 0.08, tone: 0.40, reverb: 0.10, master: 0.82 },
   { name: "FRUS",    drive: 0.04, echo: 0.30, tone: 0.85, reverb: 0.72, master: 0.82 },
   { name: "GHOST",   drive: 0.55, echo: 0.48, tone: 0.50, reverb: 0.58, master: 0.76 },
@@ -508,7 +508,7 @@ function MicBlockedModal({
 
 const PRESET_META = [
   { color: "#8a2be2", word: "OCCULT", chassis: "#09040e" },
-  { color: "#f77f00", word: "GRIMY",   chassis: "#0c0602" },
+  { color: "#cdd2da", word: "SNOW",     chassis: "#0a0a0c" },
   { color: "#e02828", word: "HOLLOW",  chassis: "#0a0202" },
   { color: "#c8a832", word: "FALCON",  chassis: "#080700" },
   { color: "#20f040", word: "HAUNTED", chassis: "#0a0a10" },
@@ -835,25 +835,29 @@ void main(){
   gl_FragColor=col;
 }`;
 
-const CRUNCH_FS = `
+const STATIC_FS = `
 precision mediump float;
 uniform float u_t; uniform vec2 u_res; uniform float u_blend;
-float tri(float x){return abs(fract(x)-.5)*2.;}
+float hash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
 void main(){
+  // estática de TV monocromática: snow + scanlines + bandas de glitch — emerge no limiar
   vec2 uv=gl_FragCoord.xy/u_res;
-  float nx=uv.x,ny=1.-uv.y,cx=nx-.5,cy=ny-.5;
-  float v=tri(nx*7.+u_t*.38)*tri(ny*5.-u_t*.28)*3.5
-         +tri((cx+cy)*11.+u_t*.44)*1.8
-         +tri((cx-cy)*8.-u_t*.32)*1.4
-         +tri(nx*3.5-ny*4.+u_t*.20)*.9;
-  float c=abs(cos(v*2.9));
-  float thresh=mix(1.0,0.68,u_blend);
+  float band=floor(uv.y*16.0);
+  float trig=step(0.85, hash(vec2(band, floor(u_t*48.0))));
+  float shift=(hash(vec2(band, floor(u_t*48.0)+3.0))-0.5)*0.12*trig;
+  vec2 q=vec2(uv.x+shift, uv.y);
+  float n=hash(floor(q*u_res/3.0)+floor(u_t*170.0));
+  float scan=0.55+0.45*sin((uv.y*u_res.y*1.5)-u_t*40.0);
+  float c=n*mix(0.55,1.0,scan);
+  float thresh=mix(1.0,0.46,u_blend);
   vec4 col;
   if(c>thresh){
-    float b=pow((c-.68)/.32,.48);
-    float w=tri(v*.5+u_t*.07)*.5+.5;
-    col=vec4(b*(178.+w*62.)/255.,b*(58.+w*22.)/255.,b*7./255.,b*.90);
-  } else{float d=tri(v*.3)*.5+.3;col=vec4(d*11./255.,d*4./255.,0.,1.);}
+    float b=pow((c-.46)/.54,.6);
+    col=vec4(b*208./255., b*214./255., b*226./255., b*.86);
+  } else {
+    float d=n*.10+scan*.04;
+    col=vec4(d*18./255., d*18./255., d*24./255., 1.);
+  }
   gl_FragColor=col;
 }`;
 
@@ -930,7 +934,7 @@ void main(){
   gl_FragColor=col;
 }`;
 
-const PRESET_FS = [CLEAN_FS, CRUNCH_FS, HEAVY_FS, FRUS_FS, GHOST_FS];
+const PRESET_FS = [CLEAN_FS, STATIC_FS, HEAVY_FS, FRUS_FS, GHOST_FS];
 const PRESET_OPACITY = [0.65, 0.74, 0.82, 0.88, 0.70];
 
 type GlState = { tLoc: WebGLUniformLocation; rLoc: WebGLUniformLocation; blendLoc: WebGLUniformLocation; prog: WebGLProgram };
