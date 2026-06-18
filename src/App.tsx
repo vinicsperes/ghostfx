@@ -486,15 +486,6 @@ export default function App() {
         />
       )}
 
-      <a
-        href="https://github.com/vinicsperes"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-3 right-4 z-[50] pointer-events-auto font-[var(--font-mono)] transition-opacity hover:opacity-80"
-        style={{ fontSize: 9, color: "rgba(255,255,255,0.18)", letterSpacing: "0.05em", textDecoration: "none" }}
-      >
-        made with ♥ vinicsperes
-      </a>
     </div>
   );
 }
