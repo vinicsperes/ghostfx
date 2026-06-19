@@ -94,9 +94,6 @@ export default function Pedal3D({
 
         <pointLight position={[0, -3, 5]} intensity={1.2} color="#ffffff" />
 
-        <pointLight position={[2, 4, 1]} intensity={2.5} color="#9d4edd" distance={8} />
-        <pointLight position={[-2, 4, 1]} intensity={2.0} color="#48cae4" distance={8} />
-
         <ResponsiveCamera />
         <OrbitControls
           enabled={controlsEnabled}
@@ -336,9 +333,9 @@ function PedalBody({
           color={palette.pedal}
           roughness={0.30}
           metalness={0.20}
-          envMapIntensity={1.0}
+          envMapIntensity={0.5}
           clearcoat={0.45}
-          clearcoatRoughness={0}
+          clearcoatRoughness={0.12}
           transparent
           opacity={0.82}
           depthWrite={false}
@@ -347,7 +344,6 @@ function PedalBody({
 
       <SideJack position={[-W / 2 - 0.04, 0.08, 0]} metal={palette.metal} />
       <SideJack position={[W / 2 + 0.04, 0.08, 0]} metal={palette.metal} />
-      <DCJack x={0.62} z={-L / 2 - 0.04} />
       <HangTag />
 
       <group position={[0, H / 2 + 0.02, 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -390,7 +386,7 @@ function PedalBody({
         const POT_LUG_Z = -0.10;
         const SW_LUG_Y = topY - 0.335;
         const LED_Y = topY - 0.06;
-        const PAD_Y = -0.066;
+        const PAD_Y = -0.026;
         return (
           <group>
 
@@ -402,12 +398,10 @@ function PedalBody({
             <SwitchBody x={0} z={FSZ} topY={topY} />
             <Battery9V />
 
-            {/* bateria → pads de força, contornando a beirada da placa */}
-            <Wire start={[0.34, -0.24, -1.26]} mid={[0.56,  0.00, -1.03]} end={[0.62, PAD_Y, -0.97]} color="#d02020" />
-            <Wire start={[0.34, -0.24, -1.38]} mid={[0.40, -0.02, -1.05]} end={[0.45, PAD_Y, -0.97]} color="#181818" />
-            {/* DC jack → mesmos pads */}
-            <Wire start={[0.70, 0.14, -1.39]} mid={[0.72,  0.02, -1.06]} end={[0.62, PAD_Y, -0.97]} color="#d02020" r={0.009} />
-            <Wire start={[0.54, 0.14, -1.39]} mid={[0.50, -0.01, -1.07]} end={[0.45, PAD_Y, -0.97]} color="#181818" r={0.009} />
+            {/* bateria (agora sob a placa) → pads de força, saindo do snap e
+                contornando a beirada traseira da placa */}
+            <Wire start={[0.32, -0.26, -0.70]} mid={[0.50, -0.18, -1.10]} end={[0.62, PAD_Y, -0.97]} color="#d02020" />
+            <Wire start={[0.32, -0.26, -0.50]} mid={[0.42, -0.18, -1.10]} end={[0.45, PAD_Y, -0.97]} color="#181818" />
 
             <Wire start={[kp.drive[0],  POT_LUG_Y, kp.drive[2]  + POT_LUG_Z]} end={[-0.55, PAD_Y, -0.98]} color="#202020" />
             <Wire start={[kp.echo[0],   POT_LUG_Y, kp.echo[2]   + POT_LUG_Z]} end={[ 0.02, PAD_Y, -0.98]} color="#22aa3a" />
@@ -1548,14 +1542,14 @@ function PotBody({ x, z, topY }: { x: number; z: number; topY: number }) {
 
 function SwitchBody({ x, z, topY }: { x: number; z: number; topY: number }) {
   // 3PDT: corpo ~17.6 × 17.6mm, 9 lugs em grade de ~5mm
-  const w = 0.47, d = 0.47, h = 0.28;
+  const w = 0.38, d = 0.38, h = 0.28;
   const cy = topY - 0.025 - h / 2;
   const lugY = cy - h / 2 - 0.030;
   return (
     <group position={[x, 0, z]}>
       <mesh position={[0, cy, 0]} castShadow>
         <boxGeometry args={[w, h, d]} />
-        <meshStandardMaterial color="#1a5fa8" metalness={0.05} roughness={0.72} />
+        <meshStandardMaterial color="#45454d" metalness={0.4} roughness={0.5} />
       </mesh>
       {[-0.135, 0, 0.135].flatMap((lx) =>
         [-0.135, 0, 0.135].map((lz) => (
@@ -1570,9 +1564,10 @@ function SwitchBody({ x, z, topY }: { x: number; z: number; topY: number }) {
 }
 
 function Battery9V() {
-  // 9V compacta (~75% da régua — tamanho cheio dominava a cena), deitada no
-  // vão traseiro do chassi, enfiada sob a beirada da placa; snap fino na ponta
-  const cx = -0.20, cy = -0.305, cz = -1.32;
+  // 9V compacta (~75% da régua — tamanho cheio dominava a cena), deitada e
+  // enfiada SOB a placa (estilo celular): apoiada no fundo do chassi, topo logo
+  // abaixo da PCB; ocupa a metade traseira do vão sob a placa, sem clipar.
+  const cx = -0.20, cy = -0.305, cz = -0.60;
   return (
     <group position={[cx, cy, cz]}>
       <mesh castShadow>
@@ -1583,7 +1578,7 @@ function Battery9V() {
         <boxGeometry args={[0.28, 0.342, 0.502]} />
         <meshStandardMaterial color="#c9a23c" roughness={0.45} metalness={0.35} />
       </mesh>
-      <Text position={[0.0, 0.172, 0]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.10} color="#e8e6da" anchorX="center" anchorY="middle" letterSpacing={0.10}>
+      <Text position={[0.0, 0.172, 0]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.10} color="#e8e6da" anchorX="center" anchorY="middle" letterSpacing={0.10} renderOrder={6}>
         9V
       </Text>
       <mesh position={[0.495, 0.04, 0.12]} rotation={[0, 0, Math.PI / 2]}>
@@ -1705,6 +1700,7 @@ function ICDip({ x, z, pins = 8, rot = 0, color = "#101010", label = "" }: {
           anchorX="center"
           anchorY="middle"
           letterSpacing={0.06}
+          renderOrder={6}
         >
           {label}
         </Text>
@@ -1864,7 +1860,7 @@ function BoxCap({ x, z, rot = 0, color = "#b02818" }: { x: number; z: number; ro
   );
 }
 
-const SILK = "#d8d8cc";
+const SILK = "#8c8c80";
 
 function SilkRect({ x, z, w, d, y, t = 0.0045 }: {
   x: number; z: number; w: number; d: number; y: number; t?: number;
@@ -1880,11 +1876,43 @@ function SilkRect({ x, z, w, d, y, t = 0.0045 }: {
   );
 }
 
-function SilkText({ x, z, y, size = 0.038, children }: {
+function GhostSilk({ x, z, y, size = 0.17 }: { x: number; z: number; y: number; size?: number }) {
+  // mascote da marca impresso como silk discreto — easter egg do interior.
+  // mesmo path do GhostMark (viewBox 0..32), com o olho/LED vazado.
+  const tex = useMemo(() => {
+    const s = 128;
+    const c = document.createElement("canvas");
+    c.width = s; c.height = s;
+    const ctx = c.getContext("2d")!;
+    const k = (s * 0.84) / 32;
+    ctx.translate((s - 32 * k) / 2, (s - 32 * k) / 2);
+    ctx.scale(k, k);
+    const body = new Path2D(
+      "M7 27 L7 13.5 C7 7.8 11 4 16 4 C21 4 25 7.8 25 13.5 L25 27 Q22 23.6 19 27 Q16 23.6 13 27 Q10 23.6 7 27 Z"
+    );
+    ctx.fillStyle = "#cbc6b4";
+    ctx.fill(body);
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.arc(19.4, 13.6, 2.6, 0, Math.PI * 2);
+    ctx.fill();
+    const t = new THREE.CanvasTexture(c);
+    t.anisotropy = 8;
+    return t;
+  }, []);
+  return (
+    <mesh position={[x, y, z]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[size, size]} />
+      <meshBasicMaterial map={tex} transparent opacity={0.85} depthWrite={false} />
+    </mesh>
+  );
+}
+
+function SilkText({ x, z, y, size = 0.033, children }: {
   x: number; z: number; y: number; size?: number; children: string;
 }) {
   return (
-    <Text position={[x, y, z]} rotation={[-Math.PI / 2, 0, 0]} fontSize={size} color={SILK} anchorX="center" anchorY="middle" letterSpacing={0.05}>
+    <Text position={[x, y, z]} rotation={[-Math.PI / 2, 0, 0]} fontSize={size} color={SILK} anchorX="center" anchorY="middle" letterSpacing={0.05} renderOrder={6}>
       {children}
     </Text>
   );
@@ -1949,7 +1977,6 @@ function SilkRing({ x, z, r, y }: { x: number; z: number; r: number; y: number }
 function PCBBoard({ w, l }: { w: number; l: number }) {
   const TH = 0.003;
   const top = PCB_BH / 2 + TH / 2;
-  const hatchY = top - 0.0007;
   const silkY = top + 0.0024;
 
   const railX = w / 2 - 0.10;
@@ -2047,27 +2074,33 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   conns.forEach(({ px, pz, nx, nz }) =>
     segs.push({ x1: px, z1: pz, x2: nx, z2: nz, tw: 0.012 }));
 
-  const groundTex = useMemo(() => {
-    const cw = 256;
+  // textura OPACA da placa: fundo verde + grid de cobre assado direto nela.
+  // antes o grid era um plano transparente flutuante — debaixo da tampa de
+  // acrílico (também transparente) ele desordenava e sumia em alguns ângulos.
+  // Como parte da superfície opaca, renderiza estável (igual texto nos chips).
+  const boardTex = useMemo(() => {
+    const cw = 512;
     const ch = Math.round(cw * (l / w));
     const c = document.createElement("canvas");
     c.width = cw;
     c.height = ch;
     const ctx = c.getContext("2d")!;
-    ctx.strokeStyle = "rgba(165,130,52,0.55)";
-    ctx.lineWidth = 1.1;
+    ctx.fillStyle = "#0e3a1c";
+    ctx.fillRect(0, 0, cw, ch);
+    ctx.strokeStyle = "rgba(176,140,58,0.34)";
+    ctx.lineWidth = 1.4;
     const nx = 30;
     const nz = Math.round(nx * (l / w));
     for (let i = 1; i < nx; i++) {
-      const px = (i / nx) * cw;
+      const px = Math.round((i / nx) * cw) + 0.5;
       ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, ch); ctx.stroke();
     }
     for (let j = 1; j < nz; j++) {
-      const py = (j / nz) * ch;
+      const py = Math.round((j / nz) * ch) + 0.5;
       ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(cw, py); ctx.stroke();
     }
     const t = new THREE.CanvasTexture(c);
-    t.anisotropy = 4;
+    t.anisotropy = 8;
     return t;
   }, [w, l]);
 
@@ -2075,12 +2108,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
     <group>
       <mesh receiveShadow>
         <boxGeometry args={[w, PCB_BH, l]} />
-        <meshStandardMaterial color="#0e3a1c" roughness={0.65} metalness={0.08} />
-      </mesh>
-
-      <mesh position={[0, hatchY, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[w - 0.16, l - 0.16]} />
-        <meshBasicMaterial map={groundTex} transparent opacity={0.46} depthWrite={false} />
+        <meshStandardMaterial map={boardTex} roughness={0.65} metalness={0.08} />
       </mesh>
 
       {segs.map(({ x1, z1, x2, z2, tw }, i) => {
@@ -2151,7 +2179,12 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
       <SilkText x={q1[0]} z={q1[1] - 0.12} y={silkY}>Q1</SilkText>
       <SilkText x={q2[0]} z={q2[1] - 0.12} y={silkY}>Q2</SilkText>
       <SilkText x={reg[0]} z={reg[1] + 0.13} y={silkY}>REG</SilkText>
-      <SilkText x={0.45} z={0.68} y={silkY} size={0.08}>GHOST FX MK.I</SilkText>
+      {/* lockup de marca: wordmark à esquerda + fantasminha à direita, na faixa
+          livre à direita do footswitch (easter egg do interior, #3) */}
+      <Text position={[0.245, silkY, 1.0]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.036} color={SILK} anchorX="left" anchorY="middle" letterSpacing={0.05} renderOrder={6}>
+        GHOST FX MK.I
+      </Text>
+      <GhostSilk x={0.60} z={1.0} y={silkY} size={0.10} />
 
       {/* alimentação: 100µF + 47µF (16V) + 78L05 · saída: 10µF */}
       <ElCap x={c100[0]} z={c100[1]} h={0.30} r={0.085} color="#1a3a6a" />
@@ -2196,11 +2229,12 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
 }
 
 function Internals({ width, length }: { width: number; length: number; height: number }) {
-  // placa menor que o gabinete (como na vida real) e recuada pra frente,
-  // liberando o fundo pra bateria 9V em escala real
-  const PCB_Y = -0.10;
+  // placa menor que o gabinete (como na vida real), comprida o suficiente pra
+  // alcançar quase a parede frontal; cresce mantendo o centro fixo (ZOFF) pra
+  // não desalinhar componentes/fios. Vão sob a placa livre pra bateria + fios.
+  const PCB_Y = -0.06;
   const PCB_W = width - 0.42;
-  const PCB_L = length - 0.76;
+  const PCB_L = length - 0.52;
   const PCB_ZOFF = 0.17;
 
   return (
