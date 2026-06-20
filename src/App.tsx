@@ -468,9 +468,9 @@ export default function App() {
           </div>
         )}
 
-        <div className="flex flex-col" style={{ gap: 10 }}>
+        <div className="flex flex-col pointer-events-auto" style={{ gap: 4 }}>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
             <div style={{ width: 8, height: 1, background: themeColor }} />
             <span
               className="font-[var(--font-mono)] uppercase tracking-[0.35em]"
@@ -481,11 +481,11 @@ export default function App() {
             <div style={{ flex: 1, height: 1, background: `${themeColor}30` }} />
           </div>
 
-          <VUMeter label="DRIVE"  value={drive}        accent={themeColor} />
-          <VUMeter label="ECHO"   value={echo}         accent={themeColor} />
-          <VUMeter label="TONE"   value={tone}         accent={themeColor} />
-          <VUMeter label="REVERB" value={reverb}       accent={themeColor} />
-          <VUMeter label="VOLUME" value={masterVolume} accent={themeColor} highlight liveLevelRef={isActive ? getLevelRef : undefined} />
+          <Fader label="DRIVE"  value={drive}        accent={themeColor} onChange={(v) => handleKnobChange("drive",  v)} />
+          <Fader label="ECHO"   value={echo}         accent={themeColor} onChange={(v) => handleKnobChange("echo",   v)} />
+          <Fader label="TONE"   value={tone}         accent={themeColor} onChange={(v) => handleKnobChange("tone",   v)} />
+          <Fader label="REVERB" value={reverb}       accent={themeColor} onChange={(v) => handleKnobChange("reverb", v)} />
+          <Fader label="VOLUME" value={masterVolume} accent={themeColor} onChange={(v) => handleKnobChange("master", v)} highlight />
         </div>
 
         <div className="flex flex-col pointer-events-auto" style={{ gap: 8 }}>
@@ -818,88 +818,94 @@ function KeyboardDisplay({ activeKeys, accent }: { activeKeys: Set<string>; acce
   );
 }
 
-function VUMeter({
+// Real draggable fader (mouse + touch) wired to the same param state as the 3D
+// knobs — dragging either updates the other. Replaces the old read-only VU rows.
+function Fader({
   label,
   value,
+  onChange,
   accent,
   highlight = false,
-  liveLevelRef,
 }: {
   label: string;
   value: number;
+  onChange: (v: number) => void;
   accent: string;
   highlight?: boolean;
-  liveLevelRef?: { current: () => number };
 }) {
-  // nível ao vivo fica local e quantizado em segmentos: re-renderiza só este
-  // componente, e só quando o número de segmentos acesos muda — nunca o App a 60Hz
-  const segments = 16;
-  const [liveFilled, setLiveFilled] = useState<number | null>(null);
-  useEffect(() => {
-    if (!liveLevelRef) { setLiveFilled(null); return; }
-    let raf = 0;
-    let last = -1;
-    const tick = () => {
-      const f = Math.round(Math.min(1, liveLevelRef.current()) * segments);
-      if (f !== last) { last = f; setLiveFilled(f); }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [liveLevelRef]);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const draggingRef = useRef(false);
+  const lastTapRef = useRef(0);
+
+  const setFromClientX = useCallback((clientX: number) => {
+    const el = trackRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const t = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+    onChange(t);
+  }, [onChange]);
 
   const pct = Math.round(value * 100);
-  const filled = liveFilled !== null ? liveFilled : Math.round(value * segments);
 
   return (
-    <div className="flex items-center" style={{ gap: 8 }}>
-
+    <div className="grid items-center" style={{ gridTemplateColumns: "52px 1fr 30px", gap: 11, padding: "6px 0" }}>
       <span
-        className="font-[var(--font-mono)] uppercase text-right shrink-0"
-        style={{
-          fontSize: 10,
-          width: 44,
-          color: highlight ? "#ffffff" : "#8888a0",
-          letterSpacing: "0.06em",
-          fontWeight: highlight ? 700 : 400,
-        }}
+        className="font-[var(--font-mono)] uppercase"
+        style={{ fontSize: 10, letterSpacing: "0.13em", color: highlight ? "#e7e4dc" : "#9fc4ad", fontWeight: highlight ? 700 : 400 }}
       >
         {label}
       </span>
 
-      <div className="flex items-center shrink-0" style={{ gap: 2 }}>
-        {Array.from({ length: segments }).map((_, i) => {
-          const active = i < filled;
-          const hot = i >= 13;
-          return (
-            <div
-              key={i}
-              style={{
-                width: 9,
-                height: highlight ? 10 : 8,
-                borderRadius: 2,
-                background: active
-                  ? hot ? accent : accent
-                  : "rgba(255,255,255,0.06)",
-                opacity: active ? (hot ? 1 : 0.85) : 1,
-                boxShadow: active && hot ? `0 0 6px ${accent}` : active ? `0 0 3px ${accent}60` : "none",
-                transition: "background 60ms, box-shadow 60ms",
-              }}
-            />
-          );
-        })}
+      <div
+        ref={trackRef}
+        role="slider"
+        aria-label={label}
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        tabIndex={0}
+        className="relative flex items-center"
+        style={{ height: 24, cursor: "pointer", touchAction: "none" }}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          const now = performance.now();
+          if (now - lastTapRef.current < 300) { onChange(0.5); lastTapRef.current = 0; return; }
+          lastTapRef.current = now;
+          (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+          draggingRef.current = true;
+          setFromClientX(e.clientX);
+        }}
+        onPointerMove={(e) => { if (draggingRef.current) setFromClientX(e.clientX); }}
+        onPointerUp={(e) => { draggingRef.current = false; (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId); }}
+        onPointerCancel={() => { draggingRef.current = false; }}
+        onKeyDown={(e) => {
+          const step = e.shiftKey ? 0.1 : 0.02;
+          if (e.key === "ArrowRight" || e.key === "ArrowUp") { e.preventDefault(); onChange(Math.min(1, value + step)); }
+          else if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); onChange(Math.max(0, value - step)); }
+        }}
+      >
+
+        <div className="absolute left-0 right-0" style={{ height: 4, borderRadius: 2, background: "#161d18", overflow: "hidden" }}>
+          <div className="absolute inset-0" style={{ background: "repeating-linear-gradient(90deg, transparent 0 7px, rgba(0,0,0,.5) 7px 8px)" }} />
+        </div>
+
+        <div className="absolute left-0" style={{ height: 4, width: `${pct}%`, borderRadius: 2, background: accent, boxShadow: `0 0 8px ${accent}80` }} />
+
+        <div
+          className="absolute"
+          style={{
+            left: `${pct}%`, width: 14, height: 22, borderRadius: 3, transform: "translateX(-50%)",
+            background: "linear-gradient(180deg,#2a352e,#11160f)", border: "1px solid rgba(231,228,220,.16)",
+            boxShadow: "0 2px 5px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.12)",
+          }}
+        >
+          <div className="absolute" style={{ left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 8, height: 1.5, background: accent, boxShadow: `0 0 8px ${accent}` }} />
+        </div>
       </div>
 
       <span
-        className="font-[var(--font-mono)] shrink-0"
-        style={{
-          fontSize: highlight ? 13 : 11,
-          color: highlight ? accent : `${accent}cc`,
-          width: 30,
-          textAlign: "right",
-          fontWeight: highlight ? 700 : 400,
-          letterSpacing: "0.02em",
-        }}
+        className="font-[var(--font-mono)]"
+        style={{ fontSize: 12, color: highlight ? accent : "#e7e4dc", textAlign: "right", fontVariantNumeric: "tabular-nums" }}
       >
         {pct}
       </span>
