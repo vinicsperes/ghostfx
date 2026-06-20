@@ -226,7 +226,7 @@ function SideHint({
   );
 }
 
-const GHOST_ICON = { scale: 0.0188, ip: [-0.300, 0.319] as [number, number], lp: [0.066, 0.064] as [number, number] };
+const GHOST_ICON = { scale: 0.0094, ip: [-0.300, 0.330] as [number, number], lp: [0.038, 0.076] as [number, number] };
 
 type PresetVisual = {
   pickguard: { top: string; mid: string; base: string; screw: string };
@@ -349,14 +349,23 @@ function PedalBody({
       <group position={[0, H / 2 + 0.02, 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
 
         <Svg src="/ghost-led-solo.svg" scale={GHOST_ICON.scale} position={[GHOST_ICON.ip[0], GHOST_ICON.ip[1], 0]} fillMaterial={svgMaterial as any} strokeMaterial={svgMaterial as any} />
-        <group position={[GHOST_ICON.lp[0], GHOST_ICON.lp[1], 0]} rotation={[Math.PI / 2, 0, 0]} scale={0.8}>
-          <LED3D position={[0, 0, 0]} color={ledColor} active={ledActive} ink="#000000" />
+        {/* cyclops eye: a filled LED disc on the solid body (no dark ring) */}
+        <group position={[GHOST_ICON.lp[0], GHOST_ICON.lp[1], 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <mesh position={[0, 0.012, 0]}>
+            <sphereGeometry args={[0.05, 28, 22]} />
+            <meshBasicMaterial color={ledActive ? ledColor : "#15171a"} />
+          </mesh>
+          {ledActive && (
+            <mesh position={[0, 0.012, 0]}>
+              <sphereGeometry args={[0.085, 22, 18]} />
+              <meshBasicMaterial color={ledColor} transparent opacity={0.35} />
+            </mesh>
+          )}
         </group>
       </group>
 
-      <LabelText position={[0, H / 2 + 0.02, 0.54]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.20} color={inkColor} outlineColor={inkColor} outlineWidth="2%" anchorX="center" letterSpacing={0.28}>
-        GHOST
-      </LabelText>
+      {/* one-ink mono silkscreen wordmark, centred under the ghost mark */}
+      <LabelText font="/fonts/saira-800.woff" position={[0, H / 2 + 0.02, 0.55]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.17} color={inkColor} outlineColor={inkColor} outlineWidth="2%" anchorX="center" letterSpacing={-0.035}>GHOSTFX</LabelText>
 
       <LabelText position={[kp.drive[0],  H / 2 + 0.005, kp.drive[2]  + 0.22]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.062} color={silkColor} outlineColor={silkColor} outlineWidth="1%" anchorX="center">DRIVE</LabelText>
       <LabelText position={[kp.echo[0],   H / 2 + 0.005, kp.echo[2]   + 0.22]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.062} color={silkColor} outlineColor={silkColor} outlineWidth="1%" anchorX="center">ECHO</LabelText>
@@ -419,8 +428,8 @@ function PedalBody({
 
             <Wire start={[-0.70, 0.11, 0.0]} end={[-0.78, PAD_Y, -0.05]} color="#3a8ade" sag={0.04} />
 
-            <Wire start={[0.092, LED_Y, 0.165]} end={[ 0.14, PAD_Y, 0.30]} color="#d02020" r={0.008} />
-            <Wire start={[0.052, LED_Y, 0.165]} end={[ 0.02, PAD_Y, 0.30]} color="#181818" r={0.008} />
+            <Wire start={[ 0.035, LED_Y, 0.17]} end={[ 0.14, PAD_Y, 0.30]} color="#d02020" r={0.008} />
+            <Wire start={[-0.035, LED_Y, 0.17]} end={[ 0.02, PAD_Y, 0.30]} color="#181818" r={0.008} />
           </group>
         );
       })()}
@@ -854,39 +863,6 @@ function Knob3D({
         )}
       </group>
       {showArc && <KnobArc value={value} radius={0.28} color={accent} />}
-    </group>
-  );
-}
-
-function LED3D({
-  position,
-  color,
-  active,
-  ink,
-  scale = 1,
-}: {
-  position: [number, number, number];
-  color: string;
-  active: boolean;
-  ink: string;
-  scale?: number;
-}) {
-  return (
-    <group position={position} scale={scale}>
-      <mesh position={[0, 0.008, 0]} castShadow>
-        <cylinderGeometry args={[0.058, 0.064, 0.02, 24]} />
-        <meshBasicMaterial color={ink} />
-      </mesh>
-      <mesh position={[0, 0.024, 0]}>
-        <sphereGeometry args={[0.04, 24, 24]} />
-        <meshBasicMaterial color={active ? color : "#321b52"} />
-      </mesh>
-      {active && (
-        <mesh position={[0, 0.024, 0]}>
-          <sphereGeometry args={[0.075, 24, 24]} />
-          <meshBasicMaterial color={color} transparent={true} opacity={0.32} />
-        </mesh>
-      )}
     </group>
   );
 }
@@ -1376,22 +1352,22 @@ function HangTag() {
       ctx.fillStyle = ink;
       ctx.fillRect(72, 544, 368, 4);
 
-      // assinatura: fantasma ciclope (corpo + olho-LED verde)
+      // assinatura: fantasma caolho v3 (corpo + olho-LED verde)
       {
-        const gs = 1.35;
-        const gx = 256 - 16 * gs;
-        const gy = 556 - 4 * gs;
+        const gs = 0.75;
+        const gx = 256 - 32 * gs;   // centra horizontalmente (body center x=32)
+        const gy = 571 - 32 * gs;   // mantém centro vertical em ~571
         ctx.save();
         ctx.translate(gx, gy);
         ctx.scale(gs, gs);
         ctx.fillStyle = ink;
-        ctx.fill(new Path2D("M7 27 L7 13.5 C7 7.8 11 4 16 4 C21 4 25 7.8 25 13.5 L25 27 Q22 23.6 19 27 Q16 23.6 13 27 Q10 23.6 7 27 Z"));
+        ctx.fill(new Path2D("M16 51 L16 28 C16 16 23 9 32 9 C41 9 48 16 48 28 L48 51 Q44 47 40 51 Q36 55 32 51 Q28 47 24 51 Q20 55 16 51 Z"));
         ctx.fillStyle = "#41ff77";
-        ctx.globalAlpha = 0.28;
-        ctx.beginPath(); ctx.arc(19.4, 13.6, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.26;
+        ctx.beginPath(); ctx.arc(36, 27, 9, 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = 1;
         ctx.fillStyle = "#10a042";
-        ctx.beginPath(); ctx.arc(19.4, 13.6, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(36, 27, 5.5, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
       }
 
@@ -1843,24 +1819,24 @@ function SilkRect({ x, z, w, d, y, t = 0.0045 }: {
 }
 
 function GhostSilk({ x, z, y, size = 0.17 }: { x: number; z: number; y: number; size?: number }) {
-  // mascote da marca impresso como silk discreto — easter egg do interior.
-  // mesmo path do GhostMark (viewBox 0..32), com o olho/LED vazado.
+  // mascote da marca (caolho v3) impresso como silk discreto — easter egg.
+  // path do GhostMark (bbox x16-48 / y9-55), olho offset esquerdo.
   const tex = useMemo(() => {
     const s = 128;
     const c = document.createElement("canvas");
     c.width = s; c.height = s;
     const ctx = c.getContext("2d")!;
-    const k = (s * 0.84) / 32;
-    ctx.translate((s - 32 * k) / 2, (s - 32 * k) / 2);
+    const k = (s * 0.82) / 46;
+    ctx.translate(s / 2 - 32 * k, s / 2 - 32 * k);
     ctx.scale(k, k);
     const body = new Path2D(
-      "M7 27 L7 13.5 C7 7.8 11 4 16 4 C21 4 25 7.8 25 13.5 L25 27 Q22 23.6 19 27 Q16 23.6 13 27 Q10 23.6 7 27 Z"
+      "M16 51 L16 28 C16 16 23 9 32 9 C41 9 48 16 48 28 L48 51 Q44 47 40 51 Q36 55 32 51 Q28 47 24 51 Q20 55 16 51 Z"
     );
     ctx.fillStyle = "#cbc6b4";
     ctx.fill(body);
     ctx.globalCompositeOperation = "destination-out";
     ctx.beginPath();
-    ctx.arc(19.4, 13.6, 2.6, 0, Math.PI * 2);
+    ctx.arc(36, 27, 5.5, 0, Math.PI * 2);
     ctx.fill();
     const t = new THREE.CanvasTexture(c);
     t.anisotropy = 8;

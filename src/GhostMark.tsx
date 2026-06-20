@@ -1,8 +1,10 @@
 import type { CSSProperties } from "react";
 
-// GHOST FX mascot mark (brand handoff). Single sleepy left eye; the right eye is
-// a LED whose colour tracks the active preset, mirroring the physical pedal LED.
-// viewBox 0 0 32 32 — body inherits `color`, LED uses `ledColor`.
+// GHOST FX mascot mark (caolho · design system v3). Single LED eye set LEFT of
+// centre — the brand signature. viewBox 13 6 38 52 — body inherits `color`,
+// eye uses `ledColor`. Never centre the eye or add a second one.
+const BODY = "M16 51 L16 28 C16 16 23 9 32 9 C41 9 48 16 48 28 L48 51 Q44 47 40 51 Q36 55 32 51 Q28 47 24 51 Q20 55 16 51 Z";
+
 export default function GhostMark({
   variant = "solid",
   ledColor = "#41ff77",
@@ -24,29 +26,18 @@ export default function GhostMark({
     <svg
       width={size}
       height={size}
-      viewBox="0 0 32 32"
+      viewBox="13 6 38 52"
       className={className}
       style={style}
       aria-hidden="true"
     >
-      {/* single-eye ghost: the body only — the LED below is the sole eye */}
       {variant === "solid" ? (
-        <path
-          d="M7 27 L7 13.5 C7 7.8 11 4 16 4 C21 4 25 7.8 25 13.5 L25 27 Q22 23.6 19 27 Q16 23.6 13 27 Q10 23.6 7 27 Z"
-          fill={color}
-        />
+        <path d={BODY} fill={color} />
       ) : (
-        <path
-          d="M7 27 L7 13.5 C7 7.8 11 4 16 4 C21 4 25 7.8 25 13.5 L25 27 Q22 23.6 19 27 Q16 23.6 13 27 Q10 23.6 7 27 Z"
-          fill="none"
-          stroke={color}
-          strokeWidth={2}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
+        <path d={BODY} fill="none" stroke={color} strokeWidth={3} strokeLinejoin="round" strokeLinecap="round" />
       )}
-      {glow && <circle cx="19.4" cy="13.6" r="3.5" fill={ledColor} opacity="0.28" />}
-      <circle cx="19.4" cy="13.6" r="2" fill={ledColor} />
+      {glow && <circle cx="36" cy="27" r="9" fill={ledColor} opacity="0.26" />}
+      <circle cx="36" cy="27" r="5.5" fill={ledColor} />
     </svg>
   );
 }
