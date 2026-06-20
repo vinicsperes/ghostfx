@@ -66,6 +66,26 @@ function encodeWav(buf: AudioBuffer): Blob {
   return new Blob([out], { type: "audio/wav" });
 }
 
+// MP3 via lamejs — lazy-imported so it only loads on first download
+async function encodeMp3(buf: AudioBuffer): Promise<Blob> {
+  const { Mp3Encoder } = await import("@breezystack/lamejs");
+  const ch = buf.getChannelData(0); // mono (the signal is mono-summed)
+  const enc = new Mp3Encoder(1, buf.sampleRate, 128);
+  const pcm = new Int16Array(ch.length);
+  for (let i = 0; i < ch.length; i++) {
+    const s = Math.max(-1, Math.min(1, ch[i]));
+    pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+  }
+  const parts: Uint8Array[] = [];
+  for (let i = 0; i < pcm.length; i += 1152) {
+    const mp3 = enc.encodeBuffer(pcm.subarray(i, i + 1152));
+    if (mp3.length > 0) parts.push(mp3);
+  }
+  const tail = enc.flush();
+  if (tail.length > 0) parts.push(tail);
+  return new Blob(parts as BlobPart[], { type: "audio/mpeg" });
+}
+
 export function useEffects({
   drive,
   echo,
@@ -474,13 +494,16 @@ export function useEffects({
     recTimeoutRef.current = window.setTimeout(stopRecording, MAX_REC_MS);
   }, [isRecording, init, stopRecording]);
 
-  const downloadRecording = useCallback(() => {
+  const downloadRecording = useCallback(async () => {
     const buf = recordedBufferRef.current;
     if (!buf) return;
-    const url = URL.createObjectURL(encodeWav(buf));
+    let blob: Blob, ext: string;
+    try { blob = await encodeMp3(buf); ext = "mp3"; }
+    catch { blob = encodeWav(buf); ext = "wav"; } // fallback if the encoder fails
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "ghostfx-take.wav";
+    a.download = `ghostfx-take.${ext}`;
     document.body.appendChild(a);
     a.click();
     a.remove();

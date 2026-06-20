@@ -134,7 +134,7 @@ function RecorderPanel({
       <button
         onClick={onDownload}
         disabled={!hasRecording}
-        title={hasRecording ? "Download WAV" : "Record something first"}
+        title={hasRecording ? "Download MP3" : "Record something first"}
         aria-label="Download take"
         className={btn}
         style={{ ...btnBase, border: `1px solid ${accent}30`, color: hasRecording ? accent : "rgba(255,255,255,0.25)", cursor: hasRecording ? "pointer" : "not-allowed", opacity: hasRecording ? 1 : 0.5 }}
