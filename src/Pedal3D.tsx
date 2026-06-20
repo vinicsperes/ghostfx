@@ -1475,40 +1475,6 @@ function HangTag() {
   );
 }
 
-function DCJack({ x = 0, z }: { x?: number; z: number }) {
-  // jack DC 2.1mm na traseira: rosca ø12mm + porca, pino central, corpo plástico interno
-  return (
-    <group position={[x, 0.16, z]} rotation={[Math.PI / 2, 0, 0]}>
-      <mesh position={[0, -0.04, 0]}>
-        <cylinderGeometry args={[0.118, 0.118, 0.14, 16]} />
-        <meshStandardMaterial color="#101010" roughness={0.55} metalness={0.25} />
-      </mesh>
-      <mesh position={[0, -0.094, 0]} castShadow>
-        <cylinderGeometry args={[0.148, 0.148, 0.045, 6]} />
-        <meshStandardMaterial color="#1a1a1e" roughness={0.55} metalness={0.3} />
-      </mesh>
-      <mesh position={[0, -0.118, 0]}>
-        <cylinderGeometry args={[0.070, 0.070, 0.028, 14]} />
-        <meshBasicMaterial color="#000000" />
-      </mesh>
-      <mesh position={[0, -0.112, 0]}>
-        <cylinderGeometry args={[0.016, 0.016, 0.034, 8]} />
-        <meshStandardMaterial color="#b8b8bc" metalness={0.9} roughness={0.25} />
-      </mesh>
-      <mesh position={[0, 0.13, 0]} castShadow>
-        <boxGeometry args={[0.28, 0.20, 0.22]} />
-        <meshStandardMaterial color="#141414" roughness={0.7} metalness={0.04} />
-      </mesh>
-      {[-0.08, 0, 0.08].map((dx, i) => (
-        <mesh key={i} position={[dx, 0.245, 0]}>
-          <boxGeometry args={[0.028, 0.04, 0.010]} />
-          <meshStandardMaterial color="#c9b070" metalness={0.78} roughness={0.22} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
 function PotBody({ x, z, topY }: { x: number; z: number; topY: number }) {
   // pot 9mm PCB-mount (padrão em pedal compacto de 5 knobs): can ø9.5 × ~6mm, bushing M7
   const bodyR = 0.128;
@@ -1979,6 +1945,11 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   const top = PCB_BH / 2 + TH / 2;
   const silkY = top + 0.0024;
 
+  // substrato da placa estendido pra trás (cavidade onde ficava a bateria);
+  // o LAYOUT (componentes/pads/silk) fica centrado em z=0, só a placa cresce.
+  const BACK_EXT = 0.30;
+  const physL = l + BACK_EXT;
+
   const railX = w / 2 - 0.10;
 
   // ---- layout por fluxo de sinal (coords locais; mundo = local z + 0.17) ----
@@ -2080,7 +2051,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   // Como parte da superfície opaca, renderiza estável (igual texto nos chips).
   const boardTex = useMemo(() => {
     const cw = 512;
-    const ch = Math.round(cw * (l / w));
+    const ch = Math.round(cw * (physL / w));
     const c = document.createElement("canvas");
     c.width = cw;
     c.height = ch;
@@ -2090,7 +2061,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
     ctx.strokeStyle = "rgba(176,140,58,0.34)";
     ctx.lineWidth = 1.4;
     const nx = 30;
-    const nz = Math.round(nx * (l / w));
+    const nz = Math.round(nx * (physL / w));
     for (let i = 1; i < nx; i++) {
       const px = Math.round((i / nx) * cw) + 0.5;
       ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, ch); ctx.stroke();
@@ -2106,8 +2077,8 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
 
   return (
     <group>
-      <mesh receiveShadow>
-        <boxGeometry args={[w, PCB_BH, l]} />
+      <mesh receiveShadow position={[0, 0, -BACK_EXT / 2]}>
+        <boxGeometry args={[w, PCB_BH, physL]} />
         <meshStandardMaterial map={boardTex} roughness={0.65} metalness={0.08} />
       </mesh>
 
