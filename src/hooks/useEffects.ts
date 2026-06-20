@@ -11,7 +11,60 @@ type EffectsApi = {
   toggle: () => Promise<void>;
   getLevel: () => number;
   getWaveform: () => Float32Array;
+  isRecording: boolean;
+  hasRecording: boolean;
+  recordedDuration: number;
+  toggleRecording: () => Promise<void>;
+  downloadRecording: () => void;
+  getRecordedPeaks: () => Float32Array | null;
 };
+
+const MAX_REC_MS = 30000; // 30s cap so nobody hogs memory / abuses
+
+// max-abs peaks per bucket — drives the recorded-clip waveform
+function computePeaks(buf: AudioBuffer, buckets = 360): Float32Array {
+  const ch = buf.getChannelData(0);
+  const block = Math.max(1, Math.floor(ch.length / buckets));
+  const peaks = new Float32Array(buckets);
+  for (let b = 0; b < buckets; b++) {
+    let max = 0;
+    const start = b * block;
+    for (let i = 0; i < block && start + i < ch.length; i++) {
+      const a = Math.abs(ch[start + i]);
+      if (a > max) max = a;
+    }
+    peaks[b] = max;
+  }
+  return peaks;
+}
+
+// 16-bit PCM WAV from an AudioBuffer (universal, no dependency)
+function encodeWav(buf: AudioBuffer): Blob {
+  const numCh = Math.min(buf.numberOfChannels, 2);
+  const sr = buf.sampleRate;
+  const len = buf.length;
+  const blockAlign = numCh * 2;
+  const dataSize = len * blockAlign;
+  const out = new ArrayBuffer(44 + dataSize);
+  const dv = new DataView(out);
+  const str = (off: number, s: string) => { for (let i = 0; i < s.length; i++) dv.setUint8(off + i, s.charCodeAt(i)); };
+  str(0, "RIFF"); dv.setUint32(4, 36 + dataSize, true); str(8, "WAVE");
+  str(12, "fmt "); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true);
+  dv.setUint16(22, numCh, true); dv.setUint32(24, sr, true);
+  dv.setUint32(28, sr * blockAlign, true); dv.setUint16(32, blockAlign, true);
+  dv.setUint16(34, 16, true); str(36, "data"); dv.setUint32(40, dataSize, true);
+  const chans: Float32Array[] = [];
+  for (let c = 0; c < numCh; c++) chans.push(buf.getChannelData(c));
+  let off = 44;
+  for (let i = 0; i < len; i++) {
+    for (let c = 0; c < numCh; c++) {
+      const s = Math.max(-1, Math.min(1, chans[c][i]));
+      dv.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+      off += 2;
+    }
+  }
+  return new Blob([out], { type: "audio/wav" });
+}
 
 export function useEffects({
   drive,
@@ -35,6 +88,17 @@ export function useEffects({
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const guardIntervalRef = useRef<number | null>(null);
+
+  // recording (taps the post-limiter signal — the final processed sound)
+  const recordDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const recordedBufferRef = useRef<AudioBuffer | null>(null);
+  const recordedPeaksRef = useRef<Float32Array | null>(null);
+  const recTimeoutRef = useRef<number | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [hasRecording, setHasRecording] = useState(false);
+  const [recordedDuration, setRecordedDuration] = useState(0);
 
   const nodesRef = useRef<{
     preGain: GainNode | null;
@@ -203,6 +267,11 @@ export function useEffects({
       limiter.connect(analyser);
       analyser.connect(ctx.destination);
 
+      // parallel tap for the recorder (doesn't affect what plays out)
+      const recordDest = ctx.createMediaStreamDestination();
+      limiter.connect(recordDest);
+      recordDestRef.current = recordDest;
+
       nodesRef.current = {
         preGain,
         drive: driveNode,
@@ -364,5 +433,72 @@ export function useEffects({
     return Math.min(1, peak * 1.5);
   }, []);
 
-  return { state, ready, error, micBlocked, toggle, getLevel, getWaveform };
+  const stopRecording = useCallback(() => {
+    if (recTimeoutRef.current) { clearTimeout(recTimeoutRef.current); recTimeoutRef.current = null; }
+    const rec = recorderRef.current;
+    if (rec && rec.state !== "inactive") rec.stop();
+    setIsRecording(false);
+  }, []);
+
+  const toggleRecording = useCallback(async () => {
+    if (isRecording) { stopRecording(); return; }
+
+    if (!ctxRef.current) await init();
+    const ctx = ctxRef.current;
+    const dest = recordDestRef.current;
+    if (!ctx || !dest) return;
+    if (ctx.state === "suspended") await ctx.resume();
+
+    const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
+    const mime =
+      typeof MediaRecorder !== "undefined"
+        ? candidates.find((t) => MediaRecorder.isTypeSupported(t)) ?? ""
+        : "";
+
+    const rec = new MediaRecorder(dest.stream, mime ? { mimeType: mime } : undefined);
+    chunksRef.current = [];
+    rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+    rec.onstop = async () => {
+      const blob = new Blob(chunksRef.current, { type: mime || "audio/webm" });
+      try {
+        const buf = await ctx.decodeAudioData(await blob.arrayBuffer());
+        recordedBufferRef.current = buf;
+        recordedPeaksRef.current = computePeaks(buf);
+        setRecordedDuration(buf.duration);
+        setHasRecording(true);
+      } catch { /* decode failed — keep previous take */ }
+    };
+    rec.start();
+    recorderRef.current = rec;
+    setIsRecording(true);
+    recTimeoutRef.current = window.setTimeout(stopRecording, MAX_REC_MS);
+  }, [isRecording, init, stopRecording]);
+
+  const downloadRecording = useCallback(() => {
+    const buf = recordedBufferRef.current;
+    if (!buf) return;
+    const url = URL.createObjectURL(encodeWav(buf));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ghostfx-take.wav";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, []);
+
+  const getRecordedPeaks = useCallback(() => recordedPeaksRef.current, []);
+
+  useEffect(() => {
+    return () => {
+      if (recTimeoutRef.current) clearTimeout(recTimeoutRef.current);
+      const rec = recorderRef.current;
+      if (rec && rec.state !== "inactive") rec.stop();
+    };
+  }, []);
+
+  return {
+    state, ready, error, micBlocked, toggle, getLevel, getWaveform,
+    isRecording, hasRecording, recordedDuration, toggleRecording, downloadRecording, getRecordedPeaks,
+  };
 }
