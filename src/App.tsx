@@ -33,8 +33,10 @@ const PALETTE = {
 
 const WARNING_ACK_KEY = "ghostfx.warningAck";
 
-function RecorderPanel({
-  isRecording, hasRecording, recordedDuration, onToggle, onDownload, getLevelRef, getRecordedPeaks, accent,
+// Recorder controls (rec toggle + live/recorded scope + download). Layout-free
+// row — the desktop transport bar and the mobile "Rec" sheet tab both render it.
+function RecorderControls({
+  isRecording, hasRecording, recordedDuration, onToggle, onDownload, getLevelRef, getRecordedPeaks, accent, scopeHeight = 48,
 }: {
   isRecording: boolean;
   hasRecording: boolean;
@@ -44,6 +46,7 @@ function RecorderPanel({
   getLevelRef: { current: (() => number) | null };
   getRecordedPeaks: () => Float32Array | null;
   accent: string;
+  scopeHeight?: number;
 }) {
   const REC = "#f53e3e";
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -98,20 +101,10 @@ function RecorderPanel({
   }, [isRecording, hasRecording, accent, getLevelRef, getRecordedPeaks]);
 
   const btn = "flex items-center justify-center transition-all active:scale-90 shrink-0";
-  const btnBase = { width: 46, height: 48, borderRadius: 6, background: "rgba(10,10,16,0.9)" } as const;
+  const btnBase = { width: 46, height: scopeHeight, borderRadius: 6, background: "rgba(10,10,16,0.9)" } as const;
 
   return (
-    <div
-      className="fixed z-[40] flex items-center gap-1.5 pointer-events-auto
-                 bottom-3 left-1/2 -translate-x-1/2 w-[min(532px,calc(100vw_-_24px))] rounded-[10px] border p-1
-                 lg:bottom-0 lg:left-[340px] lg:right-0 lg:translate-x-0 lg:w-auto lg:gap-3.5 lg:rounded-none lg:border-0 lg:border-t lg:px-6 lg:py-0 lg:h-[92px]"
-      style={{
-        background: "rgba(3,3,8,0.94)",
-        borderColor: isRecording ? accent + "55" : "rgba(255,255,255,0.09)",
-        boxShadow: isRecording ? `0 0 22px ${accent}33` : "0 6px 24px rgba(0,0,0,0.5)",
-        transition: "border-color 200ms, box-shadow 200ms",
-      }}
-    >
+    <div className="flex items-center gap-1.5 w-full lg:gap-3.5">
       <button
         onClick={onToggle}
         title={isRecording ? "Stop (Space)" : "Record (Space)"}
@@ -122,8 +115,8 @@ function RecorderPanel({
         <span className={isRecording ? "animate-pulse" : ""} style={{ width: 14, height: 14, borderRadius: isRecording ? 3 : "50%", background: REC, boxShadow: `0 0 7px ${REC}` }} />
       </button>
 
-      <div style={{ position: "relative", flex: 1, height: 48, borderRadius: 6, overflow: "hidden", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.05)" }}>
-        <canvas ref={canvasRef} width={520} height={48} style={{ width: "100%", height: "100%", display: "block" }} />
+      <div style={{ position: "relative", flex: 1, height: scopeHeight, borderRadius: 6, overflow: "hidden", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.05)" }}>
+        <canvas ref={canvasRef} width={520} height={scopeHeight} style={{ width: "100%", height: "100%", display: "block" }} />
         <span style={{ position: "absolute", top: 4, right: 5, fontSize: 9, fontFamily: "monospace", letterSpacing: "0.1em", color: isRecording ? accent : "rgba(188,188,210,0.8)", background: "rgba(3,3,8,0.8)", padding: "1px 5px", borderRadius: 4, pointerEvents: "none" }}>
           {isRecording ? "● REC" : hasRecording ? `${recordedDuration.toFixed(1)}s` : "MAX 30s"}
         </span>
@@ -151,8 +144,10 @@ export default function App() {
     try { return localStorage.getItem(WARNING_ACK_KEY) === "1"; } catch { return false; }
   });
   const [micDismissed, setMicDismissed] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(false);
   const [keyboardMode, setKeyboardMode] = useState(false);
+  // mobile bottom-sheet: which tab is showing + peek/expanded
+  const [sheetTab, setSheetTab] = useState<"signal" | "keyboard" | "rec">("signal");
+  const [sheetExpanded, setSheetExpanded] = useState(true);
   const [stompCount, setStompCount] = useState(0);
   const [presetIdx, setPresetIdx] = useState<number | null>(4);
   const presetIdxRef = useRef<number | null>(4);
@@ -281,63 +276,26 @@ export default function App() {
         />
       )}
 
-      {panelOpen && (
-        <div className="lg:hidden fixed inset-0 z-[20] bg-black/60" onClick={() => setPanelOpen(false)} />
-      )}
-
-      {!panelOpen && (
+      {/* ===== DESKTOP transport bar (bottom of the stage) ===== */}
+      {warningDone && (
         <div
-          className="lg:hidden fixed z-[30] flex items-center gap-2 pointer-events-auto"
-          style={{ top: "max(16px, env(safe-area-inset-top, 16px))", left: 16 }}
+          className="hidden lg:flex fixed bottom-0 left-[340px] right-0 h-[92px] z-[40] items-center px-6 border-t pointer-events-auto"
+          style={{ background: "rgba(3,3,8,0.94)", borderColor: fx.isRecording ? themeColor + "55" : "rgba(255,255,255,0.09)", transition: "border-color 200ms" }}
         >
-          <button
-            className="flex items-center justify-center transition-all active:scale-90"
-            style={{ width: 40, height: 40, borderRadius: 8, background: "rgba(3,3,8,0.92)", border: `1px solid ${themeColor}30`, color: themeColor }}
-            onClick={() => setPanelOpen(true)}
-          >
-            <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
-              <rect width="18" height="2" rx="1" fill="currentColor"/>
-              <rect y="6" width="18" height="2" rx="1" fill="currentColor"/>
-              <rect y="12" width="18" height="2" rx="1" fill="currentColor"/>
-            </svg>
-          </button>
-
-          <div
-            className="flex items-center gap-1.5"
-            style={{
-              padding: "6px 10px",
-              borderRadius: 6,
-              background: "rgba(3,3,8,0.92)",
-              border: `1px solid ${themeColor}30`,
-            }}
-          >
-            <div
-              className="rounded-full shrink-0"
-              style={{ width: 6, height: 6, background: themeColor, boxShadow: `0 0 6px ${themeColor}` }}
-            />
-            <span
-              className="font-[var(--font-pixel)]"
-              style={{ fontSize: 8, color: themeColor, letterSpacing: "0.15em" }}
-            >
-              {presetIdx !== null ? PRESETS[presetIdx].name : "GHOST FX"}
-            </span>
-          </div>
+          <RecorderControls
+            isRecording={fx.isRecording}
+            hasRecording={fx.hasRecording}
+            recordedDuration={fx.recordedDuration}
+            onToggle={fx.toggleRecording}
+            onDownload={fx.downloadRecording}
+            getLevelRef={getLevelRef}
+            getRecordedPeaks={fx.getRecordedPeaks}
+            accent={themeColor}
+          />
         </div>
       )}
 
-      {warningDone && (
-        <RecorderPanel
-          isRecording={fx.isRecording}
-          hasRecording={fx.hasRecording}
-          recordedDuration={fx.recordedDuration}
-          onToggle={fx.toggleRecording}
-          onDownload={fx.downloadRecording}
-          getLevelRef={getLevelRef}
-          getRecordedPeaks={fx.getRecordedPeaks}
-          accent={themeColor}
-        />
-      )}
-
+      {/* ===== DESKTOP preset rail (top of the stage) ===== */}
       <BottomBar
         presets={PRESETS}
         activePresetIdx={presetIdx}
@@ -345,7 +303,112 @@ export default function App() {
         accent={themeColor}
       />
 
-      <div className="absolute inset-0 z-[2] lg:left-[340px] lg:bottom-[92px]">
+      {/* ===== MOBILE chrome: top-bar + preset scroller + bottom-sheet ===== */}
+      <div className="lg:hidden fixed inset-0 z-[25] flex flex-col pointer-events-none">
+
+        <div
+          className="pointer-events-auto flex items-center justify-between"
+          style={{ padding: "max(12px,env(safe-area-inset-top,12px)) 16px 10px", background: "linear-gradient(180deg, rgba(5,8,10,0.96), rgba(5,8,10,0))" }}
+        >
+          <div className="flex items-center gap-2.5">
+            <GhostMark variant="solid" size={22} color="#e7e4dc" ledColor={themeColor} />
+            <span style={{ fontFamily: "'Saira', sans-serif", fontWeight: 800, fontSize: 16, letterSpacing: "-0.02em", color: "#e7e4dc" }}>
+              GHOST<span style={{ color: themeColor }}>FX</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2 font-[var(--font-mono)]" style={{ fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(159,196,173,0.7)" }}>
+            <div className={isActive ? "animate-pulse" : ""} style={{ width: 7, height: 7, borderRadius: "50%", background: ledColor, boxShadow: `0 0 8px ${ledColor}` }} />
+            {isActive ? "Active" : fx.ready ? "Ready" : "Idle"}
+          </div>
+        </div>
+
+        <div
+          className="preset-scroll pointer-events-auto flex gap-2 overflow-x-auto px-4 pb-3 pt-1"
+          style={{ WebkitOverflowScrolling: "touch", maskImage: "linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)", WebkitMaskImage: "linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)" }}
+        >
+          {PRESETS.map((p, i) => {
+            const meta = PRESET_META[i];
+            const on = presetIdx === i;
+            return (
+              <button
+                key={i}
+                onClick={() => handlePresetSelect(i)}
+                className="shrink-0 flex items-center gap-2 active:scale-95 transition-transform"
+                style={{
+                  minHeight: 44, padding: "0 16px", borderRadius: 30,
+                  border: `1px solid ${on ? meta.color : "rgba(255,255,255,0.14)"}`,
+                  background: on ? `${meta.color}14` : "rgba(8,12,10,0.6)",
+                  color: on ? meta.color : "rgba(159,196,173,0.85)",
+                }}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: on ? meta.color : "rgba(255,255,255,0.22)", boxShadow: on ? `0 0 6px ${meta.color}` : "none" }} />
+                <span style={{ fontFamily: "'Bungee', sans-serif", fontSize: 11, letterSpacing: "0.08em" }}>{p.name}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* stage spacer — pedal shows through here; touches fall to the canvas */}
+        <div className="flex-1" />
+
+        <div
+          className="pointer-events-auto"
+          style={{ borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTop: "1px solid rgba(231,228,220,0.16)", background: "linear-gradient(180deg,#0a0e0c,#070a09)", boxShadow: "0 -10px 30px rgba(0,0,0,0.5)" }}
+        >
+          <button onClick={() => setSheetExpanded(v => !v)} className="w-full flex justify-center pt-2.5 pb-1" aria-label={sheetExpanded ? "Collapse panel" : "Expand panel"}>
+            <span style={{ width: 38, height: 4, borderRadius: 2, background: "rgba(231,228,220,0.22)" }} />
+          </button>
+
+          <div className="flex px-3" style={{ gap: 4, borderBottom: "1px solid rgba(231,228,220,0.08)" }}>
+            {([["signal", "Signal"], ["keyboard", "Teclado"], ["rec", "Rec"]] as const).map(([key, label]) => {
+              const on = sheetTab === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => { setSheetTab(key); setSheetExpanded(true); }}
+                  className="flex-1 flex items-center justify-center font-[var(--font-mono)] relative"
+                  style={{ padding: "12px 0", fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: on ? themeColor : "rgba(95,122,108,0.9)" }}
+                >
+                  {label}
+                  {on && <span style={{ position: "absolute", left: "20%", right: "20%", bottom: -1, height: 2, background: themeColor, boxShadow: `0 0 8px ${themeColor}` }} />}
+                </button>
+              );
+            })}
+          </div>
+
+          {sheetExpanded && (
+            <div style={{ padding: "16px 16px max(18px,env(safe-area-inset-bottom,16px))", maxHeight: "46vh", overflowY: "auto" }}>
+              {sheetTab === "signal" && (
+                <div className="flex flex-col" style={{ gap: 2 }}>
+                  <Fader label="DRIVE"  value={drive}        accent={themeColor} onChange={(v) => handleKnobChange("drive",  v)} />
+                  <Fader label="ECHO"   value={echo}         accent={themeColor} onChange={(v) => handleKnobChange("echo",   v)} />
+                  <Fader label="TONE"   value={tone}         accent={themeColor} onChange={(v) => handleKnobChange("tone",   v)} />
+                  <Fader label="REVERB" value={reverb}       accent={themeColor} onChange={(v) => handleKnobChange("reverb", v)} />
+                  <Fader label="VOLUME" value={masterVolume} accent={themeColor} onChange={(v) => handleKnobChange("master", v)} highlight />
+                </div>
+              )}
+              {sheetTab === "keyboard" && (
+                <KeyboardDisplay activeKeys={synth.activeKeys} accent={themeColor} />
+              )}
+              {sheetTab === "rec" && warningDone && (
+                <RecorderControls
+                  isRecording={fx.isRecording}
+                  hasRecording={fx.hasRecording}
+                  recordedDuration={fx.recordedDuration}
+                  onToggle={fx.toggleRecording}
+                  onDownload={fx.downloadRecording}
+                  getLevelRef={getLevelRef}
+                  getRecordedPeaks={fx.getRecordedPeaks}
+                  accent={themeColor}
+                  scopeHeight={62}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="absolute left-0 right-0 top-[88px] bottom-[150px] z-[2] lg:top-0 lg:left-[340px] lg:right-0 lg:bottom-[92px]">
         <Pedal3D
           ledColor={themeColor}
           isPlaying={isActive}
@@ -363,7 +426,7 @@ export default function App() {
       </div>
 
       <aside
-        className={`hud-scroll fixed left-0 top-0 h-full z-[25] select-none flex flex-col transition-transform duration-300 ease-out lg:translate-x-0 ${panelOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className="hud-scroll hidden lg:flex fixed left-0 top-0 h-full z-[25] select-none flex-col"
         style={{
           width: "clamp(260px, 85vw, 340px)",
           background: "linear-gradient(180deg, #080c0a 0%, #060908 100%)",
@@ -374,12 +437,6 @@ export default function App() {
           overflowY: "auto",
         }}
       >
-
-        <button
-          className="lg:hidden absolute top-4 right-4 pointer-events-auto font-[var(--font-mono)] text-lg transition-colors hover:text-white"
-          style={{ color: "rgba(255,255,255,0.3)", background: "none", border: "none", cursor: "pointer" }}
-          onClick={() => setPanelOpen(false)}
-        >✕</button>
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2.5">
@@ -546,7 +603,7 @@ export default function App() {
         <MicBlockedModal
           accent={themeColor}
           onRetry={() => fx.toggle()}
-          onKeyboard={() => { setMicDismissed(true); setKeyboardMode(true); setPanelOpen(true); }}
+          onKeyboard={() => { setMicDismissed(true); setKeyboardMode(true); setSheetTab("keyboard"); setSheetExpanded(true); }}
           onDismiss={() => setMicDismissed(true)}
         />
       )}
@@ -665,7 +722,7 @@ function BottomBar({
 
   return (
     <div
-      className="fixed z-[40] pointer-events-auto left-1/2 -translate-x-1/2 lg:left-[calc(50%_+_170px)]"
+      className="hidden lg:block fixed z-[40] pointer-events-auto left-1/2 -translate-x-1/2 lg:left-[calc(50%_+_170px)]"
       style={{
         top: "max(12px, env(safe-area-inset-top, 12px))",
         width: "min(532px, calc(100vw - 24px))",
