@@ -384,12 +384,11 @@ export default function App() {
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2.5">
-            <GhostMark variant="solid" size={28} color="#ffffff" ledColor={themeColor} />
+            <GhostMark variant="solid" size={26} color="#e7e4dc" ledColor={themeColor} />
             <span
-              className="font-[var(--font-display)] tracking-wide"
-              style={{ fontSize: 20, color: "#ffffff", lineHeight: 1 }}
+              style={{ fontFamily: "'Saira', sans-serif", fontWeight: 800, fontSize: 23, lineHeight: 1, letterSpacing: "-0.02em", color: "#e7e4dc" }}
             >
-              GHOST FX
+              GHOST<span style={{ color: themeColor }}>FX</span>
             </span>
           </div>
           <div className="flex items-center gap-2">

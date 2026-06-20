@@ -1,6 +1,6 @@
 {
-  "name": "GHOST FX — Signal Processor",
-  "short_name": "GHOST FX",
+  "name": "GHOSTFX — Signal Processor",
+  "short_name": "GHOSTFX",
   "description": "Browser-based guitar FX — drive, echo, tone & reverb. Zero install, haunted tones.",
   "id": "/",
   "start_url": "/",
