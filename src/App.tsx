@@ -102,14 +102,12 @@ function RecorderPanel({
 
   return (
     <div
-      className="fixed z-[40] flex items-center gap-1.5 pointer-events-auto"
+      className="fixed z-[40] flex items-center gap-1.5 pointer-events-auto
+                 bottom-3 left-1/2 -translate-x-1/2 w-[min(532px,calc(100vw_-_24px))] rounded-[10px] border p-1
+                 lg:bottom-0 lg:left-[340px] lg:right-0 lg:translate-x-0 lg:w-auto lg:gap-3.5 lg:rounded-none lg:border-0 lg:border-t lg:px-6 lg:py-0 lg:h-[92px]"
       style={{
-        bottom: 12,
-        left: "50%", transform: "translateX(-50%)",
-        width: "min(532px, calc(100vw - 24px))",
-        padding: 4, borderRadius: 10,
-        background: "rgba(3,3,8,0.92)",
-        border: `1px solid ${isRecording ? accent + "55" : "rgba(255,255,255,0.09)"}`,
+        background: "rgba(3,3,8,0.94)",
+        borderColor: isRecording ? accent + "55" : "rgba(255,255,255,0.09)",
         boxShadow: isRecording ? `0 0 22px ${accent}33` : "0 6px 24px rgba(0,0,0,0.5)",
         transition: "border-color 200ms, box-shadow 200ms",
       }}
@@ -347,7 +345,7 @@ export default function App() {
         accent={themeColor}
       />
 
-      <div className="absolute inset-0 w-full h-full z-[2]">
+      <div className="absolute inset-0 z-[2] lg:left-[340px] lg:bottom-[92px]">
         <Pedal3D
           ledColor={themeColor}
           isPlaying={isActive}
@@ -367,12 +365,13 @@ export default function App() {
       <aside
         className={`hud-scroll fixed left-0 top-0 h-full z-[25] select-none flex flex-col transition-transform duration-300 ease-out lg:translate-x-0 ${panelOpen ? "translate-x-0" : "-translate-x-full"}`}
         style={{
-          width: "clamp(260px, 85vw, 380px)",
-          background: "linear-gradient(100deg, rgba(3,3,8,0.99) 70%, rgba(3,3,8,0) 100%)",
-          padding: "clamp(20px,2.5vw,36px) clamp(16px,2vw,28px)",
-          gap: "clamp(18px,2.5vh,36px)",
-          pointerEvents: keyboardMode || panelOpen ? "auto" : "none",
-          overflowY: keyboardMode || panelOpen ? "auto" : "visible",
+          width: "clamp(260px, 85vw, 340px)",
+          background: "linear-gradient(180deg, #080c0a 0%, #060908 100%)",
+          borderRight: "1px solid rgba(231,228,220,0.12)",
+          padding: "clamp(20px,2.5vw,32px) clamp(16px,2vw,24px)",
+          gap: "clamp(16px,2.2vh,28px)",
+          pointerEvents: "auto",
+          overflowY: "auto",
         }}
       >
 
@@ -666,11 +665,9 @@ function BottomBar({
 
   return (
     <div
-      className="fixed z-[40] pointer-events-auto"
+      className="fixed z-[40] pointer-events-auto left-1/2 -translate-x-1/2 lg:left-[calc(50%_+_170px)]"
       style={{
         top: "max(12px, env(safe-area-inset-top, 12px))",
-        left: "50%",
-        transform: "translateX(-50%)",
         width: "min(532px, calc(100vw - 24px))",
         padding: 4,
         borderRadius: 10,
