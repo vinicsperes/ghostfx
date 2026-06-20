@@ -33,6 +33,121 @@ const PALETTE = {
 
 const WARNING_ACK_KEY = "ghostfx.warningAck";
 
+function RecorderPanel({
+  isRecording, hasRecording, recordedDuration, onToggle, onDownload, getLevelRef, getRecordedPeaks, accent,
+}: {
+  isRecording: boolean;
+  hasRecording: boolean;
+  recordedDuration: number;
+  onToggle: () => void;
+  onDownload: () => void;
+  getLevelRef: { current: (() => number) | null };
+  getRecordedPeaks: () => Float32Array | null;
+  accent: string;
+}) {
+  const REC = "#f53e3e";
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const liveRef = useRef<number[]>([]);
+  const rafRef = useRef(0);
+
+  useEffect(() => { if (isRecording) liveRef.current = []; }, [isRecording]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const c = canvas.getContext("2d");
+    if (!c) return;
+    const draw = () => {
+      const W = canvas.width, H = canvas.height, mid = H / 2;
+      c.clearRect(0, 0, W, H);
+      c.beginPath(); c.moveTo(0, mid); c.lineTo(W, mid);
+      c.strokeStyle = "rgba(255,255,255,0.06)"; c.lineWidth = 1; c.stroke();
+
+      c.fillStyle = accent; c.shadowColor = accent; c.shadowBlur = 5;
+      if (isRecording) {
+        // scrolling window at fixed resolution: newest on the right, scroll left,
+        // only what fits is shown — the wave stays intact (no shrinking).
+        liveRef.current.push(getLevelRef.current?.() ?? 0);
+        const samples = liveRef.current;
+        const STEP = 3, BARW = 2;
+        const visible = Math.ceil(W / STEP);
+        if (samples.length > visible + 4) samples.splice(0, samples.length - visible - 4);
+        const n = samples.length;
+        for (let k = 0; k < n; k++) {
+          const x = W - (n - k) * STEP;
+          if (x < -BARW) continue;
+          const h = Math.min(1, samples[k]) * (mid - 2);
+          c.fillRect(x, mid - h, BARW, h * 2);
+        }
+      } else if (hasRecording) {
+        const data = getRecordedPeaks();
+        if (data && data.length > 0) {
+          const n = data.length;
+          for (let i = 0; i < n; i++) {
+            const x = (i / n) * W;
+            const h = Math.min(1, data[i]) * (mid - 2);
+            c.fillRect(x, mid - h, Math.max(1, (W / n) * 0.7), h * 2);
+          }
+        }
+      }
+      c.shadowBlur = 0;
+      rafRef.current = requestAnimationFrame(draw);
+    };
+    rafRef.current = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [isRecording, hasRecording, accent, getLevelRef, getRecordedPeaks]);
+
+  const btn = "flex items-center justify-center transition-all active:scale-90 shrink-0";
+  const btnBase = { width: 46, height: 48, borderRadius: 6, background: "rgba(10,10,16,0.9)" } as const;
+
+  return (
+    <div
+      className="fixed z-[40] flex items-center gap-1.5 pointer-events-auto"
+      style={{
+        bottom: 12,
+        left: "50%", transform: "translateX(-50%)",
+        width: "min(532px, calc(100vw - 24px))",
+        padding: 4, borderRadius: 10,
+        background: "rgba(3,3,8,0.92)",
+        border: `1px solid ${isRecording ? accent + "55" : "rgba(255,255,255,0.09)"}`,
+        boxShadow: isRecording ? `0 0 22px ${accent}33` : "0 6px 24px rgba(0,0,0,0.5)",
+        transition: "border-color 200ms, box-shadow 200ms",
+      }}
+    >
+      <button
+        onClick={onToggle}
+        title={isRecording ? "Stop (Space)" : "Record (Space)"}
+        aria-label={isRecording ? "Stop recording" : "Record"}
+        className={btn}
+        style={{ ...btnBase, border: `1px solid ${isRecording ? REC : accent + "30"}`, color: REC }}
+      >
+        <span className={isRecording ? "animate-pulse" : ""} style={{ width: 14, height: 14, borderRadius: isRecording ? 3 : "50%", background: REC, boxShadow: `0 0 7px ${REC}` }} />
+      </button>
+
+      <div style={{ position: "relative", flex: 1, height: 48, borderRadius: 6, overflow: "hidden", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.05)" }}>
+        <canvas ref={canvasRef} width={520} height={48} style={{ width: "100%", height: "100%", display: "block" }} />
+        <span style={{ position: "absolute", top: 4, right: 5, fontSize: 9, fontFamily: "monospace", letterSpacing: "0.1em", color: isRecording ? accent : "rgba(188,188,210,0.8)", background: "rgba(3,3,8,0.8)", padding: "1px 5px", borderRadius: 4, pointerEvents: "none" }}>
+          {isRecording ? "● REC" : hasRecording ? `${recordedDuration.toFixed(1)}s` : "MAX 30s"}
+        </span>
+      </div>
+
+      <button
+        onClick={onDownload}
+        disabled={!hasRecording}
+        title={hasRecording ? "Download WAV" : "Record something first"}
+        aria-label="Download take"
+        className={btn}
+        style={{ ...btnBase, border: `1px solid ${accent}30`, color: hasRecording ? accent : "rgba(255,255,255,0.25)", cursor: hasRecording ? "pointer" : "not-allowed", opacity: hasRecording ? 1 : 0.5 }}
+      >
+        <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+          <path d="M9 2v9M9 11l-3.4-3.4M9 11l3.4-3.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M3 14.8h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
   const [warningDone, setWarningDone] = useState(() => {
     try { return localStorage.getItem(WARNING_ACK_KEY) === "1"; } catch { return false; }
@@ -67,6 +182,20 @@ export default function App() {
 
   const fx = useEffects({ drive, echo, tone, reverb, masterVolume });
   useEffect(() => { if (!fx.micBlocked) setMicDismissed(false); }, [fx.micBlocked]);
+
+  // Space toggles recording (ignored while typing or before the warning is dismissed)
+  useEffect(() => {
+    if (!warningDone) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== "Space" || e.repeat) return;
+      const el = document.activeElement as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      e.preventDefault();
+      fx.toggleRecording();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [warningDone, fx.toggleRecording]);
   const synth = useSynth({ drive, echo, tone, reverb, masterVolume });
 
   useEffect(() => {
@@ -90,8 +219,7 @@ export default function App() {
   }, [keyboardMode, synth.playNote, synth.stopNote]);
 
   const getLevelRef = useRef(fx.getLevel);
-  const getWaveformRef = useRef(fx.getWaveform);
-  useEffect(() => { getLevelRef.current = fx.getLevel; getWaveformRef.current = fx.getWaveform; }, [fx.getLevel, fx.getWaveform]);
+  useEffect(() => { getLevelRef.current = fx.getLevel; }, [fx.getLevel]);
 
   const handleTap = useCallback(() => {
     fx.toggle();
@@ -199,12 +327,24 @@ export default function App() {
         </div>
       )}
 
+      {warningDone && (
+        <RecorderPanel
+          isRecording={fx.isRecording}
+          hasRecording={fx.hasRecording}
+          recordedDuration={fx.recordedDuration}
+          onToggle={fx.toggleRecording}
+          onDownload={fx.downloadRecording}
+          getLevelRef={getLevelRef}
+          getRecordedPeaks={fx.getRecordedPeaks}
+          accent={themeColor}
+        />
+      )}
+
       <BottomBar
         presets={PRESETS}
         activePresetIdx={presetIdx}
         onPresetSelect={handlePresetSelect}
         accent={themeColor}
-        getWaveform={getWaveformRef}
       />
 
       <div className="absolute inset-0 w-full h-full z-[2]">
@@ -515,68 +655,36 @@ const PRESET_META = [
 ] as const;
 
 function BottomBar({
-  presets, activePresetIdx, onPresetSelect, accent, getWaveform,
+  presets, activePresetIdx, onPresetSelect, accent,
 }: {
   presets: typeof PRESETS;
   activePresetIdx: number | null;
   onPresetSelect: (i: number) => void;
   accent: string;
-  getWaveform: { current: (() => Float32Array) | null };
 }) {
   const activeMeta = activePresetIdx !== null ? PRESET_META[activePresetIdx] : null;
   const presetColor = activeMeta?.color ?? accent;
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const c = canvas.getContext("2d");
-    if (!c) return;
-    const draw = () => {
-      const W = canvas.width, H = canvas.height;
-      c.clearRect(0, 0, W, H);
-      c.beginPath(); c.moveTo(0, H / 2); c.lineTo(W, H / 2);
-      c.strokeStyle = "rgba(255,255,255,0.05)"; c.lineWidth = 1; c.stroke();
-      const wf = getWaveform.current?.();
-      if (wf && wf.length > 0) {
-        c.beginPath();
-        const step = W / wf.length;
-        for (let i = 0; i < wf.length; i++) {
-          const x = i * step, y = (0.5 - wf[i] * 0.42) * H;
-          if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
-        }
-        c.strokeStyle = presetColor; c.lineWidth = 1.5;
-        c.shadowColor = presetColor; c.shadowBlur = 4; c.stroke(); c.shadowBlur = 0;
-      }
-      rafRef.current = requestAnimationFrame(draw);
-    };
-    rafRef.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [getWaveform, presetColor]);
 
   return (
     <div
       className="fixed z-[40] pointer-events-auto"
       style={{
-        bottom: 12,
+        top: "max(12px, env(safe-area-inset-top, 12px))",
         left: "50%",
         transform: "translateX(-50%)",
-        width: "min(520px, calc(100vw - 24px))",
-        borderRadius: 8,
-        background: "rgba(3,3,8,0.97)",
+        width: "min(532px, calc(100vw - 24px))",
+        padding: 4,
+        borderRadius: 10,
+        background: "rgba(3,3,8,0.92)",
         border: `1px solid rgba(255,255,255,0.09)`,
-        boxShadow: `0 0 0 1px ${presetColor}08, 0 8px 40px rgba(0,0,0,0.7)`,
+        boxShadow: `0 0 0 1px ${presetColor}08, 0 6px 24px rgba(0,0,0,0.5)`,
         transition: "box-shadow 400ms",
         overflow: "hidden",
       }}
     >
 
-      <div style={{ display: "flex", alignItems: "stretch", height: 44 }}>
-
-        <div style={{ display: "flex", alignItems: "center", padding: "0 6px", flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ display: "flex", gap: 2 }}>
-            {presets.map((p, i) => {
+      <div style={{ display: "flex", gap: 4 }}>
+        {presets.map((p, i) => {
               const meta = PRESET_META[i];
               const isActive = activePresetIdx === i;
               return (
@@ -584,7 +692,8 @@ function BottomBar({
                   key={i}
                   onClick={() => onPresetSelect(i)}
                   style={{
-                    padding: "0 14px", height: 36, position: "relative",
+                    flex: 1, height: 42, position: "relative",
+                    display: "flex", alignItems: "center", justifyContent: "center",
                     border: `1px solid ${isActive ? meta.color + "30" : "rgba(255,255,255,0.05)"}`,
                     borderRadius: 4,
                     background: isActive
@@ -636,14 +745,6 @@ function BottomBar({
                 </button>
               );
             })}
-          </div>
-        </div>
-
-        <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-          <span style={{ position: "absolute", top: "50%", transform: "translateY(-50%)", left: 10, fontSize: 7, fontFamily: "monospace", color: "rgba(168,168,188,0.12)", letterSpacing: "0.22em", pointerEvents: "none" }}>SIGNAL</span>
-          <canvas ref={canvasRef} width={600} height={44} style={{ width: "100%", height: "100%", display: "block" }} />
-        </div>
-
       </div>
     </div>
   );
