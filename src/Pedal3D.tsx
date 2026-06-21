@@ -8,12 +8,16 @@ function easeOutBack(x: number): number {
   return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
 }
 
+// touch devices hide the mouse-oriented hints; narrow screens frame the pedal closer
+const IS_TOUCH = typeof window !== "undefined" && (window.matchMedia?.("(pointer: coarse)").matches ?? false);
+const IS_NARROW = typeof window !== "undefined" && window.innerWidth < 768;
+
 function ResponsiveCamera() {
   const { camera } = useThree();
   useEffect(() => {
     const update = () => {
       if (camera instanceof THREE.PerspectiveCamera) {
-        camera.fov = window.innerWidth < 768 ? 52 : 34;
+        camera.fov = window.innerWidth < 768 ? 48 : 34;
         camera.updateProjectionMatrix();
       }
     };
@@ -73,11 +77,11 @@ export default function Pedal3D({
   }, [isPlaying]);
 
   return (
-    <div style={{ width: "100%", height: "100%", userSelect: "none", WebkitUserSelect: "none" }}>
+    <div style={{ width: "100%", height: "100%", userSelect: "none", WebkitUserSelect: "none", touchAction: "none" }}>
       <Canvas
-        shadows
-        dpr={[1, 2]}
-        camera={{ position: [-1.5, 7.0, 5.5], fov: 34, near: 0.1, far: 60 }}
+        shadows="percentage"
+        dpr={IS_NARROW ? [1, 1.5] : [1, 2]}
+        camera={{ position: IS_NARROW ? [-1.3, 5.9, 4.6] : [-1.5, 7.0, 5.5], fov: 34, near: 0.1, far: 60 }}
         gl={{ antialias: true, alpha: true }}
         onCreated={({ camera }) => {
           camera.lookAt(0, 0, 0);
@@ -88,7 +92,7 @@ export default function Pedal3D({
 
         <ambientLight intensity={0.25} />
 
-        <directionalLight position={[-4, 6, 3]} intensity={2.8} color="#e8dfc8" castShadow shadow-mapSize={[2048, 2048]} />
+        <directionalLight position={[-4, 6, 3]} intensity={2.8} color="#e8dfc8" castShadow shadow-mapSize={IS_NARROW ? [1024, 1024] : [2048, 2048]} />
 
         <directionalLight position={[5, 4, -3]} intensity={1.6} color="#c8d8f0" />
 
@@ -121,7 +125,7 @@ export default function Pedal3D({
           position={[0, 0, 0]}
           onPointerDown={() => setHasInteracted(true)}
         >
-          {!hasInteracted && <HintSystem accent={palette.accent} />}
+          {!hasInteracted && !IS_TOUCH && <HintSystem accent={palette.accent} />}
           <PedalScene
             palette={palette}
             ledColor={ledColor}
@@ -377,7 +381,7 @@ function PedalBody({
       <Knob3D position={kp.echo}   value={knobEcho}   onChange={(val) => onKnobChange("echo",   val)} ink={inkColor} accent={knobAccent} label="Echo"   setControlsEnabled={setControlsEnabled} bootTrigger={bootTrigger} delay={0.08} knobTheme={knobTheme} knobStyle="default" showArc={v?.showArc} />
       <Knob3D position={kp.tone}   value={knobTone}   onChange={(val) => onKnobChange("tone",   val)} ink={inkColor} accent={knobAccent} label="Tone"   setControlsEnabled={setControlsEnabled} bootTrigger={bootTrigger} delay={0.16} knobTheme={knobTheme} knobStyle="default" showArc={v?.showArc} />
       <Knob3D position={kp.reverb} value={knobReverb} onChange={(val) => onKnobChange("reverb", val)} ink={inkColor} accent={knobAccent} label="Reverb" setControlsEnabled={setControlsEnabled} bootTrigger={bootTrigger} delay={0.24} knobTheme={knobTheme} knobStyle="default" showArc={v?.showArc} />
-      <MasterKnob3D position={kp.master} value={knobMaster} onChange={(val) => onKnobChange("master", val)} accent={palette.accent} setControlsEnabled={setControlsEnabled} bootTrigger={bootTrigger} delay={0.32} knobTheme={knobTheme} knobStyle="default" showArc={v?.showArc} />
+      <MasterKnob3D position={kp.master} value={knobMaster} onChange={(val) => onKnobChange("master", val)} accent={knobAccent} setControlsEnabled={setControlsEnabled} bootTrigger={bootTrigger} delay={0.32} knobTheme={knobTheme} knobStyle="default" showArc={v?.showArc} />
 
       <Footswitch3D
         position={[0, H / 2 + 0.01, FSZ]}

@@ -33,8 +33,10 @@ const PALETTE = {
 
 const WARNING_ACK_KEY = "ghostfx.warningAck";
 
-function RecorderPanel({
-  isRecording, hasRecording, recordedDuration, onToggle, onDownload, getLevelRef, getRecordedPeaks, accent,
+// Recorder controls (rec toggle + live/recorded scope + download). Layout-free
+// row — the desktop transport bar and the mobile "Rec" sheet tab both render it.
+function RecorderControls({
+  isRecording, hasRecording, recordedDuration, onToggle, onDownload, getLevelRef, getRecordedPeaks, accent, scopeHeight = 48,
 }: {
   isRecording: boolean;
   hasRecording: boolean;
@@ -44,6 +46,7 @@ function RecorderPanel({
   getLevelRef: { current: (() => number) | null };
   getRecordedPeaks: () => Float32Array | null;
   accent: string;
+  scopeHeight?: number;
 }) {
   const REC = "#f53e3e";
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -98,22 +101,10 @@ function RecorderPanel({
   }, [isRecording, hasRecording, accent, getLevelRef, getRecordedPeaks]);
 
   const btn = "flex items-center justify-center transition-all active:scale-90 shrink-0";
-  const btnBase = { width: 46, height: 48, borderRadius: 6, background: "rgba(10,10,16,0.9)" } as const;
+  const btnBase = { width: 46, height: scopeHeight, borderRadius: 6, background: "rgba(10,10,16,0.9)" } as const;
 
   return (
-    <div
-      className="fixed z-[40] flex items-center gap-1.5 pointer-events-auto"
-      style={{
-        bottom: 12,
-        left: "50%", transform: "translateX(-50%)",
-        width: "min(532px, calc(100vw - 24px))",
-        padding: 4, borderRadius: 10,
-        background: "rgba(3,3,8,0.92)",
-        border: `1px solid ${isRecording ? accent + "55" : "rgba(255,255,255,0.09)"}`,
-        boxShadow: isRecording ? `0 0 22px ${accent}33` : "0 6px 24px rgba(0,0,0,0.5)",
-        transition: "border-color 200ms, box-shadow 200ms",
-      }}
-    >
+    <div className="flex items-center gap-1.5 w-full lg:gap-3.5">
       <button
         onClick={onToggle}
         title={isRecording ? "Stop (Space)" : "Record (Space)"}
@@ -124,8 +115,8 @@ function RecorderPanel({
         <span className={isRecording ? "animate-pulse" : ""} style={{ width: 14, height: 14, borderRadius: isRecording ? 3 : "50%", background: REC, boxShadow: `0 0 7px ${REC}` }} />
       </button>
 
-      <div style={{ position: "relative", flex: 1, height: 48, borderRadius: 6, overflow: "hidden", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.05)" }}>
-        <canvas ref={canvasRef} width={520} height={48} style={{ width: "100%", height: "100%", display: "block" }} />
+      <div style={{ position: "relative", flex: 1, height: scopeHeight, borderRadius: 6, overflow: "hidden", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.05)" }}>
+        <canvas ref={canvasRef} width={520} height={scopeHeight} style={{ width: "100%", height: "100%", display: "block" }} />
         <span style={{ position: "absolute", top: 4, right: 5, fontSize: 9, fontFamily: "monospace", letterSpacing: "0.1em", color: isRecording ? accent : "rgba(188,188,210,0.8)", background: "rgba(3,3,8,0.8)", padding: "1px 5px", borderRadius: 4, pointerEvents: "none" }}>
           {isRecording ? "● REC" : hasRecording ? `${recordedDuration.toFixed(1)}s` : "MAX 30s"}
         </span>
@@ -153,8 +144,10 @@ export default function App() {
     try { return localStorage.getItem(WARNING_ACK_KEY) === "1"; } catch { return false; }
   });
   const [micDismissed, setMicDismissed] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(false);
   const [keyboardMode, setKeyboardMode] = useState(false);
+  // mobile bottom-sheet: which tab is showing + peek/expanded
+  const [sheetTab, setSheetTab] = useState<"signal" | "keyboard" | "rec">("signal");
+  const [sheetExpanded, setSheetExpanded] = useState(true);
   const [stompCount, setStompCount] = useState(0);
   const [presetIdx, setPresetIdx] = useState<number | null>(4);
   const presetIdxRef = useRef<number | null>(4);
@@ -283,63 +276,26 @@ export default function App() {
         />
       )}
 
-      {panelOpen && (
-        <div className="lg:hidden fixed inset-0 z-[20] bg-black/60" onClick={() => setPanelOpen(false)} />
-      )}
-
-      {!panelOpen && (
+      {/* ===== DESKTOP transport bar (bottom of the stage) ===== */}
+      {warningDone && (
         <div
-          className="lg:hidden fixed z-[30] flex items-center gap-2 pointer-events-auto"
-          style={{ top: "max(16px, env(safe-area-inset-top, 16px))", left: 16 }}
+          className="hidden lg:flex fixed bottom-0 left-[360px] right-0 h-[92px] z-[40] items-center px-6 border-t pointer-events-auto"
+          style={{ background: "rgba(3,3,8,0.94)", borderColor: fx.isRecording ? themeColor + "55" : "rgba(255,255,255,0.09)", transition: "border-color 200ms" }}
         >
-          <button
-            className="flex items-center justify-center transition-all active:scale-90"
-            style={{ width: 40, height: 40, borderRadius: 8, background: "rgba(3,3,8,0.92)", border: `1px solid ${themeColor}30`, color: themeColor }}
-            onClick={() => setPanelOpen(true)}
-          >
-            <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
-              <rect width="18" height="2" rx="1" fill="currentColor"/>
-              <rect y="6" width="18" height="2" rx="1" fill="currentColor"/>
-              <rect y="12" width="18" height="2" rx="1" fill="currentColor"/>
-            </svg>
-          </button>
-
-          <div
-            className="flex items-center gap-1.5"
-            style={{
-              padding: "6px 10px",
-              borderRadius: 6,
-              background: "rgba(3,3,8,0.92)",
-              border: `1px solid ${themeColor}30`,
-            }}
-          >
-            <div
-              className="rounded-full shrink-0"
-              style={{ width: 6, height: 6, background: themeColor, boxShadow: `0 0 6px ${themeColor}` }}
-            />
-            <span
-              className="font-[var(--font-pixel)]"
-              style={{ fontSize: 8, color: themeColor, letterSpacing: "0.15em" }}
-            >
-              {presetIdx !== null ? PRESETS[presetIdx].name : "GHOST FX"}
-            </span>
-          </div>
+          <RecorderControls
+            isRecording={fx.isRecording}
+            hasRecording={fx.hasRecording}
+            recordedDuration={fx.recordedDuration}
+            onToggle={fx.toggleRecording}
+            onDownload={fx.downloadRecording}
+            getLevelRef={getLevelRef}
+            getRecordedPeaks={fx.getRecordedPeaks}
+            accent={themeColor}
+          />
         </div>
       )}
 
-      {warningDone && (
-        <RecorderPanel
-          isRecording={fx.isRecording}
-          hasRecording={fx.hasRecording}
-          recordedDuration={fx.recordedDuration}
-          onToggle={fx.toggleRecording}
-          onDownload={fx.downloadRecording}
-          getLevelRef={getLevelRef}
-          getRecordedPeaks={fx.getRecordedPeaks}
-          accent={themeColor}
-        />
-      )}
-
+      {/* ===== DESKTOP preset rail (top of the stage) ===== */}
       <BottomBar
         presets={PRESETS}
         activePresetIdx={presetIdx}
@@ -347,7 +303,116 @@ export default function App() {
         accent={themeColor}
       />
 
-      <div className="absolute inset-0 w-full h-full z-[2]">
+      {/* ===== MOBILE chrome: top-bar + preset scroller + bottom-sheet ===== */}
+      <div className="lg:hidden fixed inset-0 z-[25] flex flex-col pointer-events-none">
+
+        <div
+          className="pointer-events-auto flex items-center justify-between"
+          style={{ padding: "max(12px,env(safe-area-inset-top,12px)) 16px 10px", background: "rgba(7,10,12,0.96)" }}
+        >
+          <div className="flex items-center gap-2.5">
+            <GhostMark variant="solid" size={22} color="#e7e4dc" ledColor={themeColor} />
+            <span style={{ fontFamily: "'Saira', sans-serif", fontWeight: 800, fontSize: 16, letterSpacing: "-0.02em", color: "#e7e4dc" }}>
+              GHOST<span style={{ color: themeColor }}>FX</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2 font-[var(--font-mono)]" style={{ fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(159,196,173,0.7)" }}>
+            <div className={isActive ? "animate-pulse" : ""} style={{ width: 7, height: 7, borderRadius: "50%", background: ledColor, boxShadow: `0 0 8px ${ledColor}` }} />
+            {isActive ? "Active" : fx.ready ? "Ready" : "Idle"}
+          </div>
+        </div>
+
+        <div
+          className="preset-scroll pointer-events-auto overflow-x-auto px-4 pb-3 pt-1"
+          style={{ WebkitOverflowScrolling: "touch", background: "rgba(7,10,12,0.96)", borderBottom: "1px solid rgba(231,228,220,0.1)" }}
+        >
+          {/* w-max + mx-auto: centred when the chips fit, still scrollable when they overflow */}
+          <div className="flex gap-2 w-max mx-auto">
+            {PRESETS.map((p, i) => {
+              const meta = PRESET_META[i];
+              const on = presetIdx === i;
+              return (
+                <button
+                  key={i}
+                  onClick={() => handlePresetSelect(i)}
+                  className="shrink-0 flex items-center gap-2 active:scale-95 transition-transform"
+                  style={{
+                    minHeight: 44, padding: "0 16px", borderRadius: 30,
+                    border: `1.5px solid ${on ? meta.color : "rgba(231,228,220,0.18)"}`,
+                    background: on ? "rgba(10,13,11,0.92)" : "rgba(10,13,11,0.82)",
+                    color: on ? meta.color : "rgba(180,200,188,0.9)",
+                    boxShadow: on ? `0 0 10px ${meta.color}55, inset 0 0 12px ${meta.color}1a` : "none",
+                  }}
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: on ? meta.color : "rgba(255,255,255,0.28)", boxShadow: on ? `0 0 6px ${meta.color}` : "none" }} />
+                  <span style={{ fontFamily: "'Bungee', sans-serif", fontSize: 11, letterSpacing: "0.08em" }}>{p.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* stage spacer — pedal shows through here; touches fall to the canvas */}
+        <div className="flex-1" />
+
+        <div
+          className="pointer-events-auto"
+          style={{ borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTop: "1px solid rgba(231,228,220,0.16)", background: "linear-gradient(180deg,#0a0e0c,#070a09)", boxShadow: "0 -10px 30px rgba(0,0,0,0.5)" }}
+        >
+          <button onClick={() => setSheetExpanded(v => !v)} className="w-full flex justify-center pt-2.5 pb-1" aria-label={sheetExpanded ? "Collapse panel" : "Expand panel"}>
+            <span style={{ width: 38, height: 4, borderRadius: 2, background: "rgba(231,228,220,0.22)" }} />
+          </button>
+
+          <div className="flex px-3" style={{ gap: 4, borderBottom: "1px solid rgba(231,228,220,0.08)" }}>
+            {([["signal", "Signal"], ["keyboard", "Teclado"], ["rec", "Rec"]] as const).map(([key, label]) => {
+              const on = sheetTab === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => { setSheetTab(key); setSheetExpanded(true); }}
+                  className="flex-1 flex items-center justify-center font-[var(--font-mono)] relative"
+                  style={{ padding: "12px 0", fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: on ? themeColor : "rgba(95,122,108,0.9)" }}
+                >
+                  {label}
+                  {on && <span style={{ position: "absolute", left: "20%", right: "20%", bottom: -1, height: 2, background: themeColor, boxShadow: `0 0 8px ${themeColor}` }} />}
+                </button>
+              );
+            })}
+          </div>
+
+          {sheetExpanded && (
+            <div style={{ padding: "16px 16px max(18px,env(safe-area-inset-bottom,16px))", maxHeight: "46vh", overflowY: "auto" }}>
+              {sheetTab === "signal" && (
+                <div className="flex flex-col" style={{ gap: 2 }}>
+                  <Fader label="DRIVE"  value={drive}        accent={themeColor} onChange={(v) => handleKnobChange("drive",  v)} />
+                  <Fader label="ECHO"   value={echo}         accent={themeColor} onChange={(v) => handleKnobChange("echo",   v)} />
+                  <Fader label="TONE"   value={tone}         accent={themeColor} onChange={(v) => handleKnobChange("tone",   v)} />
+                  <Fader label="REVERB" value={reverb}       accent={themeColor} onChange={(v) => handleKnobChange("reverb", v)} />
+                  <Fader label="VOLUME" value={masterVolume} accent={themeColor} onChange={(v) => handleKnobChange("master", v)} highlight />
+                </div>
+              )}
+              {sheetTab === "keyboard" && (
+                <KeyboardDisplay activeKeys={synth.activeKeys} accent={themeColor} playNote={synth.playNote} stopNote={synth.stopNote} labelMode="note" />
+              )}
+              {sheetTab === "rec" && warningDone && (
+                <RecorderControls
+                  isRecording={fx.isRecording}
+                  hasRecording={fx.hasRecording}
+                  recordedDuration={fx.recordedDuration}
+                  onToggle={fx.toggleRecording}
+                  onDownload={fx.downloadRecording}
+                  getLevelRef={getLevelRef}
+                  getRecordedPeaks={fx.getRecordedPeaks}
+                  accent={themeColor}
+                  scopeHeight={62}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="absolute left-0 right-0 top-[88px] bottom-[150px] z-[2] lg:top-0 lg:left-[360px] lg:right-0 lg:bottom-[92px]">
         <Pedal3D
           ledColor={themeColor}
           isPlaying={isActive}
@@ -365,28 +430,26 @@ export default function App() {
       </div>
 
       <aside
-        className={`hud-scroll fixed left-0 top-0 h-full z-[25] select-none flex flex-col transition-transform duration-300 ease-out lg:translate-x-0 ${panelOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className="hud-scroll hidden lg:flex fixed left-0 top-0 h-full z-[25] select-none flex-col"
         style={{
-          width: "clamp(260px, 85vw, 380px)",
-          background: "linear-gradient(100deg, rgba(3,3,8,0.99) 70%, rgba(3,3,8,0) 100%)",
-          padding: "clamp(20px,2.5vw,36px) clamp(16px,2vw,28px)",
-          gap: "clamp(18px,2.5vh,36px)",
-          pointerEvents: keyboardMode || panelOpen ? "auto" : "none",
-          overflowY: keyboardMode || panelOpen ? "auto" : "visible",
+          width: 360,
+          // translucent glass: the shader background bleeds through the right edge
+          background: "linear-gradient(105deg, rgba(6,9,11,0.95) 48%, rgba(6,9,11,0.82) 76%, rgba(6,9,11,0.30) 100%)",
+          backdropFilter: "blur(7px)",
+          WebkitBackdropFilter: "blur(7px)",
+          borderRight: "1px solid rgba(231,228,220,0.07)",
+          padding: "clamp(22px,2.4vh,34px) 30px",
+          gap: "clamp(18px,2.4vh,30px)",
+          pointerEvents: "auto",
+          overflowY: "auto",
         }}
       >
 
-        <button
-          className="lg:hidden absolute top-4 right-4 pointer-events-auto font-[var(--font-mono)] text-lg transition-colors hover:text-white"
-          style={{ color: "rgba(255,255,255,0.3)", background: "none", border: "none", cursor: "pointer" }}
-          onClick={() => setPanelOpen(false)}
-        >✕</button>
-
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2.5">
-            <GhostMark variant="solid" size={26} color="#e7e4dc" ledColor={themeColor} />
+          <div className="flex items-center gap-3">
+            <GhostMark variant="solid" size={28} color="#e7e4dc" ledColor={themeColor} />
             <span
-              style={{ fontFamily: "'Saira', sans-serif", fontWeight: 800, fontSize: 23, lineHeight: 1, letterSpacing: "-0.02em", color: "#e7e4dc" }}
+              style={{ fontFamily: "'Saira', sans-serif", fontWeight: 800, fontSize: 25, lineHeight: 1, letterSpacing: "-0.01em", color: "#e7e4dc" }}
             >
               GHOST<span style={{ color: themeColor }}>FX</span>
             </span>
@@ -411,7 +474,7 @@ export default function App() {
           <span
             className="font-[var(--font-display)] uppercase"
             style={{
-              fontSize: "clamp(28px, 3.2vw, 52px)",
+              fontSize: "clamp(30px, 4.4vw, 44px)",
               color: "#ffffff",
               letterSpacing: "-0.01em",
               lineHeight: 1,
@@ -422,12 +485,12 @@ export default function App() {
           </span>
           <span
             style={{
-              fontSize: "clamp(30px, 3.5vw, 56px)",
+              fontSize: "clamp(30px, 4.4vw, 44px)",
               color: themeColor,
               fontFamily: '"Rock 3D", system-ui',
               fontWeight: 400,
-              letterSpacing: "0.04em",
-              lineHeight: 1.15,
+              letterSpacing: "0.02em",
+              lineHeight: 1.2,
               whiteSpace: "nowrap",
               textShadow: `0 0 24px ${themeColor}66, 0 0 48px ${themeColor}22`,
             }}
@@ -437,7 +500,7 @@ export default function App() {
           <span
             className="font-[var(--font-serif)] italic"
             style={{
-              fontSize: "clamp(32px, 3.8vw, 60px)",
+              fontSize: "clamp(34px, 5vw, 50px)",
               color: "#ffffff",
               opacity: 0.82,
               letterSpacing: "-0.02em",
@@ -464,13 +527,13 @@ export default function App() {
               </span>
               <div style={{ flex: 1, height: 1, background: `${themeColor}30` }} />
             </div>
-            <KeyboardDisplay activeKeys={synth.activeKeys} accent={themeColor} />
+            <KeyboardDisplay activeKeys={synth.activeKeys} accent={themeColor} playNote={synth.playNote} stopNote={synth.stopNote} labelMode="key" />
           </div>
         )}
 
-        <div className="flex flex-col" style={{ gap: 10 }}>
+        <div className="flex flex-col pointer-events-auto" style={{ gap: 4 }}>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
             <div style={{ width: 8, height: 1, background: themeColor }} />
             <span
               className="font-[var(--font-mono)] uppercase tracking-[0.35em]"
@@ -481,11 +544,11 @@ export default function App() {
             <div style={{ flex: 1, height: 1, background: `${themeColor}30` }} />
           </div>
 
-          <VUMeter label="DRIVE"  value={drive}        accent={themeColor} />
-          <VUMeter label="ECHO"   value={echo}         accent={themeColor} />
-          <VUMeter label="TONE"   value={tone}         accent={themeColor} />
-          <VUMeter label="REVERB" value={reverb}       accent={themeColor} />
-          <VUMeter label="VOLUME" value={masterVolume} accent={themeColor} highlight liveLevelRef={isActive ? getLevelRef : undefined} />
+          <Fader label="DRIVE"  value={drive}        accent={themeColor} onChange={(v) => handleKnobChange("drive",  v)} />
+          <Fader label="ECHO"   value={echo}         accent={themeColor} onChange={(v) => handleKnobChange("echo",   v)} />
+          <Fader label="TONE"   value={tone}         accent={themeColor} onChange={(v) => handleKnobChange("tone",   v)} />
+          <Fader label="REVERB" value={reverb}       accent={themeColor} onChange={(v) => handleKnobChange("reverb", v)} />
+          <Fader label="VOLUME" value={masterVolume} accent={themeColor} onChange={(v) => handleKnobChange("master", v)} highlight />
         </div>
 
         <div className="flex flex-col pointer-events-auto" style={{ gap: 8 }}>
@@ -547,7 +610,7 @@ export default function App() {
         <MicBlockedModal
           accent={themeColor}
           onRetry={() => fx.toggle()}
-          onKeyboard={() => { setMicDismissed(true); setKeyboardMode(true); setPanelOpen(true); }}
+          onKeyboard={() => { setMicDismissed(true); setKeyboardMode(true); setSheetTab("keyboard"); setSheetExpanded(true); }}
           onDismiss={() => setMicDismissed(true)}
         />
       )}
@@ -666,11 +729,9 @@ function BottomBar({
 
   return (
     <div
-      className="fixed z-[40] pointer-events-auto"
+      className="hidden lg:block fixed z-[40] pointer-events-auto left-1/2 -translate-x-1/2 lg:left-[calc(50%_+_180px)]"
       style={{
         top: "max(12px, env(safe-area-inset-top, 12px))",
-        left: "50%",
-        transform: "translateX(-50%)",
         width: "min(532px, calc(100vw - 24px))",
         padding: 4,
         borderRadius: 10,
@@ -762,54 +823,89 @@ const WHITE_LAYOUT = [
 ] as const;
 
 const BLACK_LAYOUT = [
-  { key: "w", after: 0 },
-  { key: "e", after: 1 },
-  { key: "t", after: 3 },
-  { key: "y", after: 4 },
-  { key: "u", after: 5 },
-  { key: "o", after: 7 },
-  { key: "p", after: 8 },
+  { key: "w", after: 0, note: "C#" },
+  { key: "e", after: 1, note: "D#" },
+  { key: "t", after: 3, note: "F#" },
+  { key: "y", after: 4, note: "G#" },
+  { key: "u", after: 5, note: "A#" },
+  { key: "o", after: 7, note: "C#'" },
+  { key: "p", after: 8, note: "D#'" },
 ] as const;
 
-function KeyboardDisplay({ activeKeys, accent }: { activeKeys: Set<string>; accent: string }) {
+// Playable on-screen piano. Tap/click (multi-touch) drives the synth via
+// playNote/stopNote. labelMode "key" shows the QWERTY hint (desktop, where the
+// physical keys work); "note" shows the note name (mobile/touch).
+function KeyboardDisplay({
+  activeKeys, accent, playNote, stopNote, labelMode = "key",
+}: {
+  activeKeys: Set<string>;
+  accent: string;
+  playNote: (key: string, freq: number) => void;
+  stopNote: (key: string) => void;
+  labelMode?: "key" | "note";
+}) {
   const KW = 22, KH = 54, BW = 13, BH = 33;
-  const total = WHITE_LAYOUT.length * KW;
+  const whites = WHITE_LAYOUT;
+  // drop any black key whose right-hand white neighbour isn't shown (no overhang)
+  const blacks = BLACK_LAYOUT.filter(b => b.after < whites.length - 1);
+  const total = whites.length * KW;
+
+  const press = (e: React.PointerEvent, key: string) => { e.preventDefault(); const n = NOTE_KEYS[key]; if (n) playNote(key, n.freq); };
 
   return (
-    <div style={{ borderRadius: 5, overflow: "hidden", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.05)", padding: "8px 6px 12px" }}>
-      <svg width="100%" viewBox={`0 0 ${total} ${KH + 16}`} style={{ overflow: "visible", display: "block" }}>
-        {WHITE_LAYOUT.map(({ key, note }, i) => {
+    <div style={{ borderRadius: 5, overflow: "hidden", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.05)", padding: "8px 6px 12px", touchAction: "none" }}>
+      <svg width="100%" viewBox={`0 0 ${total} ${KH + 16}`} style={{ display: "block", touchAction: "none" }}>
+        {whites.map(({ key, note }, i) => {
           const on = activeKeys.has(key);
           return (
-            <g key={key}>
+            <g key={key} style={{ cursor: "pointer" }}
+              onPointerDown={(e) => press(e, key)}
+              onPointerUp={() => stopNote(key)}
+              onPointerCancel={() => stopNote(key)}
+              onPointerLeave={() => stopNote(key)}
+            >
               <rect x={i * KW + 0.5} y={0.5} width={KW - 1} height={KH} rx={2}
                 fill={on ? accent : "rgba(228,228,240,0.92)"}
                 stroke={on ? accent : "rgba(0,0,0,0.25)"} strokeWidth={0.5}
               />
-              <text x={i * KW + KW / 2} y={KH - 7} textAnchor="middle"
-                fontSize={7} fontFamily="monospace" fontWeight="bold"
-                fill={on ? "#080808" : "rgba(80,80,100,0.9)"}
-              >{key.toUpperCase()}</text>
-              <text x={i * KW + KW / 2} y={KH + 12} textAnchor="middle"
-                fontSize={7} fontFamily="monospace"
-                fill={on ? accent : "rgba(168,168,188,0.35)"}
-              >{note}</text>
+              {labelMode === "note" ? (
+                <text x={i * KW + KW / 2} y={KH - 8} textAnchor="middle"
+                  fontSize={8} fontFamily="monospace" fontWeight="bold"
+                  fill={on ? "#080808" : "rgba(70,70,90,0.95)"}
+                >{note}</text>
+              ) : (
+                <>
+                  <text x={i * KW + KW / 2} y={KH - 7} textAnchor="middle"
+                    fontSize={7} fontFamily="monospace" fontWeight="bold"
+                    fill={on ? "#080808" : "rgba(80,80,100,0.9)"}
+                  >{key.toUpperCase()}</text>
+                  <text x={i * KW + KW / 2} y={KH + 12} textAnchor="middle"
+                    fontSize={7} fontFamily="monospace"
+                    fill={on ? accent : "rgba(168,168,188,0.35)"}
+                  >{note}</text>
+                </>
+              )}
             </g>
           );
         })}
-        {BLACK_LAYOUT.map(({ key, after }) => {
+        {blacks.map(({ key, after, note }) => {
           const on = activeKeys.has(key);
           const x = (after + 1) * KW - BW / 2;
           return (
-            <g key={key}>
+            <g key={key} style={{ cursor: "pointer" }}
+              onPointerDown={(e) => press(e, key)}
+              onPointerUp={() => stopNote(key)}
+              onPointerCancel={() => stopNote(key)}
+              onPointerLeave={() => stopNote(key)}
+            >
               <rect x={x} y={0.5} width={BW} height={BH} rx={2}
                 fill={on ? accent : "#080810"}
                 stroke={on ? accent : "rgba(255,255,255,0.1)"} strokeWidth={0.5}
               />
               <text x={x + BW / 2} y={BH - 5} textAnchor="middle"
-                fontSize={6} fontFamily="monospace"
-                fill={on ? "#080808" : "rgba(255,255,255,0.45)"}
-              >{key.toUpperCase()}</text>
+                fontSize={labelMode === "note" ? 5 : 6} fontFamily="monospace"
+                fill={on ? "#080808" : "rgba(255,255,255,0.5)"}
+              >{labelMode === "note" ? note : key.toUpperCase()}</text>
             </g>
           );
         })}
@@ -818,88 +914,94 @@ function KeyboardDisplay({ activeKeys, accent }: { activeKeys: Set<string>; acce
   );
 }
 
-function VUMeter({
+// Real draggable fader (mouse + touch) wired to the same param state as the 3D
+// knobs — dragging either updates the other. Replaces the old read-only VU rows.
+function Fader({
   label,
   value,
+  onChange,
   accent,
   highlight = false,
-  liveLevelRef,
 }: {
   label: string;
   value: number;
+  onChange: (v: number) => void;
   accent: string;
   highlight?: boolean;
-  liveLevelRef?: { current: () => number };
 }) {
-  // nível ao vivo fica local e quantizado em segmentos: re-renderiza só este
-  // componente, e só quando o número de segmentos acesos muda — nunca o App a 60Hz
-  const segments = 16;
-  const [liveFilled, setLiveFilled] = useState<number | null>(null);
-  useEffect(() => {
-    if (!liveLevelRef) { setLiveFilled(null); return; }
-    let raf = 0;
-    let last = -1;
-    const tick = () => {
-      const f = Math.round(Math.min(1, liveLevelRef.current()) * segments);
-      if (f !== last) { last = f; setLiveFilled(f); }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [liveLevelRef]);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const draggingRef = useRef(false);
+  const lastTapRef = useRef(0);
+
+  const setFromClientX = useCallback((clientX: number) => {
+    const el = trackRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const t = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+    onChange(t);
+  }, [onChange]);
 
   const pct = Math.round(value * 100);
-  const filled = liveFilled !== null ? liveFilled : Math.round(value * segments);
 
   return (
-    <div className="flex items-center" style={{ gap: 8 }}>
-
+    <div className="grid items-center" style={{ gridTemplateColumns: "52px 1fr 30px", gap: 11, padding: "6px 0" }}>
       <span
-        className="font-[var(--font-mono)] uppercase text-right shrink-0"
-        style={{
-          fontSize: 10,
-          width: 44,
-          color: highlight ? "#ffffff" : "#8888a0",
-          letterSpacing: "0.06em",
-          fontWeight: highlight ? 700 : 400,
-        }}
+        className="font-[var(--font-mono)] uppercase"
+        style={{ fontSize: 10, letterSpacing: "0.13em", color: highlight ? "#e7e4dc" : "#9fc4ad", fontWeight: highlight ? 700 : 400 }}
       >
         {label}
       </span>
 
-      <div className="flex items-center shrink-0" style={{ gap: 2 }}>
-        {Array.from({ length: segments }).map((_, i) => {
-          const active = i < filled;
-          const hot = i >= 13;
-          return (
-            <div
-              key={i}
-              style={{
-                width: 9,
-                height: highlight ? 10 : 8,
-                borderRadius: 2,
-                background: active
-                  ? hot ? accent : accent
-                  : "rgba(255,255,255,0.06)",
-                opacity: active ? (hot ? 1 : 0.85) : 1,
-                boxShadow: active && hot ? `0 0 6px ${accent}` : active ? `0 0 3px ${accent}60` : "none",
-                transition: "background 60ms, box-shadow 60ms",
-              }}
-            />
-          );
-        })}
+      <div
+        ref={trackRef}
+        role="slider"
+        aria-label={label}
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        tabIndex={0}
+        className="relative flex items-center"
+        style={{ height: 24, cursor: "pointer", touchAction: "none" }}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          const now = performance.now();
+          if (now - lastTapRef.current < 300) { onChange(0.5); lastTapRef.current = 0; return; }
+          lastTapRef.current = now;
+          (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+          draggingRef.current = true;
+          setFromClientX(e.clientX);
+        }}
+        onPointerMove={(e) => { if (draggingRef.current) setFromClientX(e.clientX); }}
+        onPointerUp={(e) => { draggingRef.current = false; (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId); }}
+        onPointerCancel={() => { draggingRef.current = false; }}
+        onKeyDown={(e) => {
+          const step = e.shiftKey ? 0.1 : 0.02;
+          if (e.key === "ArrowRight" || e.key === "ArrowUp") { e.preventDefault(); onChange(Math.min(1, value + step)); }
+          else if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); onChange(Math.max(0, value - step)); }
+        }}
+      >
+
+        <div className="absolute left-0 right-0" style={{ height: 4, borderRadius: 2, background: "#161d18", overflow: "hidden" }}>
+          <div className="absolute inset-0" style={{ background: "repeating-linear-gradient(90deg, transparent 0 7px, rgba(0,0,0,.5) 7px 8px)" }} />
+        </div>
+
+        <div className="absolute left-0" style={{ height: 4, width: `${pct}%`, borderRadius: 2, background: accent, boxShadow: `0 0 8px ${accent}80` }} />
+
+        <div
+          className="absolute"
+          style={{
+            left: `${pct}%`, width: 14, height: 22, borderRadius: 3, transform: "translateX(-50%)",
+            background: "linear-gradient(180deg,#2a352e,#11160f)", border: "1px solid rgba(231,228,220,.16)",
+            boxShadow: "0 2px 5px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.12)",
+          }}
+        >
+          <div className="absolute" style={{ left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 8, height: 1.5, background: accent, boxShadow: `0 0 8px ${accent}` }} />
+        </div>
       </div>
 
       <span
-        className="font-[var(--font-mono)] shrink-0"
-        style={{
-          fontSize: highlight ? 13 : 11,
-          color: highlight ? accent : `${accent}cc`,
-          width: 30,
-          textAlign: "right",
-          fontWeight: highlight ? 700 : 400,
-          letterSpacing: "0.02em",
-        }}
+        className="font-[var(--font-mono)]"
+        style={{ fontSize: 12, color: highlight ? accent : "#e7e4dc", textAlign: "right", fontVariantNumeric: "tabular-nums" }}
       >
         {pct}
       </span>
@@ -1107,7 +1209,6 @@ function PresetBg({ presetIdx, introActive = false }: { presetIdx: number | null
   useEffect(() => {
     const tick = () => {
       const gl = glRef.current;
-      const s  = glState.current;
       const t  = tr.current;
       const now = performance.now();
 
@@ -1133,6 +1234,9 @@ function PresetBg({ presetIdx, introActive = false }: { presetIdx: number | null
         if (p >= 1) { t.phase = 'stable'; t.blend = 1; }
       }
 
+      // read the live state *after* a possible shader swap above, so the uniform
+      // locations always belong to the currently-bound program
+      const s = glState.current;
       if (s && gl) {
         const time = (now - startRef.current) * 0.00012;
         gl.uniform1f(s.tLoc, time);
