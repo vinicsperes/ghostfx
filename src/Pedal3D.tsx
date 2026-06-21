@@ -77,10 +77,10 @@ export default function Pedal3D({
   }, [isPlaying]);
 
   return (
-    <div style={{ width: "100%", height: "100%", userSelect: "none", WebkitUserSelect: "none" }}>
+    <div style={{ width: "100%", height: "100%", userSelect: "none", WebkitUserSelect: "none", touchAction: "none" }}>
       <Canvas
-        shadows
-        dpr={[1, 2]}
+        shadows="percentage"
+        dpr={IS_NARROW ? [1, 1.5] : [1, 2]}
         camera={{ position: IS_NARROW ? [-1.3, 5.9, 4.6] : [-1.5, 7.0, 5.5], fov: 34, near: 0.1, far: 60 }}
         gl={{ antialias: true, alpha: true }}
         onCreated={({ camera }) => {
@@ -92,7 +92,7 @@ export default function Pedal3D({
 
         <ambientLight intensity={0.25} />
 
-        <directionalLight position={[-4, 6, 3]} intensity={2.8} color="#e8dfc8" castShadow shadow-mapSize={[2048, 2048]} />
+        <directionalLight position={[-4, 6, 3]} intensity={2.8} color="#e8dfc8" castShadow shadow-mapSize={IS_NARROW ? [1024, 1024] : [2048, 2048]} />
 
         <directionalLight position={[5, 4, -3]} intensity={1.6} color="#c8d8f0" />
 

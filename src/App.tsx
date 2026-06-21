@@ -1205,7 +1205,6 @@ function PresetBg({ presetIdx, introActive = false }: { presetIdx: number | null
   useEffect(() => {
     const tick = () => {
       const gl = glRef.current;
-      const s  = glState.current;
       const t  = tr.current;
       const now = performance.now();
 
@@ -1231,6 +1230,9 @@ function PresetBg({ presetIdx, introActive = false }: { presetIdx: number | null
         if (p >= 1) { t.phase = 'stable'; t.blend = 1; }
       }
 
+      // read the live state *after* a possible shader swap above, so the uniform
+      // locations always belong to the currently-bound program
+      const s = glState.current;
       if (s && gl) {
         const time = (now - startRef.current) * 0.00012;
         gl.uniform1f(s.tLoc, time);
