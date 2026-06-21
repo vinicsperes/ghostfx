@@ -300,7 +300,6 @@ export default function App() {
         presets={PRESETS}
         activePresetIdx={presetIdx}
         onPresetSelect={handlePresetSelect}
-        accent={themeColor}
       />
 
       {/* ===== MOBILE chrome: top-bar + preset scroller + bottom-sheet ===== */}
@@ -322,34 +321,23 @@ export default function App() {
           </div>
         </div>
 
+        {/* the scroller IS the flex container: fitScroll cards grow to fill when
+            they fit and scroll (no clipping) when they overflow narrow screens */}
         <div
-          className="preset-scroll pointer-events-auto overflow-x-auto px-4 pb-3 pt-1"
+          className="preset-scroll pointer-events-auto flex gap-2 overflow-x-auto px-4 pb-3 pt-1"
           style={{ WebkitOverflowScrolling: "touch", background: "rgba(7,10,12,0.96)", borderBottom: "1px solid rgba(231,228,220,0.1)" }}
         >
-          {/* w-max + mx-auto: centred when the chips fit, still scrollable when they overflow */}
-          <div className="flex gap-2 w-max mx-auto">
-            {PRESETS.map((p, i) => {
-              const meta = PRESET_META[i];
-              const on = presetIdx === i;
-              return (
-                <button
-                  key={i}
-                  onClick={() => handlePresetSelect(i)}
-                  className="shrink-0 flex items-center gap-2 active:scale-95 transition-transform"
-                  style={{
-                    minHeight: 44, padding: "0 16px", borderRadius: 30,
-                    border: `1.5px solid ${on ? meta.color : "rgba(231,228,220,0.18)"}`,
-                    background: on ? "rgba(10,13,11,0.92)" : "rgba(10,13,11,0.82)",
-                    color: on ? meta.color : "rgba(180,200,188,0.9)",
-                    boxShadow: on ? `0 0 10px ${meta.color}55, inset 0 0 12px ${meta.color}1a` : "none",
-                  }}
-                >
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: on ? meta.color : "rgba(255,255,255,0.28)", boxShadow: on ? `0 0 6px ${meta.color}` : "none" }} />
-                  <span style={{ fontFamily: "'Bungee', sans-serif", fontSize: 11, letterSpacing: "0.08em" }}>{p.name}</span>
-                </button>
-              );
-            })}
-          </div>
+          {PRESETS.map((p, i) => (
+            <PresetCard
+              key={i}
+              name={p.name}
+              tag={PRESET_TAGS[i]}
+              color={PRESET_META[i].color}
+              isActive={presetIdx === i}
+              onSelect={() => handlePresetSelect(i)}
+              fitScroll
+            />
+          ))}
         </div>
 
         {/* stage spacer — pedal shows through here; touches fall to the canvas */}
@@ -412,7 +400,7 @@ export default function App() {
         </div>
       </div>
 
-      <div className="absolute left-0 right-0 top-[88px] bottom-[150px] z-[2] lg:top-0 lg:left-[360px] lg:right-0 lg:bottom-[92px]">
+      <div className="absolute left-0 right-0 top-[88px] bottom-[150px] z-[2] lg:top-[78px] lg:left-[360px] lg:right-0 lg:bottom-[92px]">
         <Pedal3D
           ledColor={themeColor}
           isPlaying={isActive}
@@ -716,96 +704,69 @@ const PRESET_META = [
   { color: "#20f040", word: "HAUNTED", chassis: "#0a0a10" },
 ] as const;
 
+const PRESET_TAGS = ["crystal", "grimy", "brutal", "cold", "haunted"] as const;
+
+// Shared preset card — desktop top bar and mobile scroller both render this, so
+// the rounded shape, the name+tag layout and the hover treatment stay in sync.
+function PresetCard({
+  name, tag, color, isActive, onSelect, fitScroll = false,
+}: {
+  name: string;
+  tag: string;
+  color: string;
+  isActive: boolean;
+  onSelect: () => void;
+  // fitScroll: grow to fill but never shrink, so a horizontal scroller can
+  // scroll the overflow (mobile). default = equal-width fill (desktop bar).
+  fitScroll?: boolean;
+}) {
+  const idle = "rgba(9,12,10,0.78)";
+  return (
+    <button
+      onClick={onSelect}
+      className="preset-card relative flex flex-col items-center justify-center active:scale-[0.97]"
+      style={{
+        flex: fitScroll ? "1 0 auto" : "1 1 0", minWidth: 108, height: 54, borderRadius: 14, cursor: "pointer",
+        color: isActive ? color : "rgba(184,204,192,0.6)",
+        border: `1.5px solid ${isActive ? color : "rgba(231,228,220,0.13)"}`,
+        background: isActive ? "rgba(9,12,10,0.92)" : idle,
+        boxShadow: isActive ? `0 0 18px ${color}3d, inset 0 0 22px ${color}18` : "none",
+        transition: "color 260ms ease, border-color 260ms ease, background 260ms ease, box-shadow 260ms ease, transform 200ms ease",
+      }}
+      onMouseEnter={e => { if (isActive) return; const b = e.currentTarget; b.style.color = color; b.style.borderColor = `${color}77`; b.style.background = "rgba(14,18,15,0.92)"; b.style.boxShadow = `0 0 16px ${color}33`; b.style.transform = "translateY(-2px)"; }}
+      onMouseLeave={e => { if (isActive) return; const b = e.currentTarget; b.style.color = "rgba(184,204,192,0.6)"; b.style.borderColor = "rgba(231,228,220,0.13)"; b.style.background = idle; b.style.boxShadow = "none"; b.style.transform = "none"; }}
+    >
+      <span style={{ position: "absolute", top: 9, right: 12, width: 5, height: 5, borderRadius: "50%", background: isActive ? color : "rgba(255,255,255,0.22)", boxShadow: isActive ? `0 0 6px ${color}` : "none", transition: "background 260ms" }} />
+      <span style={{ fontFamily: "'Bungee', sans-serif", fontSize: 15, letterSpacing: "0.16em", lineHeight: 1.05, color: "inherit", textShadow: isActive ? `0 0 12px ${color}aa` : "none" }}>{name}</span>
+      <span className="font-[var(--font-mono)]" style={{ fontSize: 9, letterSpacing: "0.3em", textTransform: "uppercase", marginTop: 5, paddingLeft: "0.3em", color: isActive ? `${color}cc` : "rgba(120,140,128,0.5)" }}>{tag}</span>
+      <span style={{ position: "absolute", bottom: -1, left: "28%", right: "28%", height: 2, background: isActive ? color : "transparent", boxShadow: isActive ? `0 0 8px ${color}` : "none", borderRadius: 1, pointerEvents: "none" }} />
+    </button>
+  );
+}
+
 function BottomBar({
-  presets, activePresetIdx, onPresetSelect, accent,
+  presets, activePresetIdx, onPresetSelect,
 }: {
   presets: typeof PRESETS;
   activePresetIdx: number | null;
   onPresetSelect: (i: number) => void;
-  accent: string;
 }) {
-  const activeMeta = activePresetIdx !== null ? PRESET_META[activePresetIdx] : null;
-  const presetColor = activeMeta?.color ?? accent;
-
+  // full-width top bar of separated buttons, mirroring the bottom transport bar
   return (
     <div
-      className="hidden lg:block fixed z-[40] pointer-events-auto left-1/2 -translate-x-1/2 lg:left-[calc(50%_+_180px)]"
-      style={{
-        top: "max(12px, env(safe-area-inset-top, 12px))",
-        width: "min(532px, calc(100vw - 24px))",
-        padding: 4,
-        borderRadius: 10,
-        background: "rgba(3,3,8,0.92)",
-        border: `1px solid rgba(255,255,255,0.09)`,
-        boxShadow: `0 0 0 1px ${presetColor}08, 0 6px 24px rgba(0,0,0,0.5)`,
-        transition: "box-shadow 400ms",
-        overflow: "hidden",
-      }}
+      className="hidden lg:flex fixed top-0 left-[360px] right-0 z-[40] pointer-events-auto items-stretch"
+      style={{ padding: "16px max(28px,2.2vw) 8px", gap: 12 }}
     >
-
-      <div style={{ display: "flex", gap: 4 }}>
-        {presets.map((p, i) => {
-              const meta = PRESET_META[i];
-              const isActive = activePresetIdx === i;
-              return (
-                <button
-                  key={i}
-                  onClick={() => onPresetSelect(i)}
-                  style={{
-                    flex: 1, height: 42, position: "relative",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    border: `1px solid ${isActive ? meta.color + "30" : "rgba(255,255,255,0.05)"}`,
-                    borderRadius: 4,
-                    background: isActive
-                      ? `linear-gradient(160deg, ${meta.color}18 0%, ${meta.color}08 100%)`
-                      : "rgba(8,8,12,0.7)",
-                    boxShadow: isActive ? `inset 0 0 18px ${meta.color}14, 0 0 10px ${meta.color}18` : "none",
-                    cursor: "pointer",
-                    transition: "background 550ms ease, border-color 550ms ease, box-shadow 550ms ease",
-                  }}
-                  onMouseEnter={e => {
-                    if (isActive) return;
-                    const b = e.currentTarget;
-                    b.style.background = `linear-gradient(160deg, ${meta.color}14 0%, ${meta.color}06 100%)`;
-                    b.style.borderColor = `${meta.color}22`;
-                    b.style.boxShadow = `inset 0 0 18px ${meta.color}10`;
-                    const lbl = b.querySelector('[data-lbl]') as HTMLElement;
-                    if (lbl) lbl.style.color = `${meta.color}cc`;
-                  }}
-                  onMouseLeave={e => {
-                    if (isActive) return;
-                    const b = e.currentTarget;
-                    b.style.background = "rgba(8,8,12,0.7)";
-                    b.style.borderColor = "rgba(255,255,255,0.05)";
-                    b.style.boxShadow = "none";
-                    const lbl = b.querySelector('[data-lbl]') as HTMLElement;
-                    if (lbl) lbl.style.color = "rgba(168,168,188,0.35)";
-                  }}
-                >
-
-                  <span style={{
-                    position: "absolute", bottom: -1, left: "20%", right: "20%", height: 2,
-                    background: isActive ? meta.color : "transparent",
-                    boxShadow: isActive ? `0 0 8px ${meta.color}` : "none",
-                    borderRadius: 1,
-                    pointerEvents: "none",
-                  }} />
-                  <span
-                    data-lbl=""
-                    style={{
-                      fontSize: 11,
-                      fontFamily: "'Bungee', sans-serif",
-                      letterSpacing: "0.12em",
-                      fontWeight: 400,
-                      color: isActive ? meta.color : "rgba(168,168,188,0.35)",
-                      textShadow: isActive ? `0 0 10px ${meta.color}99` : "none",
-                      transition: "color 550ms ease, text-shadow 550ms ease",
-                    }}
-                  >{p.name}</span>
-                </button>
-              );
-            })}
-      </div>
+      {presets.map((p, i) => (
+        <PresetCard
+          key={i}
+          name={p.name}
+          tag={PRESET_TAGS[i]}
+          color={PRESET_META[i].color}
+          isActive={activePresetIdx === i}
+          onSelect={() => onPresetSelect(i)}
+        />
+      ))}
     </div>
   );
 }
