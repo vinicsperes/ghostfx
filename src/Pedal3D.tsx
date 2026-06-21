@@ -1953,13 +1953,16 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   const raX = [0.16, 0.34, 0.52, 0.70];
 
   const ic2: [number, number] = [-0.20, 0.00];
-  const ecD: [number, number][] = [[-0.48, -0.28], [-0.48, -0.10], [-0.48, 0.08]];
+  // delay electrolytics in a clean even column left of IC2
+  const ecD: [number, number][] = [[-0.50, -0.24], [-0.50, -0.04], [-0.50, 0.16]];
   const disc2: [number, number] = [-0.05, 0.38];
   const disc3: [number, number] = [-0.05, 0.52];
-  const w2: [number, number] = [0.05, -0.85];
-  const w3: [number, number] = [-0.70, -0.72];
-  const rbZ = -0.62;
-  const rbX = [-0.55, -0.35, -0.15, 0.05];
+  // the two stray box caps tucked into the freed lanes (clear of the knobs)
+  const w2: [number, number] = [ 0.00, -0.62];
+  const w3: [number, number] = [-0.68, -0.62];
+  // delay resistor row pulled forward, out from under the TONE/VOLUME knobs
+  const rbZ = -0.42;
+  const rbX = [-0.50, -0.32, -0.14, 0.04];
 
   const brick: [number, number] = [-0.50, 0.72];
   const q2:    [number, number] = [-0.64, -0.25];
