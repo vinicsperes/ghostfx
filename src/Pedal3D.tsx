@@ -1957,9 +1957,10 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   const ecD: [number, number][] = [[-0.50, -0.24], [-0.50, -0.04], [-0.50, 0.16]];
   const disc2: [number, number] = [-0.05, 0.38];
   const disc3: [number, number] = [-0.05, 0.52];
-  // the two stray box caps tucked into the freed lanes (clear of the knobs)
-  const w2: [number, number] = [ 0.00, -0.62];
-  const w3: [number, number] = [-0.68, -0.62];
+  // the two box caps moved to the clear rear band beside the power row
+  // (the cramped centre lanes made them overlap the knobs/parts)
+  const w2: [number, number] = [ 0.66, -1.55];
+  const w3: [number, number] = [-0.56, -1.55];
   // delay resistor row pulled forward, out from under the TONE/VOLUME knobs
   const rbZ = -0.42;
   const rbX = [-0.50, -0.32, -0.14, 0.04];
