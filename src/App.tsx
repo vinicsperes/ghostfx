@@ -279,7 +279,7 @@ export default function App() {
       {/* ===== DESKTOP transport bar (bottom of the stage) ===== */}
       {warningDone && (
         <div
-          className="hidden lg:flex fixed bottom-0 left-[340px] right-0 h-[92px] z-[40] items-center px-6 border-t pointer-events-auto"
+          className="hidden lg:flex fixed bottom-0 left-[360px] right-0 h-[92px] z-[40] items-center px-6 border-t pointer-events-auto"
           style={{ background: "rgba(3,3,8,0.94)", borderColor: fx.isRecording ? themeColor + "55" : "rgba(255,255,255,0.09)", transition: "border-color 200ms" }}
         >
           <RecorderControls
@@ -308,7 +308,7 @@ export default function App() {
 
         <div
           className="pointer-events-auto flex items-center justify-between"
-          style={{ padding: "max(12px,env(safe-area-inset-top,12px)) 16px 10px", background: "linear-gradient(180deg, rgba(5,8,10,0.96), rgba(5,8,10,0))" }}
+          style={{ padding: "max(12px,env(safe-area-inset-top,12px)) 16px 10px", background: "rgba(7,10,12,0.96)" }}
         >
           <div className="flex items-center gap-2.5">
             <GhostMark variant="solid" size={22} color="#e7e4dc" ledColor={themeColor} />
@@ -324,7 +324,7 @@ export default function App() {
 
         <div
           className="preset-scroll pointer-events-auto overflow-x-auto px-4 pb-3 pt-1"
-          style={{ WebkitOverflowScrolling: "touch", maskImage: "linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)", WebkitMaskImage: "linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)" }}
+          style={{ WebkitOverflowScrolling: "touch", background: "rgba(7,10,12,0.96)", borderBottom: "1px solid rgba(231,228,220,0.1)" }}
         >
           {/* w-max + mx-auto: centred when the chips fit, still scrollable when they overflow */}
           <div className="flex gap-2 w-max mx-auto">
@@ -338,12 +338,13 @@ export default function App() {
                   className="shrink-0 flex items-center gap-2 active:scale-95 transition-transform"
                   style={{
                     minHeight: 44, padding: "0 16px", borderRadius: 30,
-                    border: `1px solid ${on ? meta.color : "rgba(255,255,255,0.14)"}`,
-                    background: on ? `${meta.color}14` : "rgba(8,12,10,0.6)",
-                    color: on ? meta.color : "rgba(159,196,173,0.85)",
+                    border: `1.5px solid ${on ? meta.color : "rgba(231,228,220,0.18)"}`,
+                    background: on ? "rgba(10,13,11,0.92)" : "rgba(10,13,11,0.82)",
+                    color: on ? meta.color : "rgba(180,200,188,0.9)",
+                    boxShadow: on ? `0 0 10px ${meta.color}55, inset 0 0 12px ${meta.color}1a` : "none",
                   }}
                 >
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: on ? meta.color : "rgba(255,255,255,0.22)", boxShadow: on ? `0 0 6px ${meta.color}` : "none" }} />
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: on ? meta.color : "rgba(255,255,255,0.28)", boxShadow: on ? `0 0 6px ${meta.color}` : "none" }} />
                   <span style={{ fontFamily: "'Bungee', sans-serif", fontSize: 11, letterSpacing: "0.08em" }}>{p.name}</span>
                 </button>
               );
@@ -411,7 +412,7 @@ export default function App() {
         </div>
       </div>
 
-      <div className="absolute left-0 right-0 top-[88px] bottom-[150px] z-[2] lg:top-0 lg:left-[340px] lg:right-0 lg:bottom-[92px]">
+      <div className="absolute left-0 right-0 top-[88px] bottom-[150px] z-[2] lg:top-0 lg:left-[360px] lg:right-0 lg:bottom-[92px]">
         <Pedal3D
           ledColor={themeColor}
           isPlaying={isActive}
@@ -431,21 +432,24 @@ export default function App() {
       <aside
         className="hud-scroll hidden lg:flex fixed left-0 top-0 h-full z-[25] select-none flex-col"
         style={{
-          width: "clamp(260px, 85vw, 340px)",
-          background: "linear-gradient(180deg, #080c0a 0%, #060908 100%)",
-          borderRight: "1px solid rgba(231,228,220,0.12)",
-          padding: "clamp(20px,2.5vw,32px) clamp(16px,2vw,24px)",
-          gap: "clamp(16px,2.2vh,28px)",
+          width: 360,
+          // translucent glass: the shader background bleeds through the right edge
+          background: "linear-gradient(105deg, rgba(6,9,11,0.95) 48%, rgba(6,9,11,0.82) 76%, rgba(6,9,11,0.30) 100%)",
+          backdropFilter: "blur(7px)",
+          WebkitBackdropFilter: "blur(7px)",
+          borderRight: "1px solid rgba(231,228,220,0.07)",
+          padding: "clamp(22px,2.4vh,34px) 30px",
+          gap: "clamp(18px,2.4vh,30px)",
           pointerEvents: "auto",
           overflowY: "auto",
         }}
       >
 
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2.5">
-            <GhostMark variant="solid" size={26} color="#e7e4dc" ledColor={themeColor} />
+          <div className="flex items-center gap-3">
+            <GhostMark variant="solid" size={28} color="#e7e4dc" ledColor={themeColor} />
             <span
-              style={{ fontFamily: "'Saira', sans-serif", fontWeight: 800, fontSize: 23, lineHeight: 1, letterSpacing: "-0.02em", color: "#e7e4dc" }}
+              style={{ fontFamily: "'Saira', sans-serif", fontWeight: 800, fontSize: 25, lineHeight: 1, letterSpacing: "-0.01em", color: "#e7e4dc" }}
             >
               GHOST<span style={{ color: themeColor }}>FX</span>
             </span>
@@ -470,7 +474,7 @@ export default function App() {
           <span
             className="font-[var(--font-display)] uppercase"
             style={{
-              fontSize: "clamp(28px, 3.2vw, 52px)",
+              fontSize: "clamp(30px, 4.4vw, 44px)",
               color: "#ffffff",
               letterSpacing: "-0.01em",
               lineHeight: 1,
@@ -481,12 +485,12 @@ export default function App() {
           </span>
           <span
             style={{
-              fontSize: "clamp(30px, 3.5vw, 56px)",
+              fontSize: "clamp(30px, 4.4vw, 44px)",
               color: themeColor,
               fontFamily: '"Rock 3D", system-ui',
               fontWeight: 400,
-              letterSpacing: "0.04em",
-              lineHeight: 1.15,
+              letterSpacing: "0.02em",
+              lineHeight: 1.2,
               whiteSpace: "nowrap",
               textShadow: `0 0 24px ${themeColor}66, 0 0 48px ${themeColor}22`,
             }}
@@ -496,7 +500,7 @@ export default function App() {
           <span
             className="font-[var(--font-serif)] italic"
             style={{
-              fontSize: "clamp(32px, 3.8vw, 60px)",
+              fontSize: "clamp(34px, 5vw, 50px)",
               color: "#ffffff",
               opacity: 0.82,
               letterSpacing: "-0.02em",
@@ -725,7 +729,7 @@ function BottomBar({
 
   return (
     <div
-      className="hidden lg:block fixed z-[40] pointer-events-auto left-1/2 -translate-x-1/2 lg:left-[calc(50%_+_170px)]"
+      className="hidden lg:block fixed z-[40] pointer-events-auto left-1/2 -translate-x-1/2 lg:left-[calc(50%_+_180px)]"
       style={{
         top: "max(12px, env(safe-area-inset-top, 12px))",
         width: "min(532px, calc(100vw - 24px))",
