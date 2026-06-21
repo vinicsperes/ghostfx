@@ -426,7 +426,7 @@ function PedalBody({
             {/* true bypass no 3PDT: coluna direita = input, esquerda = output, frente = LED + jumper */}
             <Wire start={[ 0.135, SW_LUG_Y, FSZ - 0.135]} end={[ 0.14, PAD_Y, 1.05]} color="#22aa3a" />
             <Wire start={[-0.135, SW_LUG_Y, FSZ - 0.135]} end={[-0.14, PAD_Y, 1.05]} color="#3a6ad0" />
-            <Wire start={[ 0.705, 0.10, -0.60]} end={[ 0.155, SW_LUG_Y + 0.02, FSZ]} color="#e8e8e8" sag={0.06} r={0.009} />
+            <Wire start={[ 0.705, 0.10, -0.60]} mid={[0.93, 0.06, 0.22]} end={[ 0.155, SW_LUG_Y + 0.02, FSZ]} color="#e8e8e8" r={0.009} />
             <Wire start={[ 0.135, SW_LUG_Y, FSZ + 0.135]} end={[-0.135, SW_LUG_Y, FSZ + 0.135]} color="#d02020" sag={0.05} r={0.009} />
             <Wire start={[-0.135, SW_LUG_Y + 0.02, FSZ]} end={[-0.135, SW_LUG_Y - 0.02, FSZ - 0.135]} color="#181818" sag={0.03} r={0.009} />
             <Wire start={[0, SW_LUG_Y, FSZ + 0.135]} end={[0.02, PAD_Y, 0.30]} color="#181818" sag={0.05} r={0.009} />
