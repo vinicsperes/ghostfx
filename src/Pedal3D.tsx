@@ -426,9 +426,9 @@ function PedalBody({
             {/* true bypass no 3PDT: coluna direita = input, esquerda = output, frente = LED + jumper */}
             <Wire start={[ 0.135, SW_LUG_Y, FSZ - 0.135]} end={[ 0.14, PAD_Y, 1.05]} color="#22aa3a" />
             <Wire start={[-0.135, SW_LUG_Y, FSZ - 0.135]} end={[-0.14, PAD_Y, 1.05]} color="#3a6ad0" />
-            <Wire start={[ 0.705, 0.10, -0.60]} mids={[[0.77, 0.04, -0.45], [0.76, 0.035, 0.55], [0.74, 0.03, 0.85], [0.45, 0.02, 1.00]]} end={[ 0.155, SW_LUG_Y + 0.02, FSZ]} color="#e8e8e8" r={0.009} />
-            <CableClip x={0.76} z={-0.20} />
-            <CableClip x={0.76} z={ 0.30} />
+            <Wire start={[ 0.705, 0.10, -0.60]} mids={[[0.79, -0.01, -0.46], [0.78, -0.02, 0.40], [0.72, -0.02, 0.78], [0.42, -0.01, 1.00]]} end={[ 0.155, SW_LUG_Y + 0.02, FSZ]} color="#e8e8e8" r={0.009} />
+            <CableClip x={0.78} z={-0.25} />
+            <CableClip x={0.78} z={ 0.10} />
             <Wire start={[ 0.135, SW_LUG_Y, FSZ + 0.135]} end={[-0.135, SW_LUG_Y, FSZ + 0.135]} color="#d02020" sag={0.05} r={0.009} />
             <Wire start={[-0.135, SW_LUG_Y + 0.02, FSZ]} end={[-0.135, SW_LUG_Y - 0.02, FSZ - 0.135]} color="#181818" sag={0.03} r={0.009} />
             <Wire start={[0, SW_LUG_Y, FSZ + 0.135]} mids={[[0.02, -0.01, 0.85]]} end={[0.02, PAD_Y, 0.30]} color="#181818" r={0.009} />
@@ -1597,7 +1597,8 @@ const PCB_BH = 0.05;
 const PCB_CU = "#c89a3c";
 
 // nylon saddle clip that pins a wire/harness down to the board ("presilha")
-function CableClip({ x, z, y = -0.026, rot = 0, color = "#141418" }: {
+// y default sits the feet on the board surface (board centre is at world -0.06)
+function CableClip({ x, z, y = -0.06, rot = 0, color = "#141418" }: {
   x: number; z: number; y?: number; rot?: number; color?: string;
 }) {
   const base = PCB_BH / 2;
@@ -1952,29 +1953,29 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   // ── full reflow: spread the whole circuit across the board, signal flowing
   //    input(right) → drive → delay(centre) → reverb(front-left) → output(left) ──
 
-  // input + drive · right
-  const q1:    [number, number] = [ 0.66, -0.34];
-  const rIn:   [number, number] = [ 0.66, -0.10];
-  const ic1:   [number, number] = [ 0.36,  0.12];
-  const dg1:   [number, number] = [ 0.50,  0.60];
-  const dg2:   [number, number] = [ 0.64,  0.60];
-  const disc1: [number, number] = [ 0.50, -0.14];
-  const raZ = 0.44;
-  const raX = [0.16, 0.34, 0.52, 0.70];
+  // input + drive · right (shifted back toward the pots)
+  const q1:    [number, number] = [ 0.66, -0.46];
+  const rIn:   [number, number] = [ 0.66, -0.24];
+  const ic1:   [number, number] = [ 0.34, -0.06];
+  const dg1:   [number, number] = [ 0.56, -0.06];
+  const dg2:   [number, number] = [ 0.56,  0.10];
+  const disc1: [number, number] = [ 0.30, -0.34];
+  const raZ = 0.32;
+  const raX = [0.14, 0.32, 0.50, 0.68];
 
   // delay · centre
-  const ic2: [number, number] = [-0.22, 0.04];
-  const ecD: [number, number][] = [[-0.56, -0.26], [-0.56, -0.06], [-0.56, 0.14]];
-  const disc2: [number, number] = [-0.06, 0.46];
-  const disc3: [number, number] = [ 0.12, 0.46];
-  const rbZ = -0.40;
+  const ic2: [number, number] = [-0.22, -0.10];
+  const ecD: [number, number][] = [[-0.56, -0.38], [-0.56, -0.18], [-0.56, 0.02]];
+  const disc2: [number, number] = [-0.14, 0.34];
+  const disc3: [number, number] = [-0.02, 0.34];
+  const rbZ = -0.44;
   const rbX = [-0.52, -0.36, -0.20, -0.04];
 
   // reverb + output · front-left / left column
-  const brick: [number, number] = [-0.48, 0.74];
-  const q2:    [number, number] = [-0.70, -0.34];
-  const ecOut: [number, number] = [-0.70, -0.12];
-  const rOut:  [number, number] = [-0.70,  0.10];
+  const brick: [number, number] = [-0.48, 0.66];
+  const q2:    [number, number] = [-0.70, -0.46];
+  const ecOut: [number, number] = [-0.70, -0.24];
+  const rOut:  [number, number] = [-0.70, -0.02];
 
   // rail perimeter: rear edge pushed into the extended band so it encloses the power row
   const zBack = -(l / 2 + BACK_EXT) + 0.04;
