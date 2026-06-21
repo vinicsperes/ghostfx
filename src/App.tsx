@@ -323,29 +323,32 @@ export default function App() {
         </div>
 
         <div
-          className="preset-scroll pointer-events-auto flex gap-2 overflow-x-auto px-4 pb-3 pt-1"
+          className="preset-scroll pointer-events-auto overflow-x-auto px-4 pb-3 pt-1"
           style={{ WebkitOverflowScrolling: "touch", maskImage: "linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)", WebkitMaskImage: "linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)" }}
         >
-          {PRESETS.map((p, i) => {
-            const meta = PRESET_META[i];
-            const on = presetIdx === i;
-            return (
-              <button
-                key={i}
-                onClick={() => handlePresetSelect(i)}
-                className="shrink-0 flex items-center gap-2 active:scale-95 transition-transform"
-                style={{
-                  minHeight: 44, padding: "0 16px", borderRadius: 30,
-                  border: `1px solid ${on ? meta.color : "rgba(255,255,255,0.14)"}`,
-                  background: on ? `${meta.color}14` : "rgba(8,12,10,0.6)",
-                  color: on ? meta.color : "rgba(159,196,173,0.85)",
-                }}
-              >
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: on ? meta.color : "rgba(255,255,255,0.22)", boxShadow: on ? `0 0 6px ${meta.color}` : "none" }} />
-                <span style={{ fontFamily: "'Bungee', sans-serif", fontSize: 11, letterSpacing: "0.08em" }}>{p.name}</span>
-              </button>
-            );
-          })}
+          {/* w-max + mx-auto: centred when the chips fit, still scrollable when they overflow */}
+          <div className="flex gap-2 w-max mx-auto">
+            {PRESETS.map((p, i) => {
+              const meta = PRESET_META[i];
+              const on = presetIdx === i;
+              return (
+                <button
+                  key={i}
+                  onClick={() => handlePresetSelect(i)}
+                  className="shrink-0 flex items-center gap-2 active:scale-95 transition-transform"
+                  style={{
+                    minHeight: 44, padding: "0 16px", borderRadius: 30,
+                    border: `1px solid ${on ? meta.color : "rgba(255,255,255,0.14)"}`,
+                    background: on ? `${meta.color}14` : "rgba(8,12,10,0.6)",
+                    color: on ? meta.color : "rgba(159,196,173,0.85)",
+                  }}
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: on ? meta.color : "rgba(255,255,255,0.22)", boxShadow: on ? `0 0 6px ${meta.color}` : "none" }} />
+                  <span style={{ fontFamily: "'Bungee', sans-serif", fontSize: 11, letterSpacing: "0.08em" }}>{p.name}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* stage spacer — pedal shows through here; touches fall to the canvas */}
