@@ -84,3 +84,11 @@ body {
 .hud-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.22);
 }
+
+/* horizontal preset scroller on mobile — hide the scrollbar entirely */
+.preset-scroll {
+  scrollbar-width: none;
+}
+.preset-scroll::-webkit-scrollbar {
+  display: none;
+}
