@@ -1949,29 +1949,32 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   const c47:  [number, number] = [-0.06, -1.56];
   const reg:  [number, number] = [-0.34, -1.56];
 
-  // drive stage spread to the right column / front-right, opening the centre
-  const q1:    [number, number] = [0.66, -0.42];
-  const rIn:   [number, number] = [0.66, -0.18];
-  const ic1:   [number, number] = [0.50,  0.06];
-  const dg1:   [number, number] = [0.66,  0.52];
-  const dg2:   [number, number] = [0.68,  0.66];
-  const disc1: [number, number] = [0.36, -0.30];
-  const raZ = 0.32;
+  // ── full reflow: spread the whole circuit across the board, signal flowing
+  //    input(right) → drive → delay(centre) → reverb(front-left) → output(left) ──
+
+  // input + drive · right
+  const q1:    [number, number] = [ 0.66, -0.34];
+  const rIn:   [number, number] = [ 0.66, -0.10];
+  const ic1:   [number, number] = [ 0.36,  0.12];
+  const dg1:   [number, number] = [ 0.50,  0.60];
+  const dg2:   [number, number] = [ 0.64,  0.60];
+  const disc1: [number, number] = [ 0.50, -0.14];
+  const raZ = 0.44;
   const raX = [0.16, 0.34, 0.52, 0.70];
 
-  const ic2: [number, number] = [-0.20, 0.00];
-  // delay electrolytics in a clean even column left of IC2
-  const ecD: [number, number][] = [[-0.50, -0.24], [-0.50, -0.04], [-0.50, 0.16]];
-  const disc2: [number, number] = [-0.05, 0.38];
-  const disc3: [number, number] = [-0.05, 0.52];
-  // delay resistor row pulled forward, out from under the TONE/VOLUME knobs
-  const rbZ = -0.42;
-  const rbX = [-0.50, -0.32, -0.14, 0.04];
+  // delay · centre
+  const ic2: [number, number] = [-0.22, 0.04];
+  const ecD: [number, number][] = [[-0.56, -0.26], [-0.56, -0.06], [-0.56, 0.14]];
+  const disc2: [number, number] = [-0.06, 0.46];
+  const disc3: [number, number] = [ 0.12, 0.46];
+  const rbZ = -0.40;
+  const rbX = [-0.52, -0.36, -0.20, -0.04];
 
-  const brick: [number, number] = [-0.50, 0.72];
-  const q2:    [number, number] = [-0.64, -0.25];
-  const ecOut: [number, number] = [-0.62, -0.10];
-  const rOut:  [number, number] = [-0.70, 0.10];
+  // reverb + output · front-left / left column
+  const brick: [number, number] = [-0.48, 0.74];
+  const q2:    [number, number] = [-0.70, -0.34];
+  const ecOut: [number, number] = [-0.70, -0.12];
+  const rOut:  [number, number] = [-0.70,  0.10];
 
   // rail perimeter: rear edge pushed into the extended band so it encloses the power row
   const zBack = -(l / 2 + BACK_EXT) + 0.04;
