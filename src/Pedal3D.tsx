@@ -346,8 +346,9 @@ function PedalBody({
         />
       </RoundedBox>
 
-      <SideJack position={[-W / 2 - 0.04, 0.08, 0]} metal={palette.metal} />
-      <SideJack position={[W / 2 + 0.04, 0.08, 0]} metal={palette.metal} />
+      {/* I/O jacks recessed into the rear third: output left, input right */}
+      <SideJack position={[-W / 2 - 0.04, 0.08, -0.60]} metal={palette.metal} />
+      <SideJack position={[W / 2 + 0.04, 0.08, -0.60]} metal={palette.metal} />
       <HangTag />
 
       <group position={[0, H / 2 + 0.02, 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -425,12 +426,12 @@ function PedalBody({
             {/* true bypass no 3PDT: coluna direita = input, esquerda = output, frente = LED + jumper */}
             <Wire start={[ 0.135, SW_LUG_Y, FSZ - 0.135]} end={[ 0.14, PAD_Y, 1.05]} color="#22aa3a" />
             <Wire start={[-0.135, SW_LUG_Y, FSZ - 0.135]} end={[-0.14, PAD_Y, 1.05]} color="#3a6ad0" />
-            <Wire start={[ 0.70, 0.11, 0.02]} mids={[[0.90, 0.03, 0.18], [0.92, -0.01, 0.74], [0.52, 0.01, 1.02]]} end={[ 0.155, SW_LUG_Y + 0.02, FSZ]} color="#e8e8e8" r={0.009} />
+            <Wire start={[ 0.705, 0.10, -0.60]} mids={[[0.92, 0.02, -0.42], [0.93, -0.01, 0.64], [0.46, 0.01, 1.00]]} end={[ 0.155, SW_LUG_Y + 0.02, FSZ]} color="#e8e8e8" r={0.009} />
             <Wire start={[ 0.135, SW_LUG_Y, FSZ + 0.135]} end={[-0.135, SW_LUG_Y, FSZ + 0.135]} color="#d02020" sag={0.05} r={0.009} />
             <Wire start={[-0.135, SW_LUG_Y + 0.02, FSZ]} end={[-0.135, SW_LUG_Y - 0.02, FSZ - 0.135]} color="#181818" sag={0.03} r={0.009} />
             <Wire start={[0, SW_LUG_Y, FSZ + 0.135]} mids={[[0.02, -0.01, 0.85]]} end={[0.02, PAD_Y, 0.30]} color="#181818" r={0.009} />
 
-            <Wire start={[-0.70, 0.11, 0.0]} end={[-0.78, PAD_Y, -0.05]} color="#3a8ade" sag={0.04} />
+            <Wire start={[-0.705, 0.10, -0.60]} end={[-0.74, PAD_Y, -0.57]} color="#3a8ade" sag={0.04} />
 
             <Wire start={[ 0.035, LED_Y, 0.17]} end={[ 0.14, PAD_Y, 0.30]} color="#d02020" r={0.008} />
             <Wire start={[-0.035, LED_Y, 0.17]} end={[ 0.02, PAD_Y, 0.30]} color="#181818" r={0.008} />
@@ -1995,9 +1996,9 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
     // footswitch (true bypass send/return)
     { px:  0.14, pz:  0.88, nx: raX[0], nz: raZ },
     { px: -0.14, pz:  0.88, nx: brick[0] + 0.225, nz: 0.88 },
-    // jacks
-    { px:  0.78, pz: -0.12, nx: q1[0], nz: q1[1] },
-    { px: -0.78, pz: -0.22, nx: q2[0], nz: q2[1] },
+    // jacks recuados: input dir. → Q1, output esq. → Q2
+    { px:  0.74, pz: -0.74, nx: q1[0], nz: q1[1] },
+    { px: -0.74, pz: -0.74, nx: q2[0], nz: q2[1] },
     // LED
     { px:  0.14, pz:  0.13, nx: raX[0], nz: raZ },
     { px:  0.02, pz:  0.13, nx: raX[1], nz: raZ },
