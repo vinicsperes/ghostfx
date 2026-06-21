@@ -416,11 +416,11 @@ function PedalBody({
             <Wire start={[0.32, -0.26, -0.70]} mid={[0.50, -0.14, -1.32]} end={[0.50, PAD_Y, -1.31]} color="#d02020" />
             <Wire start={[0.32, -0.26, -0.50]} mid={[0.10, -0.14, -1.32]} end={[-0.06, PAD_Y, -1.31]} color="#181818" />
 
-            <Wire start={[kp.drive[0],  POT_LUG_Y, kp.drive[2]  + POT_LUG_Z]} end={[-0.55, PAD_Y, -0.98]} color="#202020" />
-            <Wire start={[kp.echo[0],   POT_LUG_Y, kp.echo[2]   + POT_LUG_Z]} end={[ 0.02, PAD_Y, -0.98]} color="#22aa3a" />
-            <Wire start={[kp.reverb[0], POT_LUG_Y, kp.reverb[2] + POT_LUG_Z]} end={[ 0.55, PAD_Y, -0.98]} color="#e0b020" />
-            <Wire start={[kp.tone[0],   POT_LUG_Y, kp.tone[2]   + POT_LUG_Z]} end={[-0.26, PAD_Y, -0.72]} color="#e8e8e8" />
-            <Wire start={[kp.master[0], POT_LUG_Y, kp.master[2] + POT_LUG_Z]} end={[ 0.30, PAD_Y, -0.72]} color="#d02020" />
+            <Wire start={[kp.drive[0],  POT_LUG_Y, kp.drive[2]  + POT_LUG_Z]} mid={[kp.drive[0],  0.03, kp.drive[2]  + POT_LUG_Z]} end={[-0.55, PAD_Y, -0.98]} color="#202020" />
+            <Wire start={[kp.echo[0],   POT_LUG_Y, kp.echo[2]   + POT_LUG_Z]} mid={[kp.echo[0],   0.03, kp.echo[2]   + POT_LUG_Z]} end={[ 0.02, PAD_Y, -0.98]} color="#22aa3a" />
+            <Wire start={[kp.reverb[0], POT_LUG_Y, kp.reverb[2] + POT_LUG_Z]} mid={[kp.reverb[0], 0.03, kp.reverb[2] + POT_LUG_Z]} end={[ 0.55, PAD_Y, -0.98]} color="#e0b020" />
+            <Wire start={[kp.tone[0],   POT_LUG_Y, kp.tone[2]   + POT_LUG_Z]} mid={[kp.tone[0],   0.03, kp.tone[2]   + POT_LUG_Z]} end={[-0.26, PAD_Y, -0.72]} color="#e8e8e8" />
+            <Wire start={[kp.master[0], POT_LUG_Y, kp.master[2] + POT_LUG_Z]} mid={[kp.master[0], 0.03, kp.master[2] + POT_LUG_Z]} end={[ 0.30, PAD_Y, -0.72]} color="#d02020" />
 
             {/* true bypass no 3PDT: coluna direita = input, esquerda = output, frente = LED + jumper */}
             <Wire start={[ 0.135, SW_LUG_Y, FSZ - 0.135]} end={[ 0.14, PAD_Y, 1.05]} color="#22aa3a" />
@@ -428,7 +428,7 @@ function PedalBody({
             <Wire start={[ 0.70, 0.11, 0.02]} mids={[[0.90, 0.03, 0.18], [0.92, -0.01, 0.74], [0.52, 0.01, 1.02]]} end={[ 0.155, SW_LUG_Y + 0.02, FSZ]} color="#e8e8e8" r={0.009} />
             <Wire start={[ 0.135, SW_LUG_Y, FSZ + 0.135]} end={[-0.135, SW_LUG_Y, FSZ + 0.135]} color="#d02020" sag={0.05} r={0.009} />
             <Wire start={[-0.135, SW_LUG_Y + 0.02, FSZ]} end={[-0.135, SW_LUG_Y - 0.02, FSZ - 0.135]} color="#181818" sag={0.03} r={0.009} />
-            <Wire start={[0, SW_LUG_Y, FSZ + 0.135]} end={[0.02, PAD_Y, 0.30]} color="#181818" sag={0.05} r={0.009} />
+            <Wire start={[0, SW_LUG_Y, FSZ + 0.135]} mids={[[0.02, -0.01, 0.85]]} end={[0.02, PAD_Y, 0.30]} color="#181818" r={0.009} />
 
             <Wire start={[-0.70, 0.11, 0.0]} end={[-0.78, PAD_Y, -0.05]} color="#3a8ade" sag={0.04} />
 
