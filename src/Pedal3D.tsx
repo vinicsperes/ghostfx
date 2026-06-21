@@ -8,12 +8,16 @@ function easeOutBack(x: number): number {
   return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
 }
 
+// touch devices hide the mouse-oriented hints; narrow screens frame the pedal closer
+const IS_TOUCH = typeof window !== "undefined" && (window.matchMedia?.("(pointer: coarse)").matches ?? false);
+const IS_NARROW = typeof window !== "undefined" && window.innerWidth < 768;
+
 function ResponsiveCamera() {
   const { camera } = useThree();
   useEffect(() => {
     const update = () => {
       if (camera instanceof THREE.PerspectiveCamera) {
-        camera.fov = window.innerWidth < 768 ? 52 : 34;
+        camera.fov = window.innerWidth < 768 ? 48 : 34;
         camera.updateProjectionMatrix();
       }
     };
@@ -77,7 +81,7 @@ export default function Pedal3D({
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: [-1.5, 7.0, 5.5], fov: 34, near: 0.1, far: 60 }}
+        camera={{ position: IS_NARROW ? [-1.3, 5.9, 4.6] : [-1.5, 7.0, 5.5], fov: 34, near: 0.1, far: 60 }}
         gl={{ antialias: true, alpha: true }}
         onCreated={({ camera }) => {
           camera.lookAt(0, 0, 0);
@@ -121,7 +125,7 @@ export default function Pedal3D({
           position={[0, 0, 0]}
           onPointerDown={() => setHasInteracted(true)}
         >
-          {!hasInteracted && <HintSystem accent={palette.accent} />}
+          {!hasInteracted && !IS_TOUCH && <HintSystem accent={palette.accent} />}
           <PedalScene
             palette={palette}
             ledColor={ledColor}
