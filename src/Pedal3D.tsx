@@ -425,7 +425,7 @@ function PedalBody({
             {/* true bypass no 3PDT: coluna direita = input, esquerda = output, frente = LED + jumper */}
             <Wire start={[ 0.135, SW_LUG_Y, FSZ - 0.135]} end={[ 0.14, PAD_Y, 1.05]} color="#22aa3a" />
             <Wire start={[-0.135, SW_LUG_Y, FSZ - 0.135]} end={[-0.14, PAD_Y, 1.05]} color="#3a6ad0" />
-            <Wire start={[ 0.70, 0.11, 0.02]} end={[ 0.155, SW_LUG_Y + 0.02, FSZ]} color="#e8e8e8" sag={0.06} r={0.009} />
+            <Wire start={[ 0.70, 0.11, 0.02]} mids={[[0.90, 0.03, 0.18], [0.92, -0.01, 0.74], [0.52, 0.01, 1.02]]} end={[ 0.155, SW_LUG_Y + 0.02, FSZ]} color="#e8e8e8" r={0.009} />
             <Wire start={[ 0.135, SW_LUG_Y, FSZ + 0.135]} end={[-0.135, SW_LUG_Y, FSZ + 0.135]} color="#d02020" sag={0.05} r={0.009} />
             <Wire start={[-0.135, SW_LUG_Y + 0.02, FSZ]} end={[-0.135, SW_LUG_Y - 0.02, FSZ - 0.135]} color="#181818" sag={0.03} r={0.009} />
             <Wire start={[0, SW_LUG_Y, FSZ + 0.135]} end={[0.02, PAD_Y, 0.30]} color="#181818" sag={0.05} r={0.009} />
@@ -1543,18 +1543,20 @@ function Battery9V() {
   );
 }
 
-function Wire({ start, end, color, sag, r = 0.010, mid }: {
+function Wire({ start, end, color, sag, r = 0.010, mid, mids }: {
   start: [number, number, number]; end: [number, number, number]; color: string; sag?: number; r?: number;
   mid?: [number, number, number];
+  mids?: [number, number, number][];
 }) {
   const geometry = useMemo(() => {
     const s = new THREE.Vector3(...start);
     const e = new THREE.Vector3(...end);
-    if (mid) {
-      // waypoint explícito (ex.: contornar a beirada da placa)
-      const m = new THREE.Vector3(...mid);
-      const curve = new THREE.CatmullRomCurve3([s, m, e], false, "catmullrom", 0.7);
-      return new THREE.TubeGeometry(curve, 32, r, 8, false);
+    const way = mids ?? (mid ? [mid] : null);
+    if (way) {
+      // explicit waypoints — route the wire along the walls/edges with rounded bends
+      const pts = [s, ...way.map((m) => new THREE.Vector3(...m)), e];
+      const curve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.5);
+      return new THREE.TubeGeometry(curve, Math.max(40, pts.length * 18), r, 8, false);
     }
     const horiz = Math.hypot(e.x - s.x, e.z - s.z);
     const drop = sag ?? Math.min(0.045 + horiz * 0.10, 0.14);
@@ -1569,7 +1571,7 @@ function Wire({ start, end, color, sag, r = 0.010, mid }: {
     p2.y -= drop; p2.x -= j2 * 0.7; p2.z += j1 * 0.7;
     const curve = new THREE.CatmullRomCurve3([s, p1, p2, e], false, "catmullrom", 0.9);
     return new THREE.TubeGeometry(curve, 32, r, 8, false);
-  }, [start, end, sag, r, mid]);
+  }, [start, end, sag, r, mid, mids]);
   return (
     <group>
       <mesh geometry={geometry} castShadow>
