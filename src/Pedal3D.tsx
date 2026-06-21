@@ -1491,8 +1491,8 @@ function PotBody({ x, z, topY }: { x: number; z: number; topY: number }) {
 }
 
 function SwitchBody({ x, z, topY }: { x: number; z: number; topY: number }) {
-  // 3PDT: corpo ~17.6 × 17.6mm, 9 lugs em grade de ~5mm
-  const w = 0.38, d = 0.38, h = 0.28;
+  // 3PDT: smaller body, 9 lugs in a tighter grid
+  const w = 0.30, d = 0.30, h = 0.22;
   const cy = topY - 0.025 - h / 2;
   const lugY = cy - h / 2 - 0.030;
   return (
@@ -1501,8 +1501,8 @@ function SwitchBody({ x, z, topY }: { x: number; z: number; topY: number }) {
         <boxGeometry args={[w, h, d]} />
         <meshStandardMaterial color="#45454d" metalness={0.4} roughness={0.5} />
       </mesh>
-      {[-0.135, 0, 0.135].flatMap((lx) =>
-        [-0.135, 0, 0.135].map((lz) => (
+      {[-0.105, 0, 0.105].flatMap((lx) =>
+        [-0.105, 0, 0.105].map((lz) => (
           <mesh key={`${lx}_${lz}`} position={[lx, lugY, lz]}>
             <boxGeometry args={[0.034, 0.060, 0.012]} />
             <meshStandardMaterial color="#c9b070" metalness={0.78} roughness={0.22} />
@@ -1971,9 +1971,11 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
 
   // delay · centre
   const ic2: [number, number] = [-0.22, 0.06];
-  const ecD: [number, number][] = [[-0.56, -0.26], [-0.56, -0.04], [-0.56, 0.18]];
-  const disc2: [number, number] = [-0.06, 0.42];
-  const disc3: [number, number] = [ 0.08, 0.42];
+  // delay electrolytics distributed into the clear gaps between the knobs
+  // (drive↔echo, echo↔reverb, and the central tone↔volume gap)
+  const ecD: [number, number][] = [[-0.31, -1.18], [0.31, -1.18], [0.00, -0.70]];
+  const disc2: [number, number] = [-0.18, 0.40];
+  const disc3: [number, number] = [ 0.06, 0.40];
 
   // reverb + output · left column
   const brick: [number, number] = [-0.44, 0.78];
