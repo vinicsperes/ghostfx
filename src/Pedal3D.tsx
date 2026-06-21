@@ -1942,29 +1942,32 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   const c47:  [number, number] = [ 0.05, -1.38];
   const reg:  [number, number] = [-0.20, -1.38];
 
-  const q1:    [number, number] = [0.62, -0.45];
-  const rIn:   [number, number] = [0.72, -0.20];
-  const ic1:   [number, number] = [0.38, -0.10];
-  const dg1:   [number, number] = [0.62, 0.00];
-  const dg2:   [number, number] = [0.62, 0.115];
-  const disc1: [number, number] = [0.17, -0.32];
-  const w1:    [number, number] = [0.14, 0.06];
-  const raZ = 0.32;
-  const raX = [0.16, 0.34, 0.52, 0.70];
+  // ── input + drive · right column ──
+  const q1:    [number, number] = [ 0.64, -0.52];
+  const rIn:   [number, number] = [ 0.64, -0.28];
+  const ic1:   [number, number] = [ 0.44, -0.06];
+  const dg1:   [number, number] = [ 0.66,  0.08];
+  const dg2:   [number, number] = [ 0.66,  0.20];
+  const disc1: [number, number] = [ 0.22, -0.34];
+  const w1:    [number, number] = [ 0.22,  0.12];
+  const raZ = 0.36;
+  const raX = [0.20, 0.38, 0.56, 0.72];
 
-  const ic2: [number, number] = [-0.20, 0.00];
-  const ecD: [number, number][] = [[-0.48, -0.28], [-0.48, -0.10], [-0.48, 0.08]];
-  const disc2: [number, number] = [-0.05, 0.38];
-  const disc3: [number, number] = [-0.05, 0.52];
-  const w2: [number, number] = [0.05, -0.85];
-  const w3: [number, number] = [-0.70, -0.72];
-  const rbZ = -0.62;
-  const rbX = [-0.55, -0.35, -0.15, 0.05];
+  // ── delay · centre ──
+  const ic2: [number, number] = [-0.18, 0.02];
+  const ecD: [number, number][] = [[-0.48, -0.26], [-0.48, -0.08], [-0.48, 0.10]];
+  const disc2: [number, number] = [-0.04, 0.42];
+  const disc3: [number, number] = [-0.04, 0.56];
+  const w2: [number, number] = [ 0.06, -0.20];
+  const w3: [number, number] = [-0.66, -0.42];
+  const rbZ = -0.40;
+  const rbX = [-0.50, -0.32, -0.14, 0.04];
 
-  const brick: [number, number] = [-0.50, 0.72];
-  const q2:    [number, number] = [-0.64, -0.25];
-  const ecOut: [number, number] = [-0.62, -0.10];
-  const rOut:  [number, number] = [-0.70, 0.10];
+  // ── reverb + output · front-left / left column ──
+  const brick: [number, number] = [-0.48, 0.76];
+  const q2:    [number, number] = [-0.66, -0.18];
+  const ecOut: [number, number] = [-0.66,  0.00];
+  const rOut:  [number, number] = [-0.66,  0.16];
 
   // rear edge of the copper rails pushed back into the BACK_EXT band so the
   // perimeter encloses the relocated power section
