@@ -1785,27 +1785,6 @@ function Transistor({ x, z, rot = 0 }: { x: number; z: number; rot?: number }) {
   );
 }
 
-function BoxCap({ x, z, rot = 0, color = "#b02818" }: { x: number; z: number; rot?: number; color?: string }) {
-  // film box estilo WIMA: 7.2mm de comprimento, pitch 5mm
-  const w = 0.194;
-  const h = 0.16;
-  const d = 0.067;
-  return (
-    <group position={[x, 0, z]} rotation={[0, rot, 0]}>
-      <mesh position={[0, PCB_BH / 2 + h / 2 + 0.006, 0]} castShadow>
-        <boxGeometry args={[w, h, d]} />
-        <meshStandardMaterial color={color} roughness={0.5} metalness={0.05} />
-      </mesh>
-      {[-0.0675, 0.0675].map((dx, i) => (
-        <mesh key={i} position={[dx, PCB_BH / 2 + 0.005, 0]}>
-          <cylinderGeometry args={[0.008, 0.008, 0.014, 8]} />
-          <meshStandardMaterial color="#c0c0c4" metalness={0.85} roughness={0.18} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
 const SILK = "#8c8c80";
 
 function SilkRect({ x, z, w, d, y, t = 0.0045 }: {
@@ -1948,7 +1927,6 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   const dg1:   [number, number] = [0.62, 0.00];
   const dg2:   [number, number] = [0.62, 0.115];
   const disc1: [number, number] = [0.17, -0.32];
-  const w1:    [number, number] = [0.14, 0.06];
   const raZ = 0.32;
   const raX = [0.16, 0.34, 0.52, 0.70];
 
@@ -1957,10 +1935,6 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   const ecD: [number, number][] = [[-0.50, -0.24], [-0.50, -0.04], [-0.50, 0.16]];
   const disc2: [number, number] = [-0.05, 0.38];
   const disc3: [number, number] = [-0.05, 0.52];
-  // the two box caps moved to the clear rear band beside the power row
-  // (the cramped centre lanes made them overlap the knobs/parts)
-  const w2: [number, number] = [ 0.66, -1.55];
-  const w3: [number, number] = [-0.56, -1.55];
   // delay resistor row pulled forward, out from under the TONE/VOLUME knobs
   const rbZ = -0.42;
   const rbX = [-0.50, -0.32, -0.14, 0.04];
@@ -1993,8 +1967,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
     { x1: ic1[0], z1: ic1[1], x2: dg1[0], z2: dg1[1], tw: 0.011 },
     { x1: ic1[0], z1: ic1[1], x2: dg2[0], z2: dg2[1], tw: 0.011 },
     { x1: ic1[0], z1: ic1[1], x2: disc1[0], z2: disc1[1], tw: 0.011 },
-    { x1: ic1[0], z1: ic1[1], x2: w1[0], z2: w1[1], tw: 0.012 },
-    { x1: w1[0], z1: w1[1], x2: raX[1], z2: raZ, tw: 0.012 },
+    { x1: ic1[0], z1: ic1[1], x2: raX[1], z2: raZ, tw: 0.012 },
     { x1: raX[0], z1: raZ, x2: raX[3], z2: raZ, tw: 0.014 },
     { x1: raX[0], z1: raZ, x2: ic2[0], z2: ic2[1], tw: 0.012 },
 
@@ -2007,8 +1980,6 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
     { x1: brick[0], z1: 0.30, x2: q2[0], z2: q2[1], tw: 0.012 },
     { x1: q2[0], z1: q2[1], x2: ecOut[0], z2: ecOut[1], tw: 0.012 },
     { x1: q2[0], z1: q2[1], x2: rOut[0], z2: rOut[1], tw: 0.012 },
-    { x1: w3[0], z1: w3[1], x2: rbX[0], z2: rbZ, tw: 0.011 },
-    { x1: w2[0], z1: w2[1], x2: rbX[3], z2: rbZ, tw: 0.011 },
   ];
 
   type Conn = { px: number; pz: number; nx: number; nz: number };
@@ -2016,7 +1987,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
     // pots: drive · echo · reverb (fileira de trás) + tone · volume
     { px: -0.55, pz: -1.15, nx: rbX[0], nz: rbZ },
     { px:  0.02, pz: -1.15, nx: ic2[0], nz: -0.32 },
-    { px:  0.55, pz: -1.15, nx: w2[0], nz: w2[1] },
+    { px:  0.55, pz: -1.15, nx: rbX[3], nz: rbZ },
     { px: -0.26, pz: -0.89, nx: rbX[1], nz: rbZ },
     { px:  0.30, pz: -0.89, nx: rbX[3], nz: rbZ },
     // footswitch (true bypass send/return)
@@ -2027,7 +1998,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
     { px: -0.78, pz: -0.22, nx: q2[0], nz: q2[1] },
     // LED
     { px:  0.14, pz:  0.13, nx: raX[0], nz: raZ },
-    { px:  0.02, pz:  0.13, nx: w1[0], nz: w1[1] },
+    { px:  0.02, pz:  0.13, nx: raX[1], nz: raZ },
     // alimentação (bateria/DC): pads atrás dos pots, à frente da fileira de força
     { px:  0.50, pz: -1.48, nx: d3[0], nz: d3[1] },
     { px: -0.06, pz: -1.48, nx: c47[0], nz: c47[1] },
@@ -2160,7 +2131,6 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
       <Diode x={dg1[0]} z={dg1[1]} rot={Math.PI / 2} />
       <Diode x={dg2[0]} z={dg2[1]} rot={Math.PI / 2} />
       <DiscCap x={disc1[0]} z={disc1[1]} />
-      <BoxCap x={w1[0]} z={w1[1]} />
       <THResistor x={raX[0]} z={raZ} />
       <THResistor x={raX[1]} z={raZ} b1="#c02010" b2="#101010" b3="#e0a020" />
       <THResistor x={raX[2]} z={raZ} b1="#202080" b2="#c02010" b3="#e0a020" />
@@ -2173,7 +2143,6 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
       <ElCap x={ecD[2][0]} z={ecD[2][1]} h={0.20} r={0.054} color="#1a1a1a" />
       <DiscCap x={disc2[0]} z={disc2[1]} color="#c8a050" />
       <DiscCap x={disc3[0]} z={disc3[1]} color="#b8c070" />
-      <BoxCap x={w2[0]} z={w2[1]} />
       <THResistor x={rbX[0]} z={rbZ} b1="#e0a010" b2="#101010" b3="#c02010" />
       <THResistor x={rbX[1]} z={rbZ} />
       <THResistor x={rbX[2]} z={rbZ} b1="#202080" b2="#c02010" b3="#e0a020" />
@@ -2184,7 +2153,6 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
       <Transistor x={q2[0]} z={q2[1]} rot={Math.PI / 2} />
       <ElCap x={ecOut[0]} z={ecOut[1]} h={0.20} r={0.054} color="#1a3a6a" />
       <THResistor x={rOut[0]} z={rOut[1]} />
-      <BoxCap x={w3[0]} z={w3[1]} />
     </group>
   );
 }
