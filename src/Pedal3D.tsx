@@ -1924,12 +1924,13 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   const c47:  [number, number] = [-0.06, -1.56];
   const reg:  [number, number] = [-0.34, -1.56];
 
-  const q1:    [number, number] = [0.62, -0.45];
-  const rIn:   [number, number] = [0.72, -0.20];
-  const ic1:   [number, number] = [0.38, -0.10];
-  const dg1:   [number, number] = [0.62, 0.00];
-  const dg2:   [number, number] = [0.62, 0.115];
-  const disc1: [number, number] = [0.17, -0.32];
+  // drive stage spread to the right column / front-right, opening the centre
+  const q1:    [number, number] = [0.66, -0.42];
+  const rIn:   [number, number] = [0.66, -0.18];
+  const ic1:   [number, number] = [0.50,  0.06];
+  const dg1:   [number, number] = [0.66,  0.52];
+  const dg2:   [number, number] = [0.68,  0.66];
+  const disc1: [number, number] = [0.36, -0.30];
   const raZ = 0.32;
   const raX = [0.16, 0.34, 0.52, 0.70];
 
