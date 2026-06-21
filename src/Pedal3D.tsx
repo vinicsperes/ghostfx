@@ -1246,12 +1246,13 @@ function SideJack({ position, metal }: { position: [number, number, number], met
   return (
     <group position={position} rotation={[0, 0, isLeft ? -Math.PI / 2 : Math.PI / 2]}>
 
-      <mesh position={[0, 0.22, 0]} castShadow>
-        <cylinderGeometry args={[0.135, 0.135, 0.26, 20]} />
-        <meshStandardMaterial color="#0a0a0a" roughness={0.62} metalness={0.18} />
+      {/* enclosed-jack body: a smaller rectangular plastic box (not cylindrical) */}
+      <mesh position={[0, 0.205, 0]} castShadow>
+        <boxGeometry args={[0.20, 0.24, 0.17]} />
+        <meshStandardMaterial color="#0a0a0a" roughness={0.62} metalness={0.12} />
       </mesh>
-      <mesh position={[0, 0.355, 0]}>
-        <cylinderGeometry args={[0.105, 0.105, 0.018, 16]} />
+      <mesh position={[0, 0.335, 0]} castShadow>
+        <boxGeometry args={[0.16, 0.04, 0.13]} />
         <meshStandardMaterial color="#141414" roughness={0.7} metalness={0.05} />
       </mesh>
 
