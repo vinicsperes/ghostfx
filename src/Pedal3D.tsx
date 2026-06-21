@@ -426,7 +426,9 @@ function PedalBody({
             {/* true bypass no 3PDT: coluna direita = input, esquerda = output, frente = LED + jumper */}
             <Wire start={[ 0.135, SW_LUG_Y, FSZ - 0.135]} end={[ 0.14, PAD_Y, 1.05]} color="#22aa3a" />
             <Wire start={[-0.135, SW_LUG_Y, FSZ - 0.135]} end={[-0.14, PAD_Y, 1.05]} color="#3a6ad0" />
-            <Wire start={[ 0.705, 0.10, -0.60]} mids={[[0.92, 0.02, -0.42], [0.93, -0.01, 0.64], [0.46, 0.01, 1.00]]} end={[ 0.155, SW_LUG_Y + 0.02, FSZ]} color="#e8e8e8" r={0.009} />
+            <Wire start={[ 0.705, 0.10, -0.60]} mids={[[0.77, 0.04, -0.45], [0.76, 0.035, 0.55], [0.74, 0.03, 0.85], [0.45, 0.02, 1.00]]} end={[ 0.155, SW_LUG_Y + 0.02, FSZ]} color="#e8e8e8" r={0.009} />
+            <CableClip x={0.76} z={-0.20} />
+            <CableClip x={0.76} z={ 0.30} />
             <Wire start={[ 0.135, SW_LUG_Y, FSZ + 0.135]} end={[-0.135, SW_LUG_Y, FSZ + 0.135]} color="#d02020" sag={0.05} r={0.009} />
             <Wire start={[-0.135, SW_LUG_Y + 0.02, FSZ]} end={[-0.135, SW_LUG_Y - 0.02, FSZ - 0.135]} color="#181818" sag={0.03} r={0.009} />
             <Wire start={[0, SW_LUG_Y, FSZ + 0.135]} mids={[[0.02, -0.01, 0.85]]} end={[0.02, PAD_Y, 0.30]} color="#181818" r={0.009} />
@@ -1593,6 +1595,29 @@ function Wire({ start, end, color, sag, r = 0.010, mid, mids }: {
 
 const PCB_BH = 0.05;
 const PCB_CU = "#c89a3c";
+
+// nylon saddle clip that pins a wire/harness down to the board ("presilha")
+function CableClip({ x, z, y = -0.026, rot = 0, color = "#141418" }: {
+  x: number; z: number; y?: number; rot?: number; color?: string;
+}) {
+  const base = PCB_BH / 2;
+  return (
+    <group position={[x, y, z]} rotation={[0, rot, 0]}>
+      {/* arch over the wire */}
+      <mesh position={[0, base + 0.034, 0]} rotation={[0, 0, 0]} castShadow>
+        <torusGeometry args={[0.03, 0.0075, 8, 16, Math.PI]} />
+        <meshStandardMaterial color={color} roughness={0.5} metalness={0.05} />
+      </mesh>
+      {/* two feet anchoring it to the board */}
+      {[-0.03, 0.03].map((dx, i) => (
+        <mesh key={i} position={[dx, base + 0.016, 0]} castShadow>
+          <boxGeometry args={[0.013, 0.034, 0.016]} />
+          <meshStandardMaterial color={color} roughness={0.5} metalness={0.05} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
 
 function ElCap({ x, z, h = 0.18, r = 0.055, color = "#1a1a1a" }: {
   x: number; z: number; h?: number; r?: number; color?: string;
