@@ -413,8 +413,8 @@ function PedalBody({
 
             {/* bateria (agora sob a placa) → pads de força, saindo do snap e
                 contornando a beirada traseira da placa */}
-            <Wire start={[0.32, -0.26, -0.70]} mid={[0.50, -0.18, -1.10]} end={[0.62, PAD_Y, -0.97]} color="#d02020" />
-            <Wire start={[0.32, -0.26, -0.50]} mid={[0.42, -0.18, -1.10]} end={[0.45, PAD_Y, -0.97]} color="#181818" />
+            <Wire start={[0.32, -0.26, -0.70]} mid={[0.50, -0.14, -1.32]} end={[0.50, PAD_Y, -1.31]} color="#d02020" />
+            <Wire start={[0.32, -0.26, -0.50]} mid={[0.10, -0.14, -1.32]} end={[-0.06, PAD_Y, -1.31]} color="#181818" />
 
             <Wire start={[kp.drive[0],  POT_LUG_Y, kp.drive[2]  + POT_LUG_Z]} end={[-0.55, PAD_Y, -0.98]} color="#202020" />
             <Wire start={[kp.echo[0],   POT_LUG_Y, kp.echo[2]   + POT_LUG_Z]} end={[ 0.02, PAD_Y, -0.98]} color="#22aa3a" />
@@ -1927,7 +1927,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
 
   // substrato da placa estendido pra trás (cavidade onde ficava a bateria);
   // o LAYOUT (componentes/pads/silk) fica centrado em z=0, só a placa cresce.
-  const BACK_EXT = 0.30;
+  const BACK_EXT = 0.38;
   const physL = l + BACK_EXT;
 
   const railX = w / 2 - 0.10;
@@ -1935,10 +1935,12 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   // ---- layout por fluxo de sinal (coords locais; mundo = local z + 0.17) ----
   // alimentação no fundo (lado do DC jack) · input/drive à direita · delay no
   // centro · reverb (brick) frente-esquerda · saída à esquerda
-  const c100: [number, number] = [0.55, -1.02];
-  const c47:  [number, number] = [0.38, -1.02];
-  const reg:  [number, number] = [0.20, -1.02];
-  const d3:   [number, number] = [0.55, -0.86];
+  // power row tucked BEHIND the back pots (clear of the knob footprints),
+  // on the extended rear band: D3 → 100µF → 47µF → 78L05
+  const d3:   [number, number] = [ 0.50, -1.56];
+  const c100: [number, number] = [ 0.22, -1.56];
+  const c47:  [number, number] = [-0.06, -1.56];
+  const reg:  [number, number] = [-0.34, -1.56];
 
   const q1:    [number, number] = [0.62, -0.45];
   const rIn:   [number, number] = [0.72, -0.20];
@@ -1964,12 +1966,16 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   const ecOut: [number, number] = [-0.62, -0.10];
   const rOut:  [number, number] = [-0.70, 0.10];
 
+  // rail perimeter: rear edge pushed into the extended band so it encloses the power row
+  const zBack = -(l / 2 + BACK_EXT) + 0.04;
+  const zFront = l / 2 - 0.06;
+
   type Seg = { x1: number; z1: number; x2: number; z2: number; tw: number };
   const segs: Seg[] = [
-    { x1: -railX, z1: -l / 2 + 0.06, x2:  railX, z2: -l / 2 + 0.06, tw: 0.030 },
-    { x1: -railX, z1:  l / 2 - 0.06, x2:  railX, z2:  l / 2 - 0.06, tw: 0.030 },
-    { x1: -railX, z1: -l / 2 + 0.06, x2: -railX, z2:  l / 2 - 0.06, tw: 0.022 },
-    { x1:  railX, z1: -l / 2 + 0.06, x2:  railX, z2:  l / 2 - 0.06, tw: 0.022 },
+    { x1: -railX, z1: zBack, x2:  railX, z2: zBack, tw: 0.030 },
+    { x1: -railX, z1: zFront, x2:  railX, z2: zFront, tw: 0.030 },
+    { x1: -railX, z1: zBack, x2: -railX, z2: zFront, tw: 0.022 },
+    { x1:  railX, z1: zBack, x2:  railX, z2: zFront, tw: 0.022 },
 
     // alimentação: DC/bateria → D3 → filtros → 78L05 → trilho 5V do delay
     { x1: d3[0], z1: d3[1], x2: c100[0], z2: c100[1], tw: 0.018 },
@@ -2018,9 +2024,9 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
     // LED
     { px:  0.14, pz:  0.13, nx: raX[0], nz: raZ },
     { px:  0.02, pz:  0.13, nx: w1[0], nz: w1[1] },
-    // alimentação (bateria/DC)
-    { px:  0.62, pz: -1.14, nx: d3[0], nz: d3[1] },
-    { px:  0.45, pz: -1.14, nx: c47[0], nz: c47[1] },
+    // alimentação (bateria/DC): pads atrás dos pots, à frente da fileira de força
+    { px:  0.50, pz: -1.48, nx: d3[0], nz: d3[1] },
+    { px: -0.06, pz: -1.48, nx: c47[0], nz: c47[1] },
   ];
   conns.forEach(({ px, pz, nx, nz }) =>
     segs.push({ x1: px, z1: pz, x2: nx, z2: nz, tw: 0.012 }));
