@@ -398,7 +398,7 @@ function PedalBody({
         const topY = H / 2;
         const POT_LUG_Y = topY - 0.21;
         const POT_LUG_Z = -0.10;
-        const SW_LUG_Y = topY - 0.335;
+        const SW_LUG_Y = topY - 0.235; // matches SwitchBody lugY (topY - 0.055 - h, h=0.18)
         const LED_Y = topY - 0.06;
         const PAD_Y = -0.026;
         return (
@@ -424,14 +424,14 @@ function PedalBody({
             <Wire start={[kp.master[0], POT_LUG_Y, kp.master[2] + POT_LUG_Z]} mid={[kp.master[0], 0.03, kp.master[2] + POT_LUG_Z]} end={[ 0.30, PAD_Y, -0.72]} color="#d02020" />
 
             {/* true bypass no 3PDT: coluna direita = input, esquerda = output, frente = LED + jumper */}
-            <Wire start={[ 0.135, SW_LUG_Y, FSZ - 0.135]} end={[ 0.14, PAD_Y, 1.05]} color="#22aa3a" />
-            <Wire start={[-0.135, SW_LUG_Y, FSZ - 0.135]} end={[-0.14, PAD_Y, 1.05]} color="#3a6ad0" />
-            <Wire start={[ 0.705, 0.10, -0.60]} mids={[[0.79, -0.01, -0.46], [0.78, -0.02, 0.40], [0.72, -0.02, 0.78], [0.42, -0.01, 1.00]]} end={[ 0.155, SW_LUG_Y + 0.02, FSZ]} color="#e8e8e8" r={0.009} />
+            <Wire start={[ 0.08, SW_LUG_Y, FSZ - 0.08]} end={[ 0.14, PAD_Y, 1.05]} color="#22aa3a" />
+            <Wire start={[-0.08, SW_LUG_Y, FSZ - 0.08]} end={[-0.14, PAD_Y, 1.05]} color="#3a6ad0" />
+            <Wire start={[ 0.705, 0.10, -0.60]} mids={[[0.79, -0.01, -0.46], [0.78, -0.02, 0.40], [0.72, -0.02, 0.78], [0.42, -0.01, 1.00]]} end={[ 0.08, SW_LUG_Y, FSZ - 0.08]} color="#e8e8e8" r={0.009} />
             <CableClip x={0.78} z={-0.25} />
             <CableClip x={0.78} z={ 0.10} />
-            <Wire start={[ 0.135, SW_LUG_Y, FSZ + 0.135]} end={[-0.135, SW_LUG_Y, FSZ + 0.135]} color="#d02020" sag={0.05} r={0.009} />
-            <Wire start={[-0.135, SW_LUG_Y + 0.02, FSZ]} end={[-0.135, SW_LUG_Y - 0.02, FSZ - 0.135]} color="#181818" sag={0.03} r={0.009} />
-            <Wire start={[0, SW_LUG_Y, FSZ + 0.135]} mids={[[0.02, -0.01, 0.85]]} end={[0.02, PAD_Y, 0.30]} color="#181818" r={0.009} />
+            <Wire start={[ 0.08, SW_LUG_Y, FSZ + 0.08]} end={[-0.08, SW_LUG_Y, FSZ + 0.08]} color="#d02020" sag={0.04} r={0.009} />
+            <Wire start={[-0.08, SW_LUG_Y + 0.02, FSZ]} end={[-0.08, SW_LUG_Y - 0.02, FSZ - 0.08]} color="#181818" sag={0.025} r={0.009} />
+            <Wire start={[0, SW_LUG_Y, FSZ + 0.08]} mids={[[0.02, -0.01, 0.80]]} end={[0.02, PAD_Y, 0.30]} color="#181818" r={0.009} />
 
             <Wire start={[-0.705, 0.10, -0.60]} end={[-0.74, PAD_Y, -0.57]} color="#3a8ade" sag={0.04} />
 
@@ -1491,8 +1491,8 @@ function PotBody({ x, z, topY }: { x: number; z: number; topY: number }) {
 }
 
 function SwitchBody({ x, z, topY }: { x: number; z: number; topY: number }) {
-  // 3PDT: smaller body, 9 lugs in a tighter grid
-  const w = 0.30, d = 0.30, h = 0.22;
+  // 3PDT: compact body, 9 lugs in a tight grid (LG matches SW_LUG offsets in PedalBody)
+  const w = 0.24, d = 0.24, h = 0.18;
   const cy = topY - 0.025 - h / 2;
   const lugY = cy - h / 2 - 0.030;
   return (
@@ -1501,8 +1501,8 @@ function SwitchBody({ x, z, topY }: { x: number; z: number; topY: number }) {
         <boxGeometry args={[w, h, d]} />
         <meshStandardMaterial color="#45454d" metalness={0.4} roughness={0.5} />
       </mesh>
-      {[-0.105, 0, 0.105].flatMap((lx) =>
-        [-0.105, 0, 0.105].map((lz) => (
+      {[-0.08, 0, 0.08].flatMap((lx) =>
+        [-0.08, 0, 0.08].map((lz) => (
           <mesh key={`${lx}_${lz}`} position={[lx, lugY, lz]}>
             <boxGeometry args={[0.034, 0.060, 0.012]} />
             <meshStandardMaterial color="#c9b070" metalness={0.78} roughness={0.22} />
@@ -1970,7 +1970,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
   const disc1: [number, number] = [ 0.16, -0.08];
 
   // delay · centre
-  const ic2: [number, number] = [-0.22, 0.06];
+  const ic2: [number, number] = [-0.22, -0.06]; // receded so its front clears the brick
   // delay electrolytics distributed into the clear gaps between the knobs
   // (drive↔echo, echo↔reverb, and the central tone↔volume gap)
   const ecD: [number, number][] = [[-0.31, -1.18], [0.31, -1.18], [0.00, -0.70]];
