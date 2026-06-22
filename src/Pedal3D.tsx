@@ -41,6 +41,8 @@ export default function Pedal3D({
   palette,
   presetIdx = null,
   stompCount = 0,
+  view,
+  xray = false,
 }: {
   ledColor: string;
   isPlaying: boolean;
@@ -54,6 +56,9 @@ export default function Pedal3D({
   palette: { pedal: string; ink: string; accent: string; cream: string; metal: string };
   presetIdx?: number | null;
   stompCount?: number;
+  // test mode: fixed camera position (looks at origin); disables orbit + hints
+  view?: [number, number, number];
+  xray?: boolean; // make the enclosure near-transparent to inspect the internals
 }) {
   const ledActive = isPlaying;
   const [controlsEnabled, setControlsEnabled] = useState(true);
@@ -81,7 +86,7 @@ export default function Pedal3D({
       <Canvas
         shadows="percentage"
         dpr={IS_NARROW ? [1, 1.5] : [1, 2]}
-        camera={{ position: IS_NARROW ? [-1.3, 5.9, 4.6] : [-1.5, 7.0, 5.5], fov: 34, near: 0.1, far: 60 }}
+        camera={{ position: view ?? (IS_NARROW ? [-1.3, 5.9, 4.6] : [-1.5, 7.0, 5.5]), fov: 34, near: 0.1, far: 60 }}
         gl={{ antialias: true, alpha: true }}
         onCreated={({ camera }) => {
           camera.lookAt(0, 0, 0);
@@ -100,7 +105,7 @@ export default function Pedal3D({
 
         <ResponsiveCamera />
         <OrbitControls
-          enabled={controlsEnabled}
+          enabled={controlsEnabled && !view}
           enableDamping
           dampingFactor={0.05}
           minDistance={2.1}
@@ -125,9 +130,10 @@ export default function Pedal3D({
           position={[0, 0, 0]}
           onPointerDown={() => setHasInteracted(true)}
         >
-          {!hasInteracted && !IS_TOUCH && <HintSystem accent={palette.accent} />}
+          {!hasInteracted && !IS_TOUCH && !view && <HintSystem accent={palette.accent} />}
           <PedalScene
             palette={palette}
+            xray={xray}
             ledColor={ledColor}
             ledActive={ledActive}
             onTap={onTap}
@@ -262,6 +268,7 @@ function LabelText(props: React.ComponentProps<typeof Text>) {
 
 function PedalBody({
   palette,
+  xray = false,
   ledColor,
   ledActive,
   knobDrive,
@@ -281,6 +288,7 @@ function PedalBody({
   onCancel,
 }: {
   palette: { pedal: string; ink: string; accent: string; cream: string; metal: string };
+  xray?: boolean;
   ledColor: string;
   ledActive: boolean;
   knobDrive: number;
@@ -341,7 +349,7 @@ function PedalBody({
           clearcoat={0.45}
           clearcoatRoughness={0.12}
           transparent
-          opacity={0.82}
+          opacity={xray ? 0.12 : 0.82}
           depthWrite={false}
         />
       </RoundedBox>
@@ -415,7 +423,7 @@ function PedalBody({
             {/* bateria (agora sob a placa) → pads de força, saindo do snap e
                 contornando a beirada traseira da placa */}
             <Wire start={[0.32, -0.26, -0.70]} mid={[0.50, -0.14, -1.32]} end={[0.50, PAD_Y, -1.31]} color="#d02020" />
-            <Wire start={[0.32, -0.26, -0.50]} mid={[0.10, -0.14, -1.32]} end={[-0.06, PAD_Y, -1.31]} color="#181818" />
+            <Wire start={[0.32, -0.26, -0.48]} mids={[[0.43, -0.19, -0.80], [0.40, -0.13, -1.18]]} end={[-0.06, PAD_Y, -1.31]} color="#181818" />
 
             <Wire start={[kp.drive[0],  POT_LUG_Y, kp.drive[2]  + POT_LUG_Z]} mid={[kp.drive[0],  0.03, kp.drive[2]  + POT_LUG_Z]} end={[-0.55, PAD_Y, -0.98]} color="#202020" />
             <Wire start={[kp.echo[0],   POT_LUG_Y, kp.echo[2]   + POT_LUG_Z]} mid={[kp.echo[0],   0.03, kp.echo[2]   + POT_LUG_Z]} end={[ 0.02, PAD_Y, -0.98]} color="#22aa3a" />
@@ -426,14 +434,18 @@ function PedalBody({
             {/* true bypass no 3PDT: coluna direita = input, esquerda = output, frente = LED + jumper */}
             <Wire start={[ 0.08, SW_LUG_Y, FSZ - 0.08]} end={[ 0.14, PAD_Y, 1.05]} color="#22aa3a" />
             <Wire start={[-0.08, SW_LUG_Y, FSZ - 0.08]} end={[-0.14, PAD_Y, 1.05]} color="#3a6ad0" />
-            <Wire start={[ 0.705, 0.10, -0.60]} mids={[[0.79, -0.01, -0.46], [0.78, -0.02, 0.40], [0.72, -0.02, 0.78], [0.42, -0.01, 1.00]]} end={[ 0.08, SW_LUG_Y, FSZ - 0.08]} color="#e8e8e8" r={0.009} />
-            <CableClip x={0.78} z={-0.25} />
-            <CableClip x={0.78} z={ 0.10} />
+            <Wire start={[ 0.705, 0.13, -0.60]} mids={[[0.80, -0.01, -0.45], [0.80, -0.02, 0.30], [0.80, -0.02, 0.80], [0.42, -0.01, 1.00]]} end={[ 0.08, SW_LUG_Y, FSZ - 0.08]} color="#e8e8e8" r={0.009} />
+            {/* input jack sleeve (2º polo) → trilho de terra */}
+            <Wire start={[ 0.705, 0.03, -0.60]} end={[ 0.74, PAD_Y, -0.40]} color="#181818" sag={0.05} r={0.009} />
+            <CableClip x={0.80} z={-0.20} />
+            <CableClip x={0.80} z={ 0.40} />
             <Wire start={[ 0.08, SW_LUG_Y, FSZ + 0.08]} end={[-0.08, SW_LUG_Y, FSZ + 0.08]} color="#d02020" sag={0.04} r={0.009} />
             <Wire start={[-0.08, SW_LUG_Y + 0.02, FSZ]} end={[-0.08, SW_LUG_Y - 0.02, FSZ - 0.08]} color="#181818" sag={0.025} r={0.009} />
-            <Wire start={[0, SW_LUG_Y, FSZ + 0.08]} mids={[[0.02, -0.01, 0.80]]} end={[0.02, PAD_Y, 0.30]} color="#181818" r={0.009} />
+            <Wire start={[0, SW_LUG_Y, FSZ + 0.08]} mids={[[0.20, -0.01, 0.78], [0.34, -0.02, 0.34], [0.33, -0.02, 0.02]]} end={[0.24, PAD_Y, -0.05]} color="#181818" r={0.009} />
 
-            <Wire start={[-0.705, 0.10, -0.60]} end={[-0.74, PAD_Y, -0.57]} color="#3a8ade" sag={0.04} />
+            <Wire start={[-0.705, 0.13, -0.60]} end={[-0.74, PAD_Y, -0.57]} color="#3a8ade" sag={0.04} />
+            {/* output jack sleeve (2º polo) → trilho de terra */}
+            <Wire start={[-0.705, 0.03, -0.60]} end={[-0.74, PAD_Y, -0.40]} color="#181818" sag={0.05} r={0.009} />
 
             <Wire start={[ 0.035, LED_Y, 0.17]} end={[ 0.14, PAD_Y, 0.30]} color="#d02020" r={0.008} />
             <Wire start={[-0.035, LED_Y, 0.17]} end={[ 0.02, PAD_Y, 0.30]} color="#181818" r={0.008} />
@@ -447,6 +459,7 @@ function PedalBody({
 
 function PedalScene({
   palette,
+  xray = false,
   ledColor,
   ledActive,
   onTap,
@@ -463,6 +476,7 @@ function PedalScene({
   onChassisLeave,
 }: {
   palette: { pedal: string; ink: string; accent: string; cream: string; metal: string };
+  xray?: boolean;
   ledColor: string;
   ledActive: boolean;
   onTap: () => void;
@@ -483,6 +497,7 @@ function PedalScene({
   return (
     <PedalBody
       palette={palette}
+      xray={xray}
       presetIdx={presetIdx}
       ledColor={ledColor}
       ledActive={ledActive}
@@ -1531,17 +1546,19 @@ function Battery9V() {
       <Text position={[0.0, 0.172, 0]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.10} color="#e8e6da" anchorX="center" anchorY="middle" letterSpacing={0.10} renderOrder={6}>
         9V
       </Text>
-      <mesh position={[0.495, 0.04, 0.12]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.038, 0.038, 0.025, 12]} />
-        <meshStandardMaterial color="#c0c0c4" metalness={0.85} roughness={0.25} />
+      {/* tampa preta de plástico onde os polos se assentam */}
+      <mesh position={[0.495, 0.02, 0]} castShadow>
+        <boxGeometry args={[0.03, 0.26, 0.44]} />
+        <meshStandardMaterial color="#1a1a1e" roughness={0.6} metalness={0.05} />
       </mesh>
-      <mesh position={[0.495, 0.04, -0.12]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.046, 0.046, 0.025, 6]} />
-        <meshStandardMaterial color="#c0c0c4" metalness={0.85} roughness={0.25} />
+      {/* polos da 9V em níquel polido: snap redondo (+, fio vermelho) e hexagonal (−, fio preto) */}
+      <mesh position={[0.515, 0.04, -0.12]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.040, 0.040, 0.066, 20]} />
+        <meshStandardMaterial color="#e4e4ea" metalness={0.98} roughness={0.12} />
       </mesh>
-      <mesh position={[0.525, 0.02, 0]} castShadow>
-        <boxGeometry args={[0.05, 0.24, 0.42]} />
-        <meshStandardMaterial color="#18181c" roughness={0.6} metalness={0.05} />
+      <mesh position={[0.515, 0.04, 0.12]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.050, 0.050, 0.066, 6]} />
+        <meshStandardMaterial color="#e4e4ea" metalness={0.98} roughness={0.12} />
       </mesh>
     </group>
   );
@@ -1875,7 +1892,7 @@ function SilkText({ x, z, y, size = 0.033, children }: {
 
 function BeltonBrick({ x, z }: { x: number; z: number }) {
   // módulo de reverb estilo Digi-Log mini (33.7×16.8×9.2mm), 6 pinos SIP numa ponta
-  const W = 0.45, L = 0.91, H = 0.25;
+  const W = 0.38, L = 0.74, H = 0.22;
   const topY = PCB_BH / 2 + 0.02 + H;
 
   // etiqueta desenhada em canvas — texto cravado no plano, sem flutuar
@@ -1956,26 +1973,26 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
 
   // resistors pulled back near the pots (flat, fit under the knob skirts);
   // tall parts (ICs, electrolytics) spread across the front — the rear is pots
-  const raZ = -0.40;
-  const raX = [0.16, 0.34, 0.52, 0.70];
-  const rbZ = -0.40;
-  const rbX = [-0.54, -0.38, -0.22, -0.06];
+  const raZ = -0.42;
+  const raX = [0.08, 0.24, 0.39, 0.55];
+  const rbZ = -0.42;
+  const rbX = [-0.55, -0.39, -0.24, -0.08];
 
   // input + drive · right column
-  const q1:    [number, number] = [ 0.60, -0.28];
-  const rIn:   [number, number] = [ 0.64, -0.08];
-  const ic1:   [number, number] = [ 0.36,  0.06];
-  const dg1:   [number, number] = [ 0.64,  0.16];
-  const dg2:   [number, number] = [ 0.64,  0.34];
-  const disc1: [number, number] = [ 0.16, -0.08];
+  const q1:    [number, number] = [ 0.64,  0.10];
+  const rIn:   [number, number] = [ 0.66, -0.14];
+  const ic1:   [number, number] = [ 0.44,  0.42];
+  const dg1:   [number, number] = [ 0.66,  0.34];
+  const dg2:   [number, number] = [ 0.66,  0.52];
+  const disc1: [number, number] = [ 0.42,  0.69];
 
   // delay · centre
-  const ic2: [number, number] = [-0.22, -0.06]; // receded so its front clears the brick
+  const ic2: [number, number] = [ 0.00, -0.02]; // laid horizontal (rot below) so it's shallow in z
   // delay electrolytics distributed into the clear gaps between the knobs
   // (drive↔echo, echo↔reverb, and the central tone↔volume gap)
   const ecD: [number, number][] = [[-0.31, -1.18], [0.31, -1.18], [0.00, -0.70]];
-  const disc2: [number, number] = [-0.18, 0.40];
-  const disc3: [number, number] = [ 0.06, 0.40];
+  const disc2: [number, number] = [-0.30, 0.18];
+  const disc3: [number, number] = [-0.06, 0.18];
 
   // reverb + output · left column
   const brick: [number, number] = [-0.44, 0.78];
@@ -2129,7 +2146,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
 
       <SilkRect x={0} z={0} w={w - 0.10} d={l - 0.10} y={silkY} t={0.005} />
       <SilkRect x={ic1[0]} z={ic1[1]} w={0.24} d={0.34} y={silkY} />
-      <SilkRect x={ic2[0]} z={ic2[1]} w={0.24} d={0.60} y={silkY} />
+      <SilkRect x={ic2[0]} z={ic2[1]} w={0.60} d={0.24} y={silkY} />
       <SilkRect x={brick[0]} z={brick[1]} w={0.49} d={0.95} y={silkY} />
       <SilkRing x={c100[0]} z={c100[1]} r={0.102} y={silkY} />
       <SilkRing x={c47[0]} z={c47[1]} r={0.084} y={silkY} />
@@ -2142,7 +2159,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
       {raX.map((rx, i) => <SilkText key={`dra${i}`} x={rx} z={raZ + 0.21} y={silkY}>{`R${i + 1}`}</SilkText>)}
       {rbX.map((rx, i) => <SilkText key={`drb${i}`} x={rx} z={rbZ + 0.20} y={silkY}>{`R${i + 5}`}</SilkText>)}
       <SilkText x={ic1[0]} z={ic1[1] + 0.24} y={silkY}>IC1</SilkText>
-      <SilkText x={ic2[0]} z={ic2[1] + 0.37} y={silkY}>IC2</SilkText>
+      <SilkText x={ic2[0]} z={ic2[1] + 0.18} y={silkY}>IC2</SilkText>
       <SilkText x={brick[0]} z={brick[1] - 0.55} y={silkY}>BR1</SilkText>
       <SilkText x={dg1[0] + 0.12} z={dg1[1]} y={silkY}>D1</SilkText>
       <SilkText x={dg2[0] + 0.12} z={dg2[1] + 0.06} y={silkY}>D2</SilkText>
@@ -2176,7 +2193,7 @@ function PCBBoard({ w, l }: { w: number; l: number }) {
       <THResistor x={raX[3]} z={raZ} b1="#101010" b2="#e0a010" b3="#a0a010" />
 
       {/* delay */}
-      <ICDip x={ic2[0]} z={ic2[1]} pins={16} color="#1c1c1c" label="ECTO-399" />
+      <ICDip x={ic2[0]} z={ic2[1]} pins={16} rot={Math.PI / 2} color="#1c1c1c" label="ECTO-399" />
       <ElCap x={ecD[0][0]} z={ecD[0][1]} h={0.20} r={0.054} color="#2a4a1a" />
       <ElCap x={ecD[1][0]} z={ecD[1][1]} h={0.20} r={0.054} color="#1a3a6a" />
       <ElCap x={ecD[2][0]} z={ecD[2][1]} h={0.20} r={0.054} color="#1a1a1a" />
