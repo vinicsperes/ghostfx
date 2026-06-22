@@ -706,7 +706,7 @@ function MicBlockedModal({
 
 const PRESET_META = [
   { color: "#8a2be2", word: "OCCULT", chassis: "#09040e" },
-  { color: "#cdd2da", word: "SNOW",     chassis: "#0a0a0c" },
+  { color: "#cdd2da", word: "ASHEN",    chassis: "#0a0a0c" },
   { color: "#e02828", word: "HOLLOW",  chassis: "#0a0202" },
   { color: "#ff4a28", word: "PEPPER*", chassis: "#0d0402" },
   { color: "#20f040", word: "HAUNTED", chassis: "#0a0a10" },
@@ -1009,25 +1009,25 @@ void main(){
 const STATIC_FS = `
 precision mediump float;
 uniform float u_t; uniform vec2 u_res; uniform float u_blend;
-float hash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
 void main(){
-  // estática de TV monocromática: snow + scanlines + bandas de glitch — emerge no limiar
+  // névoa cinza à deriva: campos senoidais lentos com domain warp — SEM cintilação
+  // (o "snow" de TV antigo piscava em alta frequência → risco de epilepsia).
   vec2 uv=gl_FragCoord.xy/u_res;
-  float band=floor(uv.y*16.0);
-  float trig=step(0.85, hash(vec2(band, floor(u_t*48.0))));
-  float shift=(hash(vec2(band, floor(u_t*48.0)+3.0))-0.5)*0.12*trig;
-  vec2 q=vec2(uv.x+shift, uv.y);
-  float n=hash(floor(q*u_res/3.0)+floor(u_t*170.0));
-  float scan=0.55+0.45*sin((uv.y*u_res.y*1.5)-u_t*40.0);
-  float c=n*mix(0.55,1.0,scan);
-  float thresh=mix(1.0,0.46,u_blend);
+  vec2 p=vec2(uv.x,1.-uv.y);
+  vec2 q=vec2(sin(p.x*2.6+u_t*.07)+sin(p.y*2.2-u_t*.05),
+              sin(p.x*2.3-u_t*.06)+sin(p.y*2.9+u_t*.045));
+  vec2 r=vec2(sin(p.x*2.4+q.x*1.8+u_t*.05)+sin(p.y*2.0-q.y*1.6-u_t*.04),
+              sin(p.x*1.9-q.y*1.7-u_t*.05)+sin(p.y*2.7+q.x*1.5+u_t*.06));
+  float v=length(r)*.55;
+  float c=abs(cos(v*2.7));
+  float thresh=mix(1.0,0.52,u_blend);
   vec4 col;
   if(c>thresh){
-    float b=pow((c-.46)/.54,.6);
-    col=vec4(b*208./255., b*214./255., b*226./255., b*.86);
+    float b=pow((c-.52)/.48,.7);
+    col=vec4(b*198./255., b*205./255., b*216./255., b*.5);
   } else {
-    float d=n*.10+scan*.04;
-    col=vec4(d*18./255., d*18./255., d*24./255., 1.);
+    float d=(cos(v*1.5)+1.)*.5;
+    col=vec4(d*15./255., d*15./255., d*19./255., 1.);
   }
   gl_FragColor=col;
 }`;
