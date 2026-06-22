@@ -277,21 +277,29 @@ export default function App() {
       )}
 
       {/* ===== DESKTOP transport bar (bottom of the stage) ===== */}
+      {/* floating card inset from the sidebar / screen edge — mirrors the preset
+          rail's margins (left-[360px] + max(28px,2.2vw) gutters) instead of a
+          full-width bar glued to the corners */}
       {warningDone && (
         <div
-          className="hidden lg:flex fixed bottom-0 left-[360px] right-0 h-[92px] z-[40] items-center px-6 border-t pointer-events-auto"
-          style={{ background: "rgba(3,3,8,0.94)", borderColor: fx.isRecording ? themeColor + "55" : "rgba(255,255,255,0.09)", transition: "border-color 200ms" }}
+          className="hidden lg:flex fixed bottom-0 left-[360px] right-0 z-[40] items-stretch pointer-events-none"
+          style={{ padding: "8px max(28px,2.2vw) 16px" }}
         >
-          <RecorderControls
-            isRecording={fx.isRecording}
-            hasRecording={fx.hasRecording}
-            recordedDuration={fx.recordedDuration}
-            onToggle={fx.toggleRecording}
-            onDownload={fx.downloadRecording}
-            getLevelRef={getLevelRef}
-            getRecordedPeaks={fx.getRecordedPeaks}
-            accent={themeColor}
-          />
+          <div
+            className="flex-1 flex items-center px-5 py-3 pointer-events-auto"
+            style={{ background: "rgba(3,3,8,0.94)", border: `1px solid ${fx.isRecording ? themeColor + "55" : "rgba(255,255,255,0.09)"}`, borderRadius: 14, transition: "border-color 200ms" }}
+          >
+            <RecorderControls
+              isRecording={fx.isRecording}
+              hasRecording={fx.hasRecording}
+              recordedDuration={fx.recordedDuration}
+              onToggle={fx.toggleRecording}
+              onDownload={fx.downloadRecording}
+              getLevelRef={getLevelRef}
+              getRecordedPeaks={fx.getRecordedPeaks}
+              accent={themeColor}
+            />
+          </div>
         </div>
       )}
 
