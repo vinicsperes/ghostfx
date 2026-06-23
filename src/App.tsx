@@ -1208,8 +1208,14 @@ function PresetBg({ presetIdx, introActive = false }: { presetIdx: number | null
       const s = glState.current;
       if (s && gl) {
         const time = (now - startRef.current) * 0.00012;
+        // centre the pattern on the visible stage, not the whole window: the
+        // 360px desktop sidebar covers the left edge, so feed u_res.x widened by
+        // the sidebar — that pushes uv=0.5 to the stage centre. Without it the
+        // radial presets (CLEAN/HEAVY/FRUS) centred ~180px left of the pedal,
+        // glaring on very wide screens.
+        const sidebar = window.innerWidth >= 1024 ? 360 : 0;
         gl.uniform1f(s.tLoc, time);
-        gl.uniform2f(s.rLoc, gl.canvas.width, gl.canvas.height);
+        gl.uniform2f(s.rLoc, gl.canvas.width + sidebar, gl.canvas.height);
         gl.uniform1f(s.blendLoc, t.blend);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
       }
