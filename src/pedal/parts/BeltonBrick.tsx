@@ -3,11 +3,9 @@ import * as THREE from "three";
 import { PCB_BH } from "../constants";
 
 export function BeltonBrick({ x, z }: { x: number; z: number }) {
-  // módulo de reverb estilo Digi-Log mini (33.7×16.8×9.2mm), 6 pinos SIP numa ponta
   const W = 0.38, L = 0.74, H = 0.22;
   const topY = PCB_BH / 2 + 0.02 + H;
 
-  // etiqueta desenhada em canvas — texto cravado no plano, sem flutuar
   const labelTex = useMemo(() => {
     const c = document.createElement("canvas");
     c.width = 512; c.height = 320;

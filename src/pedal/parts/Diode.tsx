@@ -3,7 +3,6 @@ import { PCB_BH } from "../constants";
 export function Diode({ x, z, rot = 0, kind = "glass" }: {
   x: number; z: number; rot?: number; kind?: "glass" | "power";
 }) {
-  // 1N4148 DO-35: vidro âmbar 4.25×ø2mm · 1N4001 DO-41: preto 5.2×ø2.7mm
   const glass = kind === "glass";
   const bL = glass ? 0.114 : 0.14;
   const bR = glass ? 0.027 : 0.036;

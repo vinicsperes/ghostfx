@@ -11,14 +11,12 @@ export function Wire({ start, end, color, sag, r = 0.010, mid, mids }: {
     const e = new THREE.Vector3(...end);
     const way = mids ?? (mid ? [mid] : null);
     if (way) {
-      // explicit waypoints — route the wire along the walls/edges with rounded bends
       const pts = [s, ...way.map((m) => new THREE.Vector3(...m)), e];
       const curve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.5);
       return new THREE.TubeGeometry(curve, Math.max(40, pts.length * 18), r, 8, false);
     }
     const horiz = Math.hypot(e.x - s.x, e.z - s.z);
     const drop = sag ?? Math.min(0.045 + horiz * 0.10, 0.14);
-    // folga em S com jitter determinístico (hash das pontas) — fio passado à mão
     const h1 = Math.sin(s.x * 12.9898 + e.z * 78.233) * 43758.5453;
     const h2 = Math.sin(e.x * 39.346 + s.z * 11.135) * 24634.6345;
     const j1 = (h1 - Math.floor(h1) - 0.5) * Math.min(0.09, 0.03 + horiz * 0.06);
@@ -47,7 +45,3 @@ export function Wire({ start, end, color, sag, r = 0.010, mid, mids }: {
     </group>
   );
 }
-
-
-// nylon saddle clip that pins a wire/harness down to the board ("presilha")
-// y default sits the feet on the board surface (board centre is at world -0.06)

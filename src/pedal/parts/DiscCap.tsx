@@ -1,7 +1,6 @@
 import { PCB_BH } from "../constants";
 
 export function DiscCap({ x, z, rot = 0, color = "#d4b86a" }: { x: number; z: number; rot?: number; color?: string }) {
-  // disco cerâmico ø6mm em pé sobre duas pernas (pitch 5mm)
   const r = 0.078;
   const legX = 0.0675;
   const discY = PCB_BH / 2 + r + 0.024;

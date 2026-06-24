@@ -3,7 +3,6 @@ import { PCB_BH } from "../constants";
 export function THResistor({ x, z, rot = 0, b1 = "#c02010", b2 = "#101010", b3 = "#e0a020" }: {
   x: number; z: number; rot?: number; b1?: string; b2?: string; b3?: string;
 }) {
-  // 1/4W axial: corpo 6.3 × ø2.3mm, espaçamento de furos 10.16mm (escala 1u = 37.2mm)
   const bL = 0.17;
   const bR = 0.031;
   const legZ = 0.1365;
