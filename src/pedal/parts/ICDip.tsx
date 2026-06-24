@@ -4,7 +4,6 @@ import { PCB_BH } from "../constants";
 export function ICDip({ x, z, pins = 8, rot = 0, color = "#101010", label = "" }: {
   x: number; z: number; pins?: number; rot?: number; color?: string; label?: string;
 }) {
-  // DIP: corpo 6.35mm de largura, pitch 2.54mm — DIP-8 9.8mm, DIP-16 19.3mm
   const half = pins / 2;
   const chipW = 0.171;
   const chipL = half * 0.066;

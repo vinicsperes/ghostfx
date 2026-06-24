@@ -1,7 +1,6 @@
 import { PCB_BH } from "../constants";
 
 export function Transistor({ x, z, rot = 0 }: { x: number; z: number; rot?: number }) {
-  // TO-92: ø4.5mm × 4.5mm de corpo, erguido ~1.5mm acima da placa nas pernas
   const h = 0.12;
   const standoff = 0.04;
   const bodyCY = PCB_BH / 2 + standoff + h / 2;

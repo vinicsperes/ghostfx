@@ -2,8 +2,6 @@ import { useMemo } from "react";
 import * as THREE from "three";
 
 export function GhostSilk({ x, z, y, size = 0.17 }: { x: number; z: number; y: number; size?: number }) {
-  // mascote da marca (caolho v3) impresso como silk discreto — easter egg.
-  // path do GhostMark (bbox x16-48 / y9-55), olho offset esquerdo.
   const tex = useMemo(() => {
     const s = 128;
     const c = document.createElement("canvas");
