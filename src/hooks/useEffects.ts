@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback } from "../audio/dsp";
+import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, createLimiterCurve } from "../audio/dsp";
 
 export type EffectsState = "idle" | "bypass" | "active";
 
@@ -150,7 +150,10 @@ export function useEffects({
     if (ctxRef.current) return;
 
     try {
-      const ctx = new AudioContext({ latencyHint: "balanced" });
+      // "interactive" = smallest output buffer the device allows → lowest
+      // monitoring latency (this is a live guitar FX). A dedicated interface
+      // handles the small buffer without glitching.
+      const ctx = new AudioContext({ latencyHint: "interactive" });
       ctxRef.current = ctx;
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -226,12 +229,12 @@ export function useEffects({
       const reverbWet = ctx.createGain();
       reverbWet.gain.value = reverb * 0.5;
 
-      const limiter = ctx.createDynamicsCompressor();
-      limiter.threshold.value = -1.5;
-      limiter.knee.value = 3;
-      limiter.ratio.value = 20;
-      limiter.attack.value = 0.003;
-      limiter.release.value = 0.1;
+      // zero-latency soft-clip limiter (a WaveShaper) — replaces a
+      // DynamicsCompressor whose ~6ms lookahead was pure round-trip latency.
+      // oversample "none" so it adds no latency of its own.
+      const limiter = ctx.createWaveShaper();
+      limiter.curve = createLimiterCurve();
+      limiter.oversample = "none";
 
       const masterGain = ctx.createGain();
       masterGain.gain.value = 0;
@@ -283,11 +286,13 @@ export function useEffects({
       bypassGain.connect(masterGain);
       effectsGain.connect(masterGain);
 
+      // analyser taps PRE-limiter so the feedback guard sees the true (unlimited)
+      // peak — the soft limiter caps output below the guard's 0.98 threshold.
+      masterGain.connect(analyser);
       masterGain.connect(limiter);
-      limiter.connect(analyser);
-      analyser.connect(ctx.destination);
+      limiter.connect(ctx.destination);
 
-      // parallel tap for the recorder (doesn't affect what plays out)
+      // parallel tap for the recorder (post-limiter = the final sound)
       const recordDest = ctx.createMediaStreamDestination();
       limiter.connect(recordDest);
       recordDestRef.current = recordDest;
