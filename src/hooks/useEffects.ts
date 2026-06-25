@@ -428,22 +428,19 @@ export function useEffects({
     feedbackLatchRef.current = false;
     setFeedbackBlocked(false);
     setError(null);
-    streamRef.current?.getAudioTracks().forEach((t) => { t.enabled = true; });
-    // land in safe bypass — effects are re-engaged deliberately. If they're still
-    // on speakers with no headphones, the guard simply catches it again.
-    const restore = () => {
+    const off = () => {
       const { masterGain, bypass, effects } = nodesRef.current;
       if (!ctx) return;
       const now = ctx.currentTime;
-      bypass?.gain.setTargetAtTime(1, now, 0.02);
-      effects?.gain.setTargetAtTime(0, now, 0.02);
       masterGain?.gain.cancelScheduledValues(now);
-      masterGain?.gain.setTargetAtTime(masterVolume, now, 0.05);
+      masterGain?.gain.setValueAtTime(0, now);
+      bypass?.gain.setValueAtTime(1, now);
+      effects?.gain.setValueAtTime(0, now);
     };
-    if (ctx && ctx.state === "suspended") ctx.resume().then(restore);
-    else restore();
-    setState("bypass");
-  }, [masterVolume]);
+    if (ctx && ctx.state === "suspended") ctx.resume().then(off);
+    else off();
+    setState("idle");
+  }, []);
 
   const toggle = useCallback(async () => {
     // if we're muted by the feedback guard, a stomp just safely re-arms
@@ -458,6 +455,7 @@ export function useEffects({
 
     if (state === "idle" || state === "bypass") {
       setError(null);
+      streamRef.current?.getAudioTracks().forEach((tr) => { tr.enabled = true; });
       masterGain?.gain.setTargetAtTime(0.8, t, 0.1);
       bypass?.gain.setTargetAtTime(0, t, 0.02);
       effects?.gain.setTargetAtTime(1, t, 0.02);
