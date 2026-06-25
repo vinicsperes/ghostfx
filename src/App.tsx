@@ -7,7 +7,6 @@ import WarningModal from "./WarningModal";
 import GhostMark from "./GhostMark";
 import PresetBg from "./background/PresetBg";
 import { PRESETS, PALETTE, PRESET_META, PRESET_TAGS } from "./data/presets";
-import { WHITE_LAYOUT, BLACK_LAYOUT } from "./data/keyboard";
 import { RecorderControls, MicBlockedModal, FeedbackModal, PresetCard, BottomBar, KeyboardDisplay, Fader } from "./components";
 
 function hexToRgb(h: string): [number, number, number] {
