@@ -11,3 +11,7 @@ export { GhostSilk } from "./GhostSilk";
 export { SilkText } from "./SilkText";
 export { BeltonBrick } from "./BeltonBrick";
 export { SilkRing } from "./SilkRing";
+export { SideJack } from "./SideJack";
+export { PotBody } from "./PotBody";
+export { SwitchBody } from "./SwitchBody";
+export { Battery9V } from "./Battery9V";
