@@ -27,3 +27,23 @@ export function mapDelayTime(value: number): number {
 export function mapFeedback(value: number): number {
   return 0.2 + value * 0.45;
 }
+
+// Zero-latency brickwall-ish limiter as a WaveShaper curve. Replaces the output
+// DynamicsCompressor, whose ~6ms lookahead was pure round-trip latency. Unity
+// (transparent) below `threshold`, then a tanh soft-knee that asymptotes toward
+// full scale — peaks soft-clip instantly instead of being delayed. Slope is
+// continuous (=1) at the knee, so no audible kink. Use oversample:"none" on the
+// shaper so it adds no latency of its own.
+export function createLimiterCurve(threshold = 0.82): Float32Array<ArrayBuffer> {
+  const n = 8192;
+  const curve = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (i * 2) / n - 1;
+    const a = Math.abs(x);
+    const y = a <= threshold
+      ? a
+      : threshold + (1 - threshold) * Math.tanh((a - threshold) / (1 - threshold));
+    curve[i] = Math.sign(x) * y;
+  }
+  return curve;
+}

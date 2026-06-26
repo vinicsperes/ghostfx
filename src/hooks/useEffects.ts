@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback } from "../audio/dsp";
+import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, createLimiterCurve } from "../audio/dsp";
 
 export type EffectsState = "idle" | "bypass" | "active";
 
@@ -17,6 +17,8 @@ type EffectsApi = {
   toggleRecording: () => Promise<void>;
   downloadRecording: () => void;
   getRecordedPeaks: () => Float32Array | null;
+  feedbackBlocked: boolean;
+  resumeFromFeedback: () => void;
 };
 
 const MAX_REC_MS = 30000; // 30s cap so nobody hogs memory / abuses
@@ -103,11 +105,16 @@ export function useEffects({
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [micBlocked, setMicBlocked] = useState(false);
+  const [feedbackBlocked, setFeedbackBlocked] = useState(false);
 
   const ctxRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const guardIntervalRef = useRef<number | null>(null);
+  // when true, output is force-muted + mic track disabled until the user resumes;
+  // the volume effect below must respect it (otherwise it instantly un-mutes)
+  const feedbackLatchRef = useRef(false);
+  const guardBufRef = useRef<Float32Array | null>(null);
 
   // recording (taps the post-limiter signal — the final processed sound)
   const recordDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
@@ -150,7 +157,10 @@ export function useEffects({
     if (ctxRef.current) return;
 
     try {
-      const ctx = new AudioContext({ latencyHint: "balanced" });
+      // "interactive" = smallest output buffer the device allows → lowest
+      // monitoring latency (this is a live guitar FX). A dedicated interface
+      // handles the small buffer without glitching.
+      const ctx = new AudioContext({ latencyHint: "interactive" });
       ctxRef.current = ctx;
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -226,12 +236,12 @@ export function useEffects({
       const reverbWet = ctx.createGain();
       reverbWet.gain.value = reverb * 0.5;
 
-      const limiter = ctx.createDynamicsCompressor();
-      limiter.threshold.value = -1.5;
-      limiter.knee.value = 3;
-      limiter.ratio.value = 20;
-      limiter.attack.value = 0.003;
-      limiter.release.value = 0.1;
+      // zero-latency soft-clip limiter (a WaveShaper) — replaces a
+      // DynamicsCompressor whose ~6ms lookahead was pure round-trip latency.
+      // oversample "none" so it adds no latency of its own.
+      const limiter = ctx.createWaveShaper();
+      limiter.curve = createLimiterCurve();
+      limiter.oversample = "none";
 
       const masterGain = ctx.createGain();
       masterGain.gain.value = 0;
@@ -283,11 +293,13 @@ export function useEffects({
       bypassGain.connect(masterGain);
       effectsGain.connect(masterGain);
 
+      // analyser taps PRE-limiter so the feedback guard sees the true (unlimited)
+      // peak — the soft limiter caps output below the guard's 0.98 threshold.
+      masterGain.connect(analyser);
       masterGain.connect(limiter);
-      limiter.connect(analyser);
-      analyser.connect(ctx.destination);
+      limiter.connect(ctx.destination);
 
-      // parallel tap for the recorder (doesn't affect what plays out)
+      // parallel tap for the recorder (post-limiter = the final sound)
       const recordDest = ctx.createMediaStreamDestination();
       limiter.connect(recordDest);
       recordDestRef.current = recordDest;
@@ -362,43 +374,77 @@ export function useEffects({
   }, [reverb]);
 
   useEffect(() => {
+    if (feedbackLatchRef.current) return; // stay muted while feedback-protected
     const { masterGain } = nodesRef.current;
     if (masterGain && ctxRef.current && state !== "idle")
       masterGain.gain.setTargetAtTime(masterVolume, ctxRef.current.currentTime, 0.05);
   }, [masterVolume, state]);
 
+  // Feedback guard. Output is live in BOTH "active" and "bypass" (bypass still
+  // routes the mic out), so watch both. Trip on *sustained* loudness — a single
+  // loud note decays, acoustic feedback holds/grows — to avoid muting real
+  // playing. On trip: latch muted + disable the mic track (kills the loop at the
+  // source) + raise the educational modal; the user resumes deliberately.
   useEffect(() => {
-    if (state !== "active") {
+    if (state !== "active" && state !== "bypass") {
       if (guardIntervalRef.current) clearInterval(guardIntervalRef.current);
       return;
     }
+    let over = 0;
+    const RMS_TRIP = 0.3;   // sustained RMS above this = runaway
+    const TRIP_CHECKS = 5;  // × 100ms = 0.5s held before muting
 
     const checkFeedback = () => {
       const analyser = analyserRef.current;
-      if (!analyser || !ctxRef.current) return;
-      const buffer = new Float32Array(analyser.fftSize);
-      analyser.getFloatTimeDomainData(buffer);
-      let peak = 0;
-      for (let i = 0; i < buffer.length; i++) {
-        const abs = Math.abs(buffer[i]);
-        if (abs > peak) peak = abs;
-      }
-      if (peak > 0.98) {
-        const { masterGain } = nodesRef.current;
-        if (masterGain && ctxRef.current) {
-          masterGain.gain.cancelScheduledValues(ctxRef.current.currentTime);
-          masterGain.gain.value = 0;
-          setState("bypass");
-          setError("FEEDBACK PROTECTION: Audio muted. Please use headphones.");
-        }
-      }
+      const ctx = ctxRef.current;
+      if (!analyser || !ctx || feedbackLatchRef.current) return;
+      const buf = (guardBufRef.current ??= new Float32Array(analyser.fftSize));
+      analyser.getFloatTimeDomainData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+      const rms = Math.sqrt(sum / buf.length);
+      over = rms > RMS_TRIP ? over + 1 : 0;
+      if (over < TRIP_CHECKS) return;
+
+      feedbackLatchRef.current = true;
+      // belt + suspenders: mute output, cut the mic at the source, AND suspend the
+      // whole audio thread (stops tails/loops too — nothing can leak through).
+      const { masterGain } = nodesRef.current;
+      masterGain?.gain.cancelScheduledValues(ctx.currentTime);
+      masterGain?.gain.setValueAtTime(0, ctx.currentTime);
+      streamRef.current?.getAudioTracks().forEach((t) => { t.enabled = false; });
+      ctx.suspend();
+      setState("bypass");
+      setFeedbackBlocked(true);
+      setError(null);
     };
 
     guardIntervalRef.current = window.setInterval(checkFeedback, 100);
     return () => { if (guardIntervalRef.current) clearInterval(guardIntervalRef.current); };
   }, [state]);
 
+  const resumeFromFeedback = useCallback(() => {
+    const ctx = ctxRef.current;
+    feedbackLatchRef.current = false;
+    setFeedbackBlocked(false);
+    setError(null);
+    const off = () => {
+      const { masterGain, bypass, effects } = nodesRef.current;
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      masterGain?.gain.cancelScheduledValues(now);
+      masterGain?.gain.setValueAtTime(0, now);
+      bypass?.gain.setValueAtTime(1, now);
+      effects?.gain.setValueAtTime(0, now);
+    };
+    if (ctx && ctx.state === "suspended") ctx.resume().then(off);
+    else off();
+    setState("idle");
+  }, []);
+
   const toggle = useCallback(async () => {
+    // if we're muted by the feedback guard, a stomp just safely re-arms
+    if (feedbackLatchRef.current) { resumeFromFeedback(); return; }
     if (!ctxRef.current) await init();
     const ctx = ctxRef.current;
     if (!ctx) return;
@@ -409,6 +455,7 @@ export function useEffects({
 
     if (state === "idle" || state === "bypass") {
       setError(null);
+      streamRef.current?.getAudioTracks().forEach((tr) => { tr.enabled = true; });
       masterGain?.gain.setTargetAtTime(0.8, t, 0.1);
       bypass?.gain.setTargetAtTime(0, t, 0.02);
       effects?.gain.setTargetAtTime(1, t, 0.02);
@@ -418,7 +465,7 @@ export function useEffects({
       effects?.gain.setTargetAtTime(0, t, 0.02);
       setState("bypass");
     }
-  }, [state, init]);
+  }, [state, init, resumeFromFeedback]);
 
   useEffect(() => {
     return () => {
@@ -523,5 +570,6 @@ export function useEffects({
   return {
     state, ready, error, micBlocked, toggle, getLevel, getWaveform,
     isRecording, hasRecording, recordedDuration, toggleRecording, downloadRecording, getRecordedPeaks,
+    feedbackBlocked, resumeFromFeedback,
   };
 }

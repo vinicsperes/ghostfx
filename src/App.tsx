@@ -5,14 +5,9 @@ import Pedal3D from "./Pedal3D";
 import LoadingScreen from "./LoadingScreen";
 import WarningModal from "./WarningModal";
 import GhostMark from "./GhostMark";
-
-const PRESETS = [
-  { name: "CLEAN",   drive: 0.06, echo: 0.12, tone: 0.70, reverb: 0.30, master: 0.80 },
-  { name: "STATIC",  drive: 0.54, echo: 0.22, tone: 0.46, reverb: 0.12, master: 0.78 },
-  { name: "HEAVY",   drive: 0.85, echo: 0.08, tone: 0.40, reverb: 0.10, master: 0.82 },
-  { name: "FRUS",    drive: 0.04, echo: 0.30, tone: 0.85, reverb: 0.72, master: 0.82 },
-  { name: "GHOST",   drive: 0.55, echo: 0.48, tone: 0.50, reverb: 0.58, master: 0.76 },
-] as const;
+import PresetBg from "./background/PresetBg";
+import { PRESETS, PALETTE, PRESET_META, PRESET_TAGS } from "./data/presets";
+import { RecorderControls, MicBlockedModal, FeedbackModal, PresetCard, BottomBar, KeyboardDisplay, Fader } from "./components";
 
 function hexToRgb(h: string): [number, number, number] {
   return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
@@ -22,122 +17,7 @@ function lerpHex(a: string, b: string, t: number): string {
   return '#'+[r1+(r2-r1)*t,g1+(g2-g1)*t,b1+(b2-b1)*t].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
 }
 
-const PALETTE = {
-  bg: "#030308",
-  pedal: "#1a1a1c",
-  ink: "#e0e0ec",
-  accent: "#20f040",
-  cream: "#a8a8bc",
-  metal: "#505060",
-};
-
 const WARNING_ACK_KEY = "ghostfx.warningAck";
-
-// Recorder controls (rec toggle + live/recorded scope + download). Layout-free
-// row — the desktop transport bar and the mobile "Rec" sheet tab both render it.
-function RecorderControls({
-  isRecording, hasRecording, recordedDuration, onToggle, onDownload, getLevelRef, getRecordedPeaks, accent, scopeHeight = 48,
-}: {
-  isRecording: boolean;
-  hasRecording: boolean;
-  recordedDuration: number;
-  onToggle: () => void;
-  onDownload: () => void;
-  getLevelRef: { current: (() => number) | null };
-  getRecordedPeaks: () => Float32Array | null;
-  accent: string;
-  scopeHeight?: number;
-}) {
-  const REC = "#f53e3e";
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const liveRef = useRef<number[]>([]);
-  const rafRef = useRef(0);
-
-  useEffect(() => { if (isRecording) liveRef.current = []; }, [isRecording]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const c = canvas.getContext("2d");
-    if (!c) return;
-    const draw = () => {
-      const W = canvas.width, H = canvas.height, mid = H / 2;
-      c.clearRect(0, 0, W, H);
-      c.beginPath(); c.moveTo(0, mid); c.lineTo(W, mid);
-      c.strokeStyle = "rgba(255,255,255,0.06)"; c.lineWidth = 1; c.stroke();
-
-      c.fillStyle = accent; c.shadowColor = accent; c.shadowBlur = 5;
-      if (isRecording) {
-        // scrolling window at fixed resolution: newest on the right, scroll left,
-        // only what fits is shown — the wave stays intact (no shrinking).
-        liveRef.current.push(getLevelRef.current?.() ?? 0);
-        const samples = liveRef.current;
-        const STEP = 3, BARW = 2;
-        const visible = Math.ceil(W / STEP);
-        if (samples.length > visible + 4) samples.splice(0, samples.length - visible - 4);
-        const n = samples.length;
-        for (let k = 0; k < n; k++) {
-          const x = W - (n - k) * STEP;
-          if (x < -BARW) continue;
-          const h = Math.min(1, samples[k]) * (mid - 2);
-          c.fillRect(x, mid - h, BARW, h * 2);
-        }
-      } else if (hasRecording) {
-        const data = getRecordedPeaks();
-        if (data && data.length > 0) {
-          const n = data.length;
-          for (let i = 0; i < n; i++) {
-            const x = (i / n) * W;
-            const h = Math.min(1, data[i]) * (mid - 2);
-            c.fillRect(x, mid - h, Math.max(1, (W / n) * 0.7), h * 2);
-          }
-        }
-      }
-      c.shadowBlur = 0;
-      rafRef.current = requestAnimationFrame(draw);
-    };
-    rafRef.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [isRecording, hasRecording, accent, getLevelRef, getRecordedPeaks]);
-
-  const btn = "flex items-center justify-center transition-all active:scale-90 shrink-0";
-  const btnBase = { width: 46, height: scopeHeight, borderRadius: 6, background: "rgba(10,10,16,0.9)" } as const;
-
-  return (
-    <div className="flex items-center gap-1.5 w-full lg:gap-3.5">
-      <button
-        onClick={onToggle}
-        title={isRecording ? "Stop (Space)" : "Record (Space)"}
-        aria-label={isRecording ? "Stop recording" : "Record"}
-        className={btn}
-        style={{ ...btnBase, border: `1px solid ${isRecording ? REC : accent + "30"}`, color: REC }}
-      >
-        <span className={isRecording ? "animate-pulse" : ""} style={{ width: 14, height: 14, borderRadius: isRecording ? 3 : "50%", background: REC, boxShadow: `0 0 7px ${REC}` }} />
-      </button>
-
-      <div style={{ position: "relative", flex: 1, height: scopeHeight, borderRadius: 6, overflow: "hidden", background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.05)" }}>
-        <canvas ref={canvasRef} width={520} height={scopeHeight} style={{ width: "100%", height: "100%", display: "block" }} />
-        <span style={{ position: "absolute", top: 4, right: 5, fontSize: 9, fontFamily: "monospace", letterSpacing: "0.1em", color: isRecording ? accent : "rgba(188,188,210,0.8)", background: "rgba(3,3,8,0.8)", padding: "1px 5px", borderRadius: 4, pointerEvents: "none" }}>
-          {isRecording ? "● REC" : hasRecording ? `${recordedDuration.toFixed(1)}s` : "MAX 30s"}
-        </span>
-      </div>
-
-      <button
-        onClick={onDownload}
-        disabled={!hasRecording}
-        title={hasRecording ? "Download MP3" : "Record something first"}
-        aria-label="Download take"
-        className={btn}
-        style={{ ...btnBase, border: `1px solid ${accent}30`, color: hasRecording ? accent : "rgba(255,255,255,0.25)", cursor: hasRecording ? "pointer" : "not-allowed", opacity: hasRecording ? 1 : 0.5 }}
-      >
-        <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-          <path d="M9 2v9M9 11l-3.4-3.4M9 11l3.4-3.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M3 14.8h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-        </svg>
-      </button>
-    </div>
-  );
-}
 
 export default function App() {
   const [warningDone, setWarningDone] = useState(() => {
@@ -145,7 +25,6 @@ export default function App() {
   });
   const [micDismissed, setMicDismissed] = useState(false);
   const [keyboardMode, setKeyboardMode] = useState(false);
-  // mobile bottom-sheet: which tab is showing + peek/expanded
   const [sheetTab, setSheetTab] = useState<"signal" | "keyboard" | "rec">("signal");
   const [sheetExpanded, setSheetExpanded] = useState(true);
   const [stompCount, setStompCount] = useState(0);
@@ -176,7 +55,6 @@ export default function App() {
   const fx = useEffects({ drive, echo, tone, reverb, masterVolume });
   useEffect(() => { if (!fx.micBlocked) setMicDismissed(false); }, [fx.micBlocked]);
 
-  // Space toggles recording (ignored while typing or before the warning is dismissed)
   useEffect(() => {
     if (!warningDone) return;
     const onKey = (e: KeyboardEvent) => {
@@ -277,21 +155,29 @@ export default function App() {
       )}
 
       {/* ===== DESKTOP transport bar (bottom of the stage) ===== */}
+      {/* floating card inset from the sidebar / screen edge — mirrors the preset
+          rail's margins (left-[360px] + max(28px,2.2vw) gutters) instead of a
+          full-width bar glued to the corners */}
       {warningDone && (
         <div
-          className="hidden lg:flex fixed bottom-0 left-[360px] right-0 h-[92px] z-[40] items-center px-6 border-t pointer-events-auto"
-          style={{ background: "rgba(3,3,8,0.94)", borderColor: fx.isRecording ? themeColor + "55" : "rgba(255,255,255,0.09)", transition: "border-color 200ms" }}
+          className="hidden lg:flex fixed bottom-0 left-[360px] right-0 z-[40] items-stretch pointer-events-none"
+          style={{ padding: "8px max(28px,2.2vw) 16px" }}
         >
-          <RecorderControls
-            isRecording={fx.isRecording}
-            hasRecording={fx.hasRecording}
-            recordedDuration={fx.recordedDuration}
-            onToggle={fx.toggleRecording}
-            onDownload={fx.downloadRecording}
-            getLevelRef={getLevelRef}
-            getRecordedPeaks={fx.getRecordedPeaks}
-            accent={themeColor}
-          />
+          <div
+            className="flex-1 flex items-center px-5 py-3 pointer-events-auto"
+            style={{ background: "rgba(3,3,8,0.94)", border: `1px solid ${fx.isRecording ? themeColor + "55" : "rgba(255,255,255,0.09)"}`, borderRadius: 14, transition: "border-color 200ms" }}
+          >
+            <RecorderControls
+              isRecording={fx.isRecording}
+              hasRecording={fx.hasRecording}
+              recordedDuration={fx.recordedDuration}
+              onToggle={fx.toggleRecording}
+              onDownload={fx.downloadRecording}
+              getLevelRef={getLevelRef}
+              getRecordedPeaks={fx.getRecordedPeaks}
+              accent={themeColor}
+            />
+          </div>
         </div>
       )}
 
@@ -421,7 +307,6 @@ export default function App() {
         className="hud-scroll hidden lg:flex fixed left-0 top-0 h-full z-[25] select-none flex-col"
         style={{
           width: 360,
-          // translucent glass: the shader background bleeds through the right edge
           background: "linear-gradient(105deg, rgba(6,9,11,0.95) 48%, rgba(6,9,11,0.82) 76%, rgba(6,9,11,0.30) 100%)",
           backdropFilter: "blur(7px)",
           WebkitBackdropFilter: "blur(7px)",
@@ -575,15 +460,28 @@ export default function App() {
 
         <div style={{ flex: 1 }} />
 
-        <div className="flex items-center" style={{ gap: 8 }}>
-          <div
-            className={isActive ? "animate-pulse" : ""}
-            style={{ width: 7, height: 7, borderRadius: "50%", background: ledColor, boxShadow: `0 0 8px ${ledColor}`, flexShrink: 0 }}
-          />
-          <span className="font-[var(--font-mono)]" style={{ fontSize: 9, color: "rgba(188,188,210,0.62)", letterSpacing: "0.08em" }}>
-            {isActive ? "ACTIVE · L=DRY R=FX" : fx.ready ? "READY · STOMP TO ARM" : "IDLE"}
-          </span>
-        </div>
+        {(() => {
+          const blocked = fx.feedbackBlocked;
+          const lit = blocked || isActive;
+          const tone = blocked ? "#ff5a5a" : isActive ? ledColor : "rgba(150,160,175,0.5)";
+          return (
+            <div className="flex items-center" style={{
+              gap: 8, padding: "5px 11px", borderRadius: 999,
+              border: `1px solid ${blocked ? "#ff5a5a45" : isActive ? ledColor + "45" : "rgba(255,255,255,0.08)"}`,
+              background: blocked ? "rgba(255,90,90,0.07)" : isActive ? ledColor + "10" : "rgba(255,255,255,0.02)",
+              transition: "border-color 240ms ease, background 240ms ease",
+            }}>
+              <div
+                className={lit ? "animate-pulse" : ""}
+                style={{ width: 7, height: 7, borderRadius: "50%", background: tone, boxShadow: lit ? `0 0 8px ${tone}` : "none", flexShrink: 0 }}
+              />
+              <span className="font-[var(--font-mono)]" style={{ fontSize: 9, letterSpacing: "0.08em",
+                color: blocked ? "#ff9090" : isActive ? "rgba(222,226,230,0.82)" : "rgba(188,188,210,0.5)" }}>
+                {blocked ? "MUTED · FEEDBACK" : isActive ? "ACTIVE · L=DRY R=FX" : fx.ready ? "BYPASS · STOMP TO ARM" : "IDLE"}
+              </span>
+            </div>
+          );
+        })()}
       </aside>
 
       {fx.error && (
@@ -603,614 +501,8 @@ export default function App() {
         />
       )}
 
+      {fx.feedbackBlocked && <FeedbackModal onResume={() => fx.resumeFromFeedback()} />}
+
     </div>
   );
-}
-
-const MIC_T = navigator.language.toLowerCase().startsWith("pt")
-  ? {
-      badge: "MICROFONE",
-      title: "MICROFONE BLOQUEADO",
-      body: "O GHOST FX processa a sua guitarra pelo microfone em tempo real. Sem acesso, não há sinal pra processar.",
-      hintTitle: "Como liberar",
-      hint: "Clique no ícone de cadeado/microfone na barra de endereço, marque o microfone como permitido e tente de novo.",
-      retry: "TENTAR DE NOVO",
-      keyboard: "Seguir só com o teclado",
-    }
-  : {
-      badge: "MICROPHONE",
-      title: "MICROPHONE BLOCKED",
-      body: "GHOST FX processes your guitar through the microphone in real time. Without access, there's no signal to process.",
-      hintTitle: "How to allow it",
-      hint: "Click the lock/microphone icon in the address bar, set the microphone to allowed, then try again.",
-      retry: "TRY AGAIN",
-      keyboard: "Continue with keyboard only",
-    };
-
-function MicBlockedModal({
-  accent, onRetry, onKeyboard, onDismiss,
-}: {
-  accent: string;
-  onRetry: () => void;
-  onKeyboard: () => void;
-  onDismiss: () => void;
-}) {
-  return (
-    <div className="fixed z-[120] pointer-events-none flex justify-center" style={{ left: 0, right: 0, bottom: 76, padding: "0 16px" }}>
-      <div
-        className="pointer-events-auto relative flex flex-col mic-card-in"
-        style={{
-          maxWidth: 380, width: "100%", background: "rgba(7,6,14,0.97)", backdropFilter: "blur(6px)",
-          border: `1px solid ${accent}30`, borderRadius: 11, overflow: "hidden",
-          boxShadow: `0 0 0 1px ${accent}10, 0 18px 50px rgba(0,0,0,0.7), 0 0 50px ${accent}0a`,
-        }}
-      >
-        <div style={{ height: 2, background: `linear-gradient(90deg, transparent 5%, ${accent}cc 40%, ${accent}cc 60%, transparent 95%)` }} />
-
-        <button
-          onClick={onDismiss}
-          className="absolute top-2.5 right-3.5 font-[var(--font-mono)] transition-colors hover:text-white"
-          style={{ fontSize: 15, color: "rgba(255,255,255,0.25)", background: "none", border: "none", cursor: "pointer", zIndex: 1 }}
-        >✕</button>
-
-        <div className="flex items-start gap-3" style={{ padding: "18px 20px 12px" }}>
-          <div style={{ width: 38, height: 38, borderRadius: 9, flexShrink: 0, border: `1px solid ${accent}40`, background: `${accent}10`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
-              <rect x="9" y="2" width="6" height="11" rx="3" stroke={accent} strokeWidth="1.8" />
-              <path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke={accent} strokeWidth="1.8" strokeLinecap="round" />
-              <path d="M4 3l16 18" stroke={accent} strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-          </div>
-          <div style={{ paddingTop: 1 }}>
-            <p className="font-[var(--font-pixel)]" style={{ fontSize: 7, color: accent, letterSpacing: "0.3em", marginBottom: 6 }}>{MIC_T.badge}</p>
-            <p className="font-[var(--font-display)]" style={{ fontSize: 18, color: "#fff", lineHeight: 1.05, letterSpacing: "0.01em" }}>{MIC_T.title}</p>
-          </div>
-        </div>
-
-        <div style={{ padding: "0 20px 4px" }}>
-          <p className="font-[var(--font-mono)]" style={{ fontSize: 10.5, color: "rgba(168,168,188,0.6)", lineHeight: 1.55 }}>{MIC_T.body}</p>
-          <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 7, background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)" }}>
-            <p className="font-[var(--font-mono)]" style={{ fontSize: 8.5, color: accent, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 5 }}>{MIC_T.hintTitle}</p>
-            <p className="font-[var(--font-mono)]" style={{ fontSize: 9.5, color: "rgba(168,168,188,0.5)", lineHeight: 1.55 }}>{MIC_T.hint}</p>
-          </div>
-        </div>
-
-        <div style={{ padding: "14px 20px 18px", display: "flex", alignItems: "center", gap: 10 }}>
-          <button
-            onClick={onRetry}
-            className="font-[var(--font-pixel)] transition-all active:scale-[0.98]"
-            style={{
-              fontSize: 8, letterSpacing: "0.18em", padding: "12px 18px", paddingTop: 14, borderRadius: 6,
-              border: `1px solid ${accent}50`, background: `${accent}12`, color: accent, cursor: "pointer",
-              flex: 1, boxShadow: `0 0 22px ${accent}12, inset 0 1px 0 ${accent}18`,
-            }}
-          >{MIC_T.retry}</button>
-          <button
-            onClick={onKeyboard}
-            className="font-[var(--font-mono)] transition-colors hover:text-white"
-            style={{ fontSize: 9.5, letterSpacing: "0.05em", color: "rgba(168,168,188,0.5)", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
-          >{MIC_T.keyboard}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const PRESET_META = [
-  { color: "#8a2be2", word: "OCCULT", chassis: "#09040e" },
-  { color: "#cdd2da", word: "SNOW",     chassis: "#0a0a0c" },
-  { color: "#e02828", word: "HOLLOW",  chassis: "#0a0202" },
-  { color: "#ff4a28", word: "PEPPER*", chassis: "#0d0402" },
-  { color: "#20f040", word: "HAUNTED", chassis: "#0a0a10" },
-] as const;
-
-const PRESET_TAGS = ["crystal", "grimy", "brutal", "cold", "haunted"] as const;
-
-// Shared preset card — desktop top bar and mobile scroller both render this, so
-// the rounded shape, the name+tag layout and the hover treatment stay in sync.
-function PresetCard({
-  name, tag, color, isActive, onSelect, fitScroll = false,
-}: {
-  name: string;
-  tag: string;
-  color: string;
-  isActive: boolean;
-  onSelect: () => void;
-  // fitScroll: grow to fill but never shrink, so a horizontal scroller can
-  // scroll the overflow (mobile). default = equal-width fill (desktop bar).
-  fitScroll?: boolean;
-}) {
-  const idle = "rgba(9,12,10,0.78)";
-  return (
-    <button
-      onClick={onSelect}
-      className="preset-card relative flex flex-col items-center justify-center active:scale-[0.97]"
-      style={{
-        flex: fitScroll ? "1 0 auto" : "1 1 0", minWidth: 108, height: 54, borderRadius: 14, cursor: "pointer",
-        color: isActive ? color : "rgba(184,204,192,0.6)",
-        border: `1.5px solid ${isActive ? color : "rgba(231,228,220,0.13)"}`,
-        background: isActive ? "rgba(9,12,10,0.92)" : idle,
-        boxShadow: isActive ? `0 0 18px ${color}3d, inset 0 0 22px ${color}18` : "none",
-        transition: "color 260ms ease, border-color 260ms ease, background 260ms ease, box-shadow 260ms ease, transform 200ms ease",
-      }}
-      onMouseEnter={e => { if (isActive) return; const b = e.currentTarget; b.style.color = color; b.style.borderColor = `${color}77`; b.style.background = "rgba(14,18,15,0.92)"; b.style.boxShadow = `0 0 16px ${color}33`; b.style.transform = "translateY(-2px)"; }}
-      onMouseLeave={e => { if (isActive) return; const b = e.currentTarget; b.style.color = "rgba(184,204,192,0.6)"; b.style.borderColor = "rgba(231,228,220,0.13)"; b.style.background = idle; b.style.boxShadow = "none"; b.style.transform = "none"; }}
-    >
-      <span style={{ position: "absolute", top: 9, right: 12, width: 5, height: 5, borderRadius: "50%", background: isActive ? color : "rgba(255,255,255,0.22)", boxShadow: isActive ? `0 0 6px ${color}` : "none", transition: "background 260ms" }} />
-      <span style={{ fontFamily: "'Bungee', sans-serif", fontSize: 15, letterSpacing: "0.16em", lineHeight: 1.05, color: "inherit", textShadow: isActive ? `0 0 12px ${color}aa` : "none" }}>{name}</span>
-      <span className="font-[var(--font-mono)]" style={{ fontSize: 9, letterSpacing: "0.3em", textTransform: "uppercase", marginTop: 5, paddingLeft: "0.3em", color: isActive ? `${color}cc` : "rgba(120,140,128,0.5)" }}>{tag}</span>
-      <span style={{ position: "absolute", bottom: -1, left: "28%", right: "28%", height: 2, background: isActive ? color : "transparent", boxShadow: isActive ? `0 0 8px ${color}` : "none", borderRadius: 1, pointerEvents: "none" }} />
-    </button>
-  );
-}
-
-function BottomBar({
-  presets, activePresetIdx, onPresetSelect,
-}: {
-  presets: typeof PRESETS;
-  activePresetIdx: number | null;
-  onPresetSelect: (i: number) => void;
-}) {
-  // full-width top bar of separated buttons, mirroring the bottom transport bar
-  return (
-    <div
-      className="hidden lg:flex fixed top-0 left-[360px] right-0 z-[40] pointer-events-auto items-stretch"
-      style={{ padding: "16px max(28px,2.2vw) 8px", gap: 12 }}
-    >
-      {presets.map((p, i) => (
-        <PresetCard
-          key={i}
-          name={p.name}
-          tag={PRESET_TAGS[i]}
-          color={PRESET_META[i].color}
-          isActive={activePresetIdx === i}
-          onSelect={() => onPresetSelect(i)}
-        />
-      ))}
-    </div>
-  );
-}
-
-const WHITE_LAYOUT = [
-  { key: "a", note: "C" },
-  { key: "s", note: "D" },
-  { key: "d", note: "E" },
-  { key: "f", note: "F" },
-  { key: "g", note: "G" },
-  { key: "h", note: "A" },
-  { key: "j", note: "B" },
-  { key: "k", note: "C'" },
-  { key: "l", note: "D'" },
-] as const;
-
-const BLACK_LAYOUT = [
-  { key: "w", after: 0, note: "C#" },
-  { key: "e", after: 1, note: "D#" },
-  { key: "t", after: 3, note: "F#" },
-  { key: "y", after: 4, note: "G#" },
-  { key: "u", after: 5, note: "A#" },
-  { key: "o", after: 7, note: "C#'" },
-  { key: "p", after: 8, note: "D#'" },
-] as const;
-
-// Playable on-screen piano. Tap/click (multi-touch) drives the synth via
-// playNote/stopNote. labelMode "key" shows the QWERTY hint (desktop, where the
-// physical keys work); "note" shows the note name (mobile/touch).
-function KeyboardDisplay({
-  activeKeys, accent, playNote, stopNote, labelMode = "key",
-}: {
-  activeKeys: Set<string>;
-  accent: string;
-  playNote: (key: string, freq: number) => void;
-  stopNote: (key: string) => void;
-  labelMode?: "key" | "note";
-}) {
-  const KW = 22, KH = 54, BW = 13, BH = 33;
-  const whites = WHITE_LAYOUT;
-  // drop any black key whose right-hand white neighbour isn't shown (no overhang)
-  const blacks = BLACK_LAYOUT.filter(b => b.after < whites.length - 1);
-  const total = whites.length * KW;
-
-  const press = (e: React.PointerEvent, key: string) => { e.preventDefault(); const n = NOTE_KEYS[key]; if (n) playNote(key, n.freq); };
-
-  return (
-    <div style={{ borderRadius: 5, overflow: "hidden", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.05)", padding: "8px 6px 12px", touchAction: "none" }}>
-      <svg width="100%" viewBox={`0 0 ${total} ${KH + 16}`} style={{ display: "block", touchAction: "none" }}>
-        {whites.map(({ key, note }, i) => {
-          const on = activeKeys.has(key);
-          return (
-            <g key={key} style={{ cursor: "pointer" }}
-              onPointerDown={(e) => press(e, key)}
-              onPointerUp={() => stopNote(key)}
-              onPointerCancel={() => stopNote(key)}
-              onPointerLeave={() => stopNote(key)}
-            >
-              <rect x={i * KW + 0.5} y={0.5} width={KW - 1} height={KH} rx={2}
-                fill={on ? accent : "rgba(228,228,240,0.92)"}
-                stroke={on ? accent : "rgba(0,0,0,0.25)"} strokeWidth={0.5}
-              />
-              {labelMode === "note" ? (
-                <text x={i * KW + KW / 2} y={KH - 8} textAnchor="middle"
-                  fontSize={8} fontFamily="monospace" fontWeight="bold"
-                  fill={on ? "#080808" : "rgba(70,70,90,0.95)"}
-                >{note}</text>
-              ) : (
-                <>
-                  <text x={i * KW + KW / 2} y={KH - 7} textAnchor="middle"
-                    fontSize={7} fontFamily="monospace" fontWeight="bold"
-                    fill={on ? "#080808" : "rgba(80,80,100,0.9)"}
-                  >{key.toUpperCase()}</text>
-                  <text x={i * KW + KW / 2} y={KH + 12} textAnchor="middle"
-                    fontSize={7} fontFamily="monospace"
-                    fill={on ? accent : "rgba(168,168,188,0.35)"}
-                  >{note}</text>
-                </>
-              )}
-            </g>
-          );
-        })}
-        {blacks.map(({ key, after, note }) => {
-          const on = activeKeys.has(key);
-          const x = (after + 1) * KW - BW / 2;
-          return (
-            <g key={key} style={{ cursor: "pointer" }}
-              onPointerDown={(e) => press(e, key)}
-              onPointerUp={() => stopNote(key)}
-              onPointerCancel={() => stopNote(key)}
-              onPointerLeave={() => stopNote(key)}
-            >
-              <rect x={x} y={0.5} width={BW} height={BH} rx={2}
-                fill={on ? accent : "#080810"}
-                stroke={on ? accent : "rgba(255,255,255,0.1)"} strokeWidth={0.5}
-              />
-              <text x={x + BW / 2} y={BH - 5} textAnchor="middle"
-                fontSize={labelMode === "note" ? 5 : 6} fontFamily="monospace"
-                fill={on ? "#080808" : "rgba(255,255,255,0.5)"}
-              >{labelMode === "note" ? note : key.toUpperCase()}</text>
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
-
-// Real draggable fader (mouse + touch) wired to the same param state as the 3D
-// knobs — dragging either updates the other. Replaces the old read-only VU rows.
-function Fader({
-  label,
-  value,
-  onChange,
-  accent,
-  highlight = false,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  accent: string;
-  highlight?: boolean;
-}) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const draggingRef = useRef(false);
-  const lastTapRef = useRef(0);
-
-  const setFromClientX = useCallback((clientX: number) => {
-    const el = trackRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const t = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
-    onChange(t);
-  }, [onChange]);
-
-  const pct = Math.round(value * 100);
-
-  return (
-    <div className="grid items-center" style={{ gridTemplateColumns: "52px 1fr 30px", gap: 11, padding: "6px 0" }}>
-      <span
-        className="font-[var(--font-mono)] uppercase"
-        style={{ fontSize: 10, letterSpacing: "0.13em", color: highlight ? "#e7e4dc" : "#9fc4ad", fontWeight: highlight ? 700 : 400 }}
-      >
-        {label}
-      </span>
-
-      <div
-        ref={trackRef}
-        role="slider"
-        aria-label={label}
-        aria-valuenow={pct}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        tabIndex={0}
-        className="relative flex items-center"
-        style={{ height: 24, cursor: "pointer", touchAction: "none" }}
-        onPointerDown={(e) => {
-          e.preventDefault();
-          const now = performance.now();
-          if (now - lastTapRef.current < 300) { onChange(0.5); lastTapRef.current = 0; return; }
-          lastTapRef.current = now;
-          (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-          draggingRef.current = true;
-          setFromClientX(e.clientX);
-        }}
-        onPointerMove={(e) => { if (draggingRef.current) setFromClientX(e.clientX); }}
-        onPointerUp={(e) => { draggingRef.current = false; (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId); }}
-        onPointerCancel={() => { draggingRef.current = false; }}
-        onKeyDown={(e) => {
-          const step = e.shiftKey ? 0.1 : 0.02;
-          if (e.key === "ArrowRight" || e.key === "ArrowUp") { e.preventDefault(); onChange(Math.min(1, value + step)); }
-          else if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); onChange(Math.max(0, value - step)); }
-        }}
-      >
-
-        <div className="absolute left-0 right-0" style={{ height: 4, borderRadius: 2, background: "#161d18", overflow: "hidden" }}>
-          <div className="absolute inset-0" style={{ background: "repeating-linear-gradient(90deg, transparent 0 7px, rgba(0,0,0,.5) 7px 8px)" }} />
-        </div>
-
-        <div className="absolute left-0" style={{ height: 4, width: `${pct}%`, borderRadius: 2, background: accent, boxShadow: `0 0 8px ${accent}80` }} />
-
-        <div
-          className="absolute"
-          style={{
-            left: `${pct}%`, width: 14, height: 22, borderRadius: 3, transform: "translateX(-50%)",
-            background: "linear-gradient(180deg,#2a352e,#11160f)", border: "1px solid rgba(231,228,220,.16)",
-            boxShadow: "0 2px 5px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.12)",
-          }}
-        >
-          <div className="absolute" style={{ left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 8, height: 1.5, background: accent, boxShadow: `0 0 8px ${accent}` }} />
-        </div>
-      </div>
-
-      <span
-        className="font-[var(--font-mono)]"
-        style={{ fontSize: 12, color: highlight ? accent : "#e7e4dc", textAlign: "right", fontVariantNumeric: "tabular-nums" }}
-      >
-        {pct}
-      </span>
-    </div>
-  );
-}
-
-const BG_VS = `attribute vec2 a_pos; void main(){gl_Position=vec4(a_pos,0.,1.);}`;
-
-const CLEAN_FS = `
-precision mediump float;
-uniform float u_t; uniform vec2 u_res; uniform float u_blend;
-void main(){
-  // bullseye estilo Zakk Wylde: anéis concêntricos roxos pulsando pra fora,
-  // com ondulação orgânica leve (pintura feita à mão)
-  vec2 uv=gl_FragCoord.xy/u_res;
-  vec2 p=(uv-0.5)*vec2(u_res.x/u_res.y,1.0);
-  float ang=atan(p.y,p.x);
-  float wob=sin(ang*5.0+u_t*.55)*0.013+sin(ang*9.0-u_t*.40)*0.008;
-  float r=length(p)+wob;
-  float s=cos(r*44.0-u_t*1.60);
-  float pulse=0.82+0.18*sin(u_t*0.90);
-  float c=smoothstep(-0.30,1.0,s)*pulse;
-  float thresh=mix(1.0,0.30,u_blend);
-  vec4 col;
-  if(c>thresh){
-    float b=pow((c-0.30)/0.70,0.5);
-    col=vec4(b*160./255., b*58./255., b*236./255., b*0.88);
-  } else {
-    float d=(s*0.5+0.5)*0.14;
-    col=vec4(d*16./255., d*5./255., d*30./255., 1.0);
-  }
-  gl_FragColor=col;
-}`;
-
-const STATIC_FS = `
-precision mediump float;
-uniform float u_t; uniform vec2 u_res; uniform float u_blend;
-float hash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
-void main(){
-  // estática de TV monocromática: snow + scanlines + bandas de glitch — emerge no limiar
-  vec2 uv=gl_FragCoord.xy/u_res;
-  float band=floor(uv.y*16.0);
-  float trig=step(0.85, hash(vec2(band, floor(u_t*48.0))));
-  float shift=(hash(vec2(band, floor(u_t*48.0)+3.0))-0.5)*0.12*trig;
-  vec2 q=vec2(uv.x+shift, uv.y);
-  float n=hash(floor(q*u_res/3.0)+floor(u_t*170.0));
-  float scan=0.55+0.45*sin((uv.y*u_res.y*1.5)-u_t*40.0);
-  float c=n*mix(0.55,1.0,scan);
-  float thresh=mix(1.0,0.46,u_blend);
-  vec4 col;
-  if(c>thresh){
-    float b=pow((c-.46)/.54,.6);
-    col=vec4(b*208./255., b*214./255., b*226./255., b*.86);
-  } else {
-    float d=n*.10+scan*.04;
-    col=vec4(d*18./255., d*18./255., d*24./255., 1.);
-  }
-  gl_FragColor=col;
-}`;
-
-const HEAVY_FS = `
-precision mediump float;
-uniform float u_t; uniform vec2 u_res; uniform float u_blend;
-float tri(float x){return abs(fract(x)-.5)*2.;}
-void main(){
-  vec2 uv=gl_FragCoord.xy/u_res;
-  float cx=uv.x-.5,cy=.5-uv.y;
-  float w1=sin(cx*1.6+cy*1.1+u_t*.11)*.62;
-  float w2=sin(cy*1.9-cx*1.3-u_t*.09)*.52;
-  float v=tri((cx+cy+w1)*5.5+u_t*.23)*2.5
-         +tri((cx-cy+w2)*5.0-u_t*.19)*2.2
-         +tri((cx+cy*.5+w1*.5)*3.6+u_t*.14)*1.3;
-  float c=abs(cos(v*3.1));
-  float b=pow(max(0.,(c-.18)/.82),.50);
-  float w=sin(v*.5+u_t*.04)*.15+.85;
-  float r=b*w;
-  float thresh=mix(1.0,0.04,u_blend);
-  vec4 col;
-  if(b>thresh){col=vec4(r*228./255.,r*14./255.,r*18./255.,r*.92);}
-  else{col=vec4(0.,0.,0.,1.);}
-  gl_FragColor=col;
-}`;
-
-const FRUS_FS = `
-precision mediump float;
-uniform float u_t; uniform vec2 u_res; uniform float u_blend;
-void main(){
-  vec2 uv=gl_FragCoord.xy/u_res;
-  float nx=uv.x,ny=1.-uv.y,cx=nx-.5,cy=ny-.5;
-  float r=sqrt(cx*cx+cy*cy);
-  float v=sin(nx*8.+u_t*.50)*1.1
-         +sin(ny*6.-u_t*.40)*1.1
-         +sin(r*16.-u_t*1.20)*1.5
-         +sin((cx*9.-cy*7.)+u_t*.30)*.9
-         +sin((cx*5.+cy*11.)-u_t*.22)*.7;
-  float c1=abs(cos(v*3.14159265));
-  float c2=abs(cos(v*3.14159265*.5+.9));
-  float t1=mix(1.0,0.78,u_blend);
-  float t2=mix(1.0,0.85,u_blend);
-  vec4 col;
-  if(c1>t1){
-    float b=pow((c1-.78)/.22,.55);
-    float purple=sin(v*1.4+u_t*.15)*.5+.5;
-    col=vec4(b*(35.+purple*90.)/255.,b*(155.+purple*25.)/255.,b,b*248./255.);
-  } else if(c2>t2){
-    float b=pow((c2-.85)/.15,.5)*.42;
-    col=vec4(b*45./255.,b*110./255.,b*200./255.,b*160./255.);
-  } else {
-    float depth=(sin(v*.4)+1.)*.5;
-    col=vec4(depth*4./255.,depth*9./255.,depth*28./255.,1.);
-  }
-  gl_FragColor=col;
-}`;
-
-const GHOST_FS = `
-precision mediump float;
-uniform float u_t; uniform vec2 u_res; uniform float u_blend;
-void main(){
-  vec2 uv=gl_FragCoord.xy/u_res;
-  vec2 p=vec2(uv.x,1.-uv.y);
-  vec2 q=vec2(sin(p.x*3.2+u_t*.13)+sin(p.y*2.6+u_t*.10),
-              sin(p.x*2.9-u_t*.11)+sin(p.y*3.4-u_t*.09));
-  vec2 r=vec2(sin(p.x*3.+q.x*2.2+u_t*.09)+sin(p.y*2.2-q.y*1.8-u_t*.07),
-              sin(p.x*2.2-q.y*2.1-u_t*.08)+sin(p.y*3.1+q.x*1.9+u_t*.10));
-  float v=length(r);
-  float c=abs(cos(v*4.2));
-  float thresh=mix(1.0,0.76,u_blend);
-  vec4 col;
-  if(c>thresh){float b=pow((c-.76)/.24,.55);col=vec4(b*5./255.,b*185./255.,b*32./255.,b*.82);}
-  else{float d=(cos(v*1.8)+1.)*.12;col=vec4(d*1./255.,d*6./255.,d*2./255.,1.);}
-  gl_FragColor=col;
-}`;
-
-const PRESET_FS = [CLEAN_FS, STATIC_FS, HEAVY_FS, FRUS_FS, GHOST_FS];
-const PRESET_OPACITY = [0.65, 0.74, 0.82, 0.88, 0.70];
-
-type GlState = { tLoc: WebGLUniformLocation; rLoc: WebGLUniformLocation; blendLoc: WebGLUniformLocation; prog: WebGLProgram };
-
-const BLEND_OUT = 550;
-const BLEND_IN  = 750;
-
-// Pattern shown behind the feedback-risk modal (red "danger" tone); on accept the
-// background transitions from this to the active preset (GHOST by default).
-const INTRO_IDX = 2;
-
-function buildShader(gl: WebGLRenderingContext, idx: number, old?: WebGLProgram): GlState {
-  if (old) gl.deleteProgram(old);
-  const compile = (type: number, src: string) => { const s = gl.createShader(type)!; gl.shaderSource(s, src); gl.compileShader(s); return s; };
-  const prog = gl.createProgram()!;
-  gl.attachShader(prog, compile(gl.VERTEX_SHADER, BG_VS));
-  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, PRESET_FS[idx]));
-  gl.linkProgram(prog); gl.useProgram(prog);
-  const buf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
-  const pos = gl.getAttribLocation(prog, "a_pos");
-  gl.enableVertexAttribArray(pos); gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
-  return { tLoc: gl.getUniformLocation(prog, "u_t")!, rLoc: gl.getUniformLocation(prog, "u_res")!, blendLoc: gl.getUniformLocation(prog, "u_blend")!, prog };
-}
-
-function PresetBg({ presetIdx, introActive = false }: { presetIdx: number | null; introActive?: boolean }) {
-  // While the intro (feedback-risk modal) is up, force the danger pattern; the
-  // moment it clears, effIdx changes and the existing blend animates to the preset.
-  const effIdx = introActive ? INTRO_IDX : presetIdx;
-
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const glRef     = useRef<WebGLRenderingContext | null>(null);
-  const glState   = useRef<GlState | null>(null);
-  const rafRef    = useRef(0);
-  const startRef  = useRef(performance.now());
-
-  const [canvasOpacity, setCanvasOpacity] = useState(effIdx !== null ? PRESET_OPACITY[effIdx] : 0);
-  const setOpacityRef = useRef(setCanvasOpacity);
-  setOpacityRef.current = setCanvasOpacity;
-
-  const tr = useRef<{
-    phase: 'in' | 'out' | 'stable';
-    phaseStart: number;
-    blend: number;
-    currentIdx: number | null;
-    pendingIdx: number | null;
-  }>({ phase: 'in', phaseStart: performance.now(), blend: 0, currentIdx: effIdx, pendingIdx: null });
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const gl = canvas.getContext("webgl");
-    if (!gl) return;
-    glRef.current = gl;
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; gl.viewport(0, 0, canvas.width, canvas.height); };
-    resize();
-    window.addEventListener("resize", resize);
-    if (tr.current.currentIdx !== null) glState.current = buildShader(gl, tr.current.currentIdx);
-    return () => window.removeEventListener("resize", resize);
-  }, []);
-
-  useEffect(() => {
-    const t = tr.current;
-    if (effIdx === t.currentIdx && t.phase === 'stable') return;
-    t.pendingIdx = effIdx;
-    if (t.phase !== 'out') { t.phase = 'out'; t.phaseStart = performance.now(); }
-  }, [effIdx]);
-
-  useEffect(() => {
-    const tick = () => {
-      const gl = glRef.current;
-      const t  = tr.current;
-      const now = performance.now();
-
-      if (t.phase === 'out') {
-        const p = Math.min(1, (now - t.phaseStart) / BLEND_OUT);
-        const e = p * p;
-        t.blend = 1 - e;
-        if (p >= 1) {
-          if (t.pendingIdx !== null && gl) {
-            glState.current = buildShader(gl, t.pendingIdx, glState.current?.prog);
-            setOpacityRef.current(PRESET_OPACITY[t.pendingIdx]);
-          }
-          t.currentIdx = t.pendingIdx;
-          t.pendingIdx = null;
-          t.phase = 'in';
-          t.phaseStart = now;
-          t.blend = 0;
-        }
-      } else if (t.phase === 'in') {
-        const p = Math.min(1, (now - t.phaseStart) / BLEND_IN);
-        const e = 1 - (1 - p) * (1 - p) * (1 - p);
-        t.blend = e;
-        if (p >= 1) { t.phase = 'stable'; t.blend = 1; }
-      }
-
-      // read the live state *after* a possible shader swap above, so the uniform
-      // locations always belong to the currently-bound program
-      const s = glState.current;
-      if (s && gl) {
-        const time = (now - startRef.current) * 0.00012;
-        gl.uniform1f(s.tLoc, time);
-        gl.uniform2f(s.rLoc, gl.canvas.width, gl.canvas.height);
-        gl.uniform1f(s.blendLoc, t.blend);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-      }
-
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, []);
-
-  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ width: "100%", height: "100%", zIndex: 1, opacity: canvasOpacity }} />;
 }
