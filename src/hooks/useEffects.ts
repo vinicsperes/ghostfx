@@ -443,8 +443,9 @@ export function useEffects({
       return;
     }
     let over = 0;
-    const RMS_TRIP = 0.3;   // sustained RMS above this = runaway
-    const TRIP_CHECKS = 5;  // × 100ms = 0.5s held before muting
+    const RMS_TRIP = 0.5;   // sustained RMS above this = runaway (above a hot,
+                            // wet preset's normal peaks; the limiter guards ears)
+    const TRIP_CHECKS = 6;  // × 100ms = 0.6s held before muting
 
     const checkFeedback = () => {
       const analyser = analyserRef.current;
