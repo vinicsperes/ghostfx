@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, mapChorusDepth, mapChorusMix, createLimiterCurve } from "../audio/dsp";
+import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, mapChorusDepth, mapChorusFb, mapChorusMix, createLimiterCurve } from "../audio/dsp";
 
 export type EffectsState = "idle" | "bypass" | "active";
 
@@ -139,6 +139,7 @@ export function useEffects({
     wet: GainNode | null;
     chorusDelay: DelayNode | null;
     chorusDepth: GainNode | null;
+    chorusFb: GainNode | null;
     chorusWet: GainNode | null;
     reverbWet: GainNode | null;
     bypass: GainNode | null;
@@ -154,6 +155,7 @@ export function useEffects({
     wet: null,
     chorusDelay: null,
     chorusDepth: null,
+    chorusFb: null,
     chorusWet: null,
     reverbWet: null,
     bypass: null,
@@ -222,17 +224,24 @@ export function useEffects({
       const wetGain = ctx.createGain();
       wetGain.gain.value = echo * 0.5;
 
-      // chorus: short modulated delay tapped off the tone stage, mixed wet
+      // flanger (Electric Mistress / "Heart-Shaped Box" voiced): short modulated
+      // delay with damped feedback for the resonant sweep, mixed wet
       const chorusDelay = ctx.createDelay(0.05);
-      chorusDelay.delayTime.value = 0.018;
+      chorusDelay.delayTime.value = 0.0025;
       const chorusLfo = ctx.createOscillator();
       chorusLfo.type = "sine";
-      chorusLfo.frequency.value = 0.6;
+      chorusLfo.frequency.value = 0.4;
       const chorusDepth = ctx.createGain();
       chorusDepth.gain.value = mapChorusDepth(chorus);
       chorusLfo.connect(chorusDepth);
       chorusDepth.connect(chorusDelay.delayTime);
       chorusLfo.start();
+      // low-pass the loop so the resonance sweeps instead of whistling
+      const chorusDamp = ctx.createBiquadFilter();
+      chorusDamp.type = "lowpass";
+      chorusDamp.frequency.value = 2800;
+      const chorusFb = ctx.createGain();
+      chorusFb.gain.value = mapChorusFb(chorus);
       const chorusWet = ctx.createGain();
       chorusWet.gain.value = mapChorusMix(chorus);
 
@@ -294,7 +303,10 @@ export function useEffects({
       wetGain.connect(effectsGain);
 
       toneFilter.connect(chorusDelay);
-      chorusDelay.connect(chorusWet);
+      chorusDelay.connect(chorusDamp);
+      chorusDamp.connect(chorusFb);
+      chorusFb.connect(chorusDelay);
+      chorusDamp.connect(chorusWet);
       chorusWet.connect(effectsGain);
 
       toneFilter.connect(reverbDamping);
@@ -340,6 +352,7 @@ export function useEffects({
         wet: wetGain,
         chorusDelay,
         chorusDepth,
+        chorusFb,
         chorusWet,
         reverbWet,
         bypass: bypassGain,
@@ -405,9 +418,10 @@ export function useEffects({
   useEffect(() => {
     const ctx = ctxRef.current;
     if (!ctx) return;
-    const { chorusDepth, chorusWet } = nodesRef.current;
+    const { chorusDepth, chorusFb, chorusWet } = nodesRef.current;
     const t = ctx.currentTime;
     chorusDepth?.gain.setTargetAtTime(mapChorusDepth(chorus), t, 0.05);
+    chorusFb?.gain.setTargetAtTime(mapChorusFb(chorus), t, 0.05);
     chorusWet?.gain.setTargetAtTime(mapChorusMix(chorus), t, 0.05);
   }, [chorus]);
 

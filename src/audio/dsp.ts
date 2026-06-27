@@ -28,14 +28,21 @@ export function mapFeedback(value: number): number {
   return 0.2 + value * 0.45;
 }
 
-// Chorus: a short modulated delay mixed against the dry signal. Depth is the
-// LFO swing (in seconds) around an ~18ms base delay; mix is the wet level.
+// Flanger (Electric Mistress voiced — the "Heart-Shaped Box" watery sweep): a
+// short modulated delay with damped feedback (the resonant jet). Depth is the
+// LFO swing in seconds around a ~2.5ms base delay; fb is the feedback that gives
+// the resonance; mix is the wet level. Feedback is kept moderate and the loop is
+// low-passed elsewhere so it sweeps instead of whistling.
 export function mapChorusDepth(value: number): number {
-  return 0.0008 + value * 0.0042;
+  return 0.0004 + value * 0.0018;
+}
+
+export function mapChorusFb(value: number): number {
+  return value * 0.22;
 }
 
 export function mapChorusMix(value: number): number {
-  return value * 0.7;
+  return value * 0.4;
 }
 
 // Zero-latency brickwall-ish limiter as a WaveShaper curve. Replaces the output
