@@ -1,7 +1,7 @@
 export const PRESETS = [
   { name: "GHOST",   drive: 0.55, echo: 0.48, tone: 0.50, reverb: 0.58, chorus: 0.45, master: 0.76 },
   { name: "DOOM",    drive: 0.66, echo: 0.16, tone: 0.56, reverb: 0.42, chorus: 0.32, master: 0.80 },
-  { name: "FROST",   drive: 0.05, echo: 0.20, tone: 0.66, reverb: 0.34, chorus: 0.62, master: 0.80 },
+  { name: "FROST",   drive: 0.05, echo: 0.20, tone: 0.66, reverb: 0.34, chorus: 0.62, master: 0.95 },
   { name: "HEAVY",   drive: 0.85, echo: 0.08, tone: 0.40, reverb: 0.10, chorus: 0.00, master: 0.82 },
   { name: "HAZE",    drive: 0.50, echo: 0.35, tone: 0.52, reverb: 0.82, chorus: 0.70, master: 0.80 },
 ] as const;
