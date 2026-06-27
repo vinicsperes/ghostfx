@@ -483,7 +483,7 @@ export default function App() {
               />
               <span className="font-[var(--font-mono)]" style={{ fontSize: 9, letterSpacing: "0.08em",
                 color: blocked ? "#ff9090" : isActive ? "rgba(222,226,230,0.82)" : "rgba(188,188,210,0.5)" }}>
-                {blocked ? "MUTED · FEEDBACK" : isActive ? "ACTIVE · L=DRY R=FX" : fx.ready ? "BYPASS · STOMP TO ARM" : "IDLE"}
+                {blocked ? "MUTED · FEEDBACK" : isActive ? "ACTIVE · MONITORING" : fx.ready ? "BYPASS · STOMP TO ARM" : "IDLE"}
               </span>
             </div>
           );
