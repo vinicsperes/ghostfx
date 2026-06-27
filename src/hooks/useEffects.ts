@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, createLimiterCurve } from "../audio/dsp";
+import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, mapChorusDepth, mapChorusMix, createLimiterCurve } from "../audio/dsp";
 
 export type EffectsState = "idle" | "bypass" | "active";
 
@@ -93,12 +93,14 @@ export function useEffects({
   echo,
   tone,
   reverb,
+  chorus,
   masterVolume = 0.8,
 }: {
   drive: number;
   echo: number;
   tone: number;
   reverb: number;
+  chorus: number;
   masterVolume?: number;
 }): EffectsApi {
   const [state, setState] = useState<EffectsState>("idle");
@@ -135,6 +137,9 @@ export function useEffects({
     lfoGain: GainNode | null;
     feedback: GainNode | null;
     wet: GainNode | null;
+    chorusDelay: DelayNode | null;
+    chorusDepth: GainNode | null;
+    chorusWet: GainNode | null;
     reverbWet: GainNode | null;
     bypass: GainNode | null;
     effects: GainNode | null;
@@ -147,6 +152,9 @@ export function useEffects({
     lfoGain: null,
     feedback: null,
     wet: null,
+    chorusDelay: null,
+    chorusDepth: null,
+    chorusWet: null,
     reverbWet: null,
     bypass: null,
     effects: null,
@@ -214,6 +222,20 @@ export function useEffects({
       const wetGain = ctx.createGain();
       wetGain.gain.value = echo * 0.5;
 
+      // chorus: short modulated delay tapped off the tone stage, mixed wet
+      const chorusDelay = ctx.createDelay(0.05);
+      chorusDelay.delayTime.value = 0.018;
+      const chorusLfo = ctx.createOscillator();
+      chorusLfo.type = "sine";
+      chorusLfo.frequency.value = 0.6;
+      const chorusDepth = ctx.createGain();
+      chorusDepth.gain.value = mapChorusDepth(chorus);
+      chorusLfo.connect(chorusDepth);
+      chorusDepth.connect(chorusDelay.delayTime);
+      chorusLfo.start();
+      const chorusWet = ctx.createGain();
+      chorusWet.gain.value = mapChorusMix(chorus);
+
       const reverbDamping = ctx.createBiquadFilter();
       reverbDamping.type = "lowpass";
       reverbDamping.frequency.value = 3200;
@@ -271,6 +293,10 @@ export function useEffects({
       feedbackGain.connect(wetGain);
       wetGain.connect(effectsGain);
 
+      toneFilter.connect(chorusDelay);
+      chorusDelay.connect(chorusWet);
+      chorusWet.connect(effectsGain);
+
       toneFilter.connect(reverbDamping);
 
       reverbDamping.connect(reverbDelay1);
@@ -312,6 +338,9 @@ export function useEffects({
         lfoGain,
         feedback: feedbackGain,
         wet: wetGain,
+        chorusDelay,
+        chorusDepth,
+        chorusWet,
         reverbWet,
         bypass: bypassGain,
         effects: effectsGain,
@@ -339,7 +368,7 @@ export function useEffects({
         setError(e instanceof Error ? e.message : "could not access microphone");
       }
     }
-  }, [drive, echo, tone, reverb]);
+  }, [drive, echo, tone, reverb, chorus]);
 
   useEffect(() => {
     const { drive: driveNode, preGain } = nodesRef.current;
@@ -372,6 +401,15 @@ export function useEffects({
     const { reverbWet } = nodesRef.current;
     reverbWet?.gain.setTargetAtTime(reverb * 0.5, ctx.currentTime, 0.05);
   }, [reverb]);
+
+  useEffect(() => {
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    const { chorusDepth, chorusWet } = nodesRef.current;
+    const t = ctx.currentTime;
+    chorusDepth?.gain.setTargetAtTime(mapChorusDepth(chorus), t, 0.05);
+    chorusWet?.gain.setTargetAtTime(mapChorusMix(chorus), t, 0.05);
+  }, [chorus]);
 
   useEffect(() => {
     if (feedbackLatchRef.current) return; // stay muted while feedback-protected

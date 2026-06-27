@@ -28,6 +28,16 @@ export function mapFeedback(value: number): number {
   return 0.2 + value * 0.45;
 }
 
+// Chorus: a short modulated delay mixed against the dry signal. Depth is the
+// LFO swing (in seconds) around an ~18ms base delay; mix is the wet level.
+export function mapChorusDepth(value: number): number {
+  return 0.0008 + value * 0.0042;
+}
+
+export function mapChorusMix(value: number): number {
+  return value * 0.7;
+}
+
 // Zero-latency brickwall-ish limiter as a WaveShaper curve. Replaces the output
 // DynamicsCompressor, whose ~6ms lookahead was pure round-trip latency. Unity
 // (transparent) below `threshold`, then a tanh soft-knee that asymptotes toward

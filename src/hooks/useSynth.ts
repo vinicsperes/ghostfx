@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback } from "../audio/dsp";
+import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, mapChorusDepth, mapChorusMix } from "../audio/dsp";
 
 export const NOTE_KEYS: Record<string, { freq: number; note: string; black?: true }> = {
   a: { freq: 261.63, note: "C4" },
@@ -28,22 +28,24 @@ type SynthNodes = {
   delay: DelayNode;
   feedback: GainNode;
   wet: GainNode;
+  chorusDepth: GainNode;
+  chorusWet: GainNode;
   reverbWet: GainNode;
   master: GainNode;
 };
 
 export function useSynth({
-  drive, echo, tone, reverb, masterVolume,
+  drive, echo, tone, reverb, chorus, masterVolume,
 }: {
-  drive: number; echo: number; tone: number; reverb: number; masterVolume: number;
+  drive: number; echo: number; tone: number; reverb: number; chorus: number; masterVolume: number;
 }) {
   const ctxRef   = useRef<AudioContext | null>(null);
   const nodesRef = useRef<SynthNodes | null>(null);
   const activeRef = useRef(new Map<string, { osc: OscillatorNode; env: GainNode }>());
   const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
 
-  const paramsRef = useRef({ drive, echo, tone, reverb, masterVolume });
-  useEffect(() => { paramsRef.current = { drive, echo, tone, reverb, masterVolume }; }, [drive, echo, tone, reverb, masterVolume]);
+  const paramsRef = useRef({ drive, echo, tone, reverb, chorus, masterVolume });
+  useEffect(() => { paramsRef.current = { drive, echo, tone, reverb, chorus, masterVolume }; }, [drive, echo, tone, reverb, chorus, masterVolume]);
 
   const ensureInit = useCallback(() => {
     if (ctxRef.current && nodesRef.current) return { ctx: ctxRef.current, nodes: nodesRef.current };
@@ -81,6 +83,19 @@ export function useSynth({
     const wetGain = ctx.createGain();
     wetGain.gain.value = p.echo * 0.5;
 
+    const chorusDelay = ctx.createDelay(0.05);
+    chorusDelay.delayTime.value = 0.018;
+    const chorusLfo = ctx.createOscillator();
+    chorusLfo.type = "sine";
+    chorusLfo.frequency.value = 0.6;
+    const chorusDepth = ctx.createGain();
+    chorusDepth.gain.value = mapChorusDepth(p.chorus);
+    chorusLfo.connect(chorusDepth);
+    chorusDepth.connect(chorusDelay.delayTime);
+    chorusLfo.start();
+    const chorusWet = ctx.createGain();
+    chorusWet.gain.value = mapChorusMix(p.chorus);
+
     const reverbDamping = ctx.createBiquadFilter();
     reverbDamping.type = "lowpass"; reverbDamping.frequency.value = 3200;
     const rev1 = ctx.createDelay(0.1); rev1.delayTime.value = 0.0233;
@@ -107,6 +122,7 @@ export function useSynth({
     feedbackGain.connect(delayNode);
     feedbackGain.connect(wetGain);
     wetGain.connect(master);
+    toneFilter.connect(chorusDelay); chorusDelay.connect(chorusWet); chorusWet.connect(master);
     toneFilter.connect(reverbDamping);
     reverbDamping.connect(rev1); rev1.connect(revFB1); revFB1.connect(rev1); rev1.connect(reverbWet);
     reverbDamping.connect(rev2); rev2.connect(revFB2); revFB2.connect(rev2); rev2.connect(reverbWet);
@@ -115,7 +131,7 @@ export function useSynth({
     master.connect(limiter);
     limiter.connect(ctx.destination);
 
-    const nodes: SynthNodes = { input, preGain, drive: driveNode, tone: toneFilter, delay: delayNode, feedback: feedbackGain, wet: wetGain, reverbWet, master };
+    const nodes: SynthNodes = { input, preGain, drive: driveNode, tone: toneFilter, delay: delayNode, feedback: feedbackGain, wet: wetGain, chorusDepth, chorusWet, reverbWet, master };
     nodesRef.current = nodes;
     return { ctx, nodes };
   }, []);
@@ -131,8 +147,10 @@ export function useSynth({
     n.feedback.gain.setTargetAtTime(mapFeedback(echo), t, 0.05);
     n.wet.gain.setTargetAtTime(echo * 0.5, t, 0.05);
     n.reverbWet.gain.setTargetAtTime(reverb * 0.5, t, 0.05);
+    n.chorusDepth.gain.setTargetAtTime(mapChorusDepth(chorus), t, 0.05);
+    n.chorusWet.gain.setTargetAtTime(mapChorusMix(chorus), t, 0.05);
     n.master.gain.setTargetAtTime(masterVolume * 0.55, t, 0.05);
-  }, [drive, echo, tone, reverb, masterVolume]);
+  }, [drive, echo, tone, reverb, chorus, masterVolume]);
 
   const playNote = useCallback((key: string, freq: number) => {
     if (activeRef.current.has(key)) return;

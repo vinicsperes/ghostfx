@@ -28,13 +28,14 @@ export default function App() {
   const [sheetTab, setSheetTab] = useState<"signal" | "keyboard" | "rec">("signal");
   const [sheetExpanded, setSheetExpanded] = useState(true);
   const [stompCount, setStompCount] = useState(0);
-  const [presetIdx, setPresetIdx] = useState<number | null>(4);
-  const presetIdxRef = useRef<number | null>(4);
+  const [presetIdx, setPresetIdx] = useState<number | null>(0);
+  const presetIdxRef = useRef<number | null>(0);
   useEffect(() => { presetIdxRef.current = presetIdx; }, [presetIdx]);
   const [drive, setDrive] = useState(0.55);
   const [echo, setEcho] = useState(0.48);
   const [tone, setTone] = useState(0.50);
   const [reverb, setReverb] = useState(0.58);
+  const [chorus, setChorus] = useState(0.45);
   const [masterVolume, setMasterVolume] = useState(0.76);
 
   const applyPreset = useCallback((preset: typeof PRESETS[number]) => {
@@ -52,7 +53,7 @@ export default function App() {
     applyPreset(PRESETS[i]);
   }, [applyPreset]);
 
-  const fx = useEffects({ drive, echo, tone, reverb, masterVolume });
+  const fx = useEffects({ drive, echo, tone, reverb, chorus, masterVolume });
   useEffect(() => { if (!fx.micBlocked) setMicDismissed(false); }, [fx.micBlocked]);
 
   useEffect(() => {
@@ -67,7 +68,7 @@ export default function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [warningDone, fx.toggleRecording]);
-  const synth = useSynth({ drive, echo, tone, reverb, masterVolume });
+  const synth = useSynth({ drive, echo, tone, reverb, chorus, masterVolume });
 
   useEffect(() => {
     if (!keyboardMode) return;
@@ -124,11 +125,12 @@ export default function App() {
   }, [themeTarget]);
 
   const handleKnobChange = useCallback(
-    (knob: "drive" | "echo" | "tone" | "reverb" | "master", value: number) => {
+    (knob: "drive" | "echo" | "tone" | "reverb" | "chorus" | "master", value: number) => {
       if (knob === "drive") setDrive(value);
       else if (knob === "echo") setEcho(value);
       else if (knob === "tone") setTone(value);
       else if (knob === "reverb") setReverb(value);
+      else if (knob === "chorus") setChorus(value);
       else setMasterVolume(value);
     },
     [],
@@ -262,6 +264,7 @@ export default function App() {
                   <Fader label="ECHO"   value={echo}         accent={themeColor} onChange={(v) => handleKnobChange("echo",   v)} />
                   <Fader label="TONE"   value={tone}         accent={themeColor} onChange={(v) => handleKnobChange("tone",   v)} />
                   <Fader label="REVERB" value={reverb}       accent={themeColor} onChange={(v) => handleKnobChange("reverb", v)} />
+                  <Fader label="CHORUS" value={chorus}       accent={themeColor} onChange={(v) => handleKnobChange("chorus", v)} />
                   <Fader label="VOLUME" value={masterVolume} accent={themeColor} onChange={(v) => handleKnobChange("master", v)} highlight />
                 </div>
               )}
@@ -295,6 +298,7 @@ export default function App() {
           knobEcho={echo}
           knobTone={tone}
           knobReverb={reverb}
+          knobChorus={chorus}
           knobMaster={masterVolume}
           onKnobChange={handleKnobChange}
           palette={{ ...PALETTE, accent: themeColor, pedal: presetIdx !== null ? PRESET_META[presetIdx].chassis : PALETTE.pedal }}
@@ -387,7 +391,7 @@ export default function App() {
             style={{ fontSize: 11, color: "#aaaac4", marginTop: 14 }}
           >
             Browser-based guitar FX — drive, echo,<br />
-            tone &amp; reverb. Zero install.
+            tone, chorus &amp; reverb. Zero install.
           </p>
         </div>
 
@@ -421,6 +425,7 @@ export default function App() {
           <Fader label="ECHO"   value={echo}         accent={themeColor} onChange={(v) => handleKnobChange("echo",   v)} />
           <Fader label="TONE"   value={tone}         accent={themeColor} onChange={(v) => handleKnobChange("tone",   v)} />
           <Fader label="REVERB" value={reverb}       accent={themeColor} onChange={(v) => handleKnobChange("reverb", v)} />
+          <Fader label="CHORUS" value={chorus}       accent={themeColor} onChange={(v) => handleKnobChange("chorus", v)} />
           <Fader label="VOLUME" value={masterVolume} accent={themeColor} onChange={(v) => handleKnobChange("master", v)} highlight />
         </div>
 

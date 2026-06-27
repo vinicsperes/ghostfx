@@ -35,6 +35,7 @@ export function PedalBody({
   knobEcho,
   knobTone,
   knobReverb,
+  knobChorus,
   knobMaster,
   onKnobChange,
   setControlsEnabled,
@@ -55,8 +56,9 @@ export function PedalBody({
   knobEcho: number;
   knobTone: number;
   knobReverb: number;
+  knobChorus: number;
   knobMaster: number;
-  onKnobChange: (knob: "drive" | "echo" | "tone" | "reverb" | "master", value: number) => void;
+  onKnobChange: (knob: "drive" | "echo" | "tone" | "reverb" | "chorus" | "master", value: number) => void;
   setControlsEnabled: (enabled: boolean) => void;
   bootTrigger: number;
   presetIdx?: number | null;
@@ -85,8 +87,9 @@ export function PedalBody({
     drive:  [-0.62, H / 2, -1.05] as [number, number, number],
     echo:   [ 0.00, H / 2, -1.05] as [number, number, number],
     reverb: [ 0.62, H / 2, -1.05] as [number, number, number],
-    tone:   [-0.31, H / 2, -0.52] as [number, number, number],
-    master: [ 0.31, H / 2, -0.52] as [number, number, number],
+    tone:   [-0.62, H / 2, -0.52] as [number, number, number],
+    chorus: [ 0.00, H / 2, -0.52] as [number, number, number],
+    master: [ 0.62, H / 2, -0.52] as [number, number, number],
   };
 
   return (
@@ -144,13 +147,15 @@ export function PedalBody({
       <LabelText position={[kp.echo[0],   H / 2 + 0.005, kp.echo[2]   + 0.22]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.062} color={silkColor} outlineColor={silkColor} outlineWidth="1%" anchorX="center">ECHO</LabelText>
       <LabelText position={[kp.tone[0],   H / 2 + 0.005, kp.tone[2]   + 0.22]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.062} color={silkColor} outlineColor={silkColor} outlineWidth="1%" anchorX="center">TONE</LabelText>
       <LabelText position={[kp.reverb[0], H / 2 + 0.005, kp.reverb[2] + 0.22]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.062} color={silkColor} outlineColor={silkColor} outlineWidth="1%" anchorX="center">REVERB</LabelText>
+      <LabelText position={[kp.chorus[0], H / 2 + 0.005, kp.chorus[2] + 0.22]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.062} color={silkColor} outlineColor={silkColor} outlineWidth="1%" anchorX="center">CHORUS</LabelText>
       <LabelText position={[kp.master[0], H / 2 + 0.005, kp.master[2] + 0.22]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.062} color={silkColor} outlineColor={silkColor} outlineWidth="1%" anchorX="center">VOLUME</LabelText>
 
       <Knob3D position={kp.drive}  value={knobDrive}  onChange={(val) => onKnobChange("drive",  val)} ink={inkColor} accent={knobAccent} label="Drive"  setControlsEnabled={setControlsEnabled} bootTrigger={bootTrigger} delay={0.00} knobTheme={knobTheme} knobStyle="default" showArc={v?.showArc} />
       <Knob3D position={kp.echo}   value={knobEcho}   onChange={(val) => onKnobChange("echo",   val)} ink={inkColor} accent={knobAccent} label="Echo"   setControlsEnabled={setControlsEnabled} bootTrigger={bootTrigger} delay={0.08} knobTheme={knobTheme} knobStyle="default" showArc={v?.showArc} />
       <Knob3D position={kp.tone}   value={knobTone}   onChange={(val) => onKnobChange("tone",   val)} ink={inkColor} accent={knobAccent} label="Tone"   setControlsEnabled={setControlsEnabled} bootTrigger={bootTrigger} delay={0.16} knobTheme={knobTheme} knobStyle="default" showArc={v?.showArc} />
       <Knob3D position={kp.reverb} value={knobReverb} onChange={(val) => onKnobChange("reverb", val)} ink={inkColor} accent={knobAccent} label="Reverb" setControlsEnabled={setControlsEnabled} bootTrigger={bootTrigger} delay={0.24} knobTheme={knobTheme} knobStyle="default" showArc={v?.showArc} />
-      <MasterKnob3D position={kp.master} value={knobMaster} onChange={(val) => onKnobChange("master", val)} accent={knobAccent} setControlsEnabled={setControlsEnabled} bootTrigger={bootTrigger} delay={0.32} knobTheme={knobTheme} knobStyle="default" showArc={v?.showArc} />
+      <Knob3D position={kp.chorus} value={knobChorus} onChange={(val) => onKnobChange("chorus", val)} ink={inkColor} accent={knobAccent} label="Chorus" setControlsEnabled={setControlsEnabled} bootTrigger={bootTrigger} delay={0.32} knobTheme={knobTheme} knobStyle="default" showArc={v?.showArc} />
+      <MasterKnob3D position={kp.master} value={knobMaster} onChange={(val) => onKnobChange("master", val)} accent={knobAccent} setControlsEnabled={setControlsEnabled} bootTrigger={bootTrigger} delay={0.40} knobTheme={knobTheme} knobStyle="default" showArc={v?.showArc} />
 
       <Footswitch3D
         position={[0, H / 2 + 0.01, FSZ]}
@@ -176,6 +181,7 @@ export function PedalBody({
             <PotBody x={kp.echo[0]}   z={kp.echo[2]}   topY={topY} />
             <PotBody x={kp.reverb[0]} z={kp.reverb[2]} topY={topY} />
             <PotBody x={kp.tone[0]}   z={kp.tone[2]}   topY={topY} />
+            <PotBody x={kp.chorus[0]} z={kp.chorus[2]} topY={topY} />
             <PotBody x={kp.master[0]} z={kp.master[2]} topY={topY} />
             <SwitchBody x={0} z={FSZ} topY={topY} />
             <Battery9V />
@@ -189,6 +195,7 @@ export function PedalBody({
             <Wire start={[kp.echo[0],   POT_LUG_Y, kp.echo[2]   + POT_LUG_Z]} mid={[kp.echo[0],   0.03, kp.echo[2]   + POT_LUG_Z]} end={[ 0.02, PAD_Y, -0.98]} color="#22aa3a" />
             <Wire start={[kp.reverb[0], POT_LUG_Y, kp.reverb[2] + POT_LUG_Z]} mid={[kp.reverb[0], 0.03, kp.reverb[2] + POT_LUG_Z]} end={[ 0.55, PAD_Y, -0.98]} color="#e0b020" />
             <Wire start={[kp.tone[0],   POT_LUG_Y, kp.tone[2]   + POT_LUG_Z]} mid={[kp.tone[0],   0.03, kp.tone[2]   + POT_LUG_Z]} end={[-0.26, PAD_Y, -0.72]} color="#e8e8e8" />
+            <Wire start={[kp.chorus[0], POT_LUG_Y, kp.chorus[2] + POT_LUG_Z]} mid={[kp.chorus[0], 0.03, kp.chorus[2] + POT_LUG_Z]} end={[ 0.02, PAD_Y, -0.60]} color="#3a6ad0" />
             <Wire start={[kp.master[0], POT_LUG_Y, kp.master[2] + POT_LUG_Z]} mid={[kp.master[0], 0.03, kp.master[2] + POT_LUG_Z]} end={[ 0.30, PAD_Y, -0.72]} color="#d02020" />
 
             {/* true bypass no 3PDT: coluna direita = input, esquerda = output, frente = LED + jumper */}

@@ -14,6 +14,7 @@ export default function Pedal3D({
   knobEcho,
   knobTone,
   knobReverb,
+  knobChorus,
   knobMaster,
   onKnobChange,
   palette,
@@ -29,8 +30,9 @@ export default function Pedal3D({
   knobEcho: number;
   knobTone: number;
   knobReverb: number;
+  knobChorus: number;
   knobMaster: number;
-  onKnobChange: (knob: "drive" | "echo" | "tone" | "reverb" | "master", value: number) => void;
+  onKnobChange: (knob: "drive" | "echo" | "tone" | "reverb" | "chorus" | "master", value: number) => void;
   palette: { pedal: string; ink: string; accent: string; cream: string; metal: string };
   presetIdx?: number | null;
   stompCount?: number;
@@ -118,6 +120,7 @@ export default function Pedal3D({
             knobEcho={knobEcho}
             knobTone={knobTone}
             knobReverb={knobReverb}
+            knobChorus={knobChorus}
             knobMaster={knobMaster}
             onKnobChange={onKnobChange}
             setControlsEnabled={setControlsEnabled}
