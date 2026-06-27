@@ -16,34 +16,35 @@ void main(){
   vec4 col;
   if(c>thresh){
     float b=pow((c-0.30)/0.70,0.5);
-    col=vec4(b*160./255., b*58./255., b*236./255., b*0.88);
+    col=vec4(b*118./255., b*30./255., b*205./255., b*0.90);
   } else {
     float d=(s*0.5+0.5)*0.14;
-    col=vec4(d*16./255., d*5./255., d*30./255., 1.0);
+    col=vec4(d*12./255., d*3./255., d*24./255., 1.0);
   }
   gl_FragColor=col;
 }`;
 
-export const STATIC_FS = `
+export const FROST_FS = `
 precision mediump float;
 uniform float u_t; uniform vec2 u_res; uniform float u_blend;
 void main(){
   vec2 uv=gl_FragCoord.xy/u_res;
-  vec2 p=vec2(uv.x,1.-uv.y);
-  vec2 q=vec2(sin(p.x*2.6+u_t*.07)+sin(p.y*2.2-u_t*.05),
-              sin(p.x*2.3-u_t*.06)+sin(p.y*2.9+u_t*.045));
-  vec2 r=vec2(sin(p.x*2.4+q.x*1.8+u_t*.05)+sin(p.y*2.0-q.y*1.6-u_t*.04),
-              sin(p.x*1.9-q.y*1.7-u_t*.05)+sin(p.y*2.7+q.x*1.5+u_t*.06));
-  float v=length(r)*.55;
-  float c=abs(cos(v*2.7));
-  float thresh=mix(1.0,0.52,u_blend);
+  vec2 p=(uv-0.5)*vec2(u_res.x/u_res.y,1.0);
+  float w=sin(p.x*2.2+u_t*.10)*.45+sin(p.y*1.8-u_t*.08)*.45;
+  float v=sin((p.x*3.0+w)*2.2+u_t*.06)
+         +sin((p.y*3.4-w)*1.9-u_t*.05)
+         +sin((p.x*2.2+p.y*2.6+w)*2.0+u_t*.045);
+  float ridge=abs(fract(v*1.15)-.5)*2.0;
+  float c=1.0-ridge;
+  float thresh=mix(1.0,0.55,u_blend);
   vec4 col;
   if(c>thresh){
-    float b=pow((c-.52)/.48,.7);
-    col=vec4(b*198./255., b*205./255., b*216./255., b*.5);
+    float b=pow((c-.55)/.45,.6);
+    float shimmer=sin(v*1.3+u_t*.12)*.5+.5;
+    col=vec4(b*(150.+shimmer*70.)/255., b*(186.+shimmer*54.)/255., b*(222.+shimmer*30.)/255., b*.62);
   } else {
-    float d=(cos(v*1.5)+1.)*.5;
-    col=vec4(d*15./255., d*15./255., d*19./255., 1.);
+    float d=(sin(v*.6)+1.)*.5;
+    col=vec4((6.+d*10.)/255., (10.+d*14.)/255., (20.+d*22.)/255., 1.);
   }
   gl_FragColor=col;
 }`;
@@ -71,7 +72,7 @@ void main(){
   gl_FragColor=col;
 }`;
 
-export const FRUS_FS = `
+export const HAZE_FS = `
 precision mediump float;
 uniform float u_t; uniform vec2 u_res; uniform float u_blend;
 void main(){
@@ -90,14 +91,14 @@ void main(){
   vec4 col;
   if(c1>t1){
     float b=pow((c1-.78)/.22,.55);
-    float purple=sin(v*1.4+u_t*.15)*.5+.5;
-    col=vec4(b*(35.+purple*90.)/255.,b*(155.+purple*25.)/255.,b,b*248./255.);
+    float violet=sin(v*1.4+u_t*.15)*.5+.5;
+    col=vec4(b*(212.-violet*58.)/255.,b*(106.-violet*14.)/255.,b*(159.+violet*49.)/255.,b*248./255.);
   } else if(c2>t2){
     float b=pow((c2-.85)/.15,.5)*.42;
-    col=vec4(b*45./255.,b*110./255.,b*200./255.,b*160./255.);
+    col=vec4(b*130./255.,b*70./255.,b*180./255.,b*160./255.);
   } else {
     float depth=(sin(v*.4)+1.)*.5;
-    col=vec4(depth*4./255.,depth*9./255.,depth*28./255.,1.);
+    col=vec4(depth*24./255.,depth*6./255.,depth*28./255.,1.);
   }
   gl_FragColor=col;
 }`;
@@ -121,15 +122,15 @@ void main(){
   gl_FragColor=col;
 }`;
 
-export const PRESET_FS = [CLEAN_FS, STATIC_FS, HEAVY_FS, FRUS_FS, GHOST_FS];
-export const PRESET_OPACITY = [0.65, 0.74, 0.82, 0.88, 0.70];
+export const PRESET_FS = [GHOST_FS, CLEAN_FS, FROST_FS, HEAVY_FS, HAZE_FS];
+export const PRESET_OPACITY = [0.70, 0.65, 0.74, 0.82, 0.88];
 
 export type GlState = { tLoc: WebGLUniformLocation; rLoc: WebGLUniformLocation; blendLoc: WebGLUniformLocation; prog: WebGLProgram };
 
 export const BLEND_OUT = 550;
 export const BLEND_IN  = 750;
 
-export const INTRO_IDX = 2;
+export const INTRO_IDX = 3;
 
 export function buildShader(gl: WebGLRenderingContext, idx: number, old?: WebGLProgram): GlState {
   if (old) gl.deleteProgram(old);

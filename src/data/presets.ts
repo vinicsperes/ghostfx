@@ -1,9 +1,9 @@
 export const PRESETS = [
-  { name: "CLEAN",   drive: 0.06, echo: 0.12, tone: 0.70, reverb: 0.30, master: 0.80 },
-  { name: "STATIC",  drive: 0.54, echo: 0.22, tone: 0.46, reverb: 0.12, master: 0.78 },
-  { name: "HEAVY",   drive: 0.85, echo: 0.08, tone: 0.40, reverb: 0.10, master: 0.82 },
-  { name: "FRUS",    drive: 0.04, echo: 0.30, tone: 0.85, reverb: 0.72, master: 0.82 },
-  { name: "GHOST",   drive: 0.55, echo: 0.48, tone: 0.50, reverb: 0.58, master: 0.76 },
+  { name: "GHOST",   drive: 0.55, echo: 0.48, tone: 0.50, reverb: 0.58, chorus: 0.45, master: 0.76 },
+  { name: "DOOM",    drive: 0.66, echo: 0.16, tone: 0.56, reverb: 0.42, chorus: 0.32, master: 0.80 },
+  { name: "FROST",   drive: 0.05, echo: 0.20, tone: 0.66, reverb: 0.34, chorus: 0.62, master: 0.80 },
+  { name: "HEAVY",   drive: 0.85, echo: 0.08, tone: 0.40, reverb: 0.10, chorus: 0.00, master: 0.82 },
+  { name: "HAZE",    drive: 0.50, echo: 0.35, tone: 0.52, reverb: 0.82, chorus: 0.70, master: 0.80 },
 ] as const;
 
 export const PALETTE = {
@@ -16,11 +16,11 @@ export const PALETTE = {
 };
 
 export const PRESET_META = [
-  { color: "#8a2be2", word: "OCCULT", chassis: "#09040e" },
-  { color: "#cdd2da", word: "ASHEN",    chassis: "#0a0a0c" },
-  { color: "#e02828", word: "HOLLOW",  chassis: "#0a0202" },
-  { color: "#ff4a28", word: "PEPPER*", chassis: "#0d0402" },
   { color: "#20f040", word: "HAUNTED", chassis: "#0a0a10" },
+  { color: "#7d22c4", word: "OCCULT",  chassis: "#0a0412" },
+  { color: "#a8c4dc", word: "GLACIER", chassis: "#080a10" },
+  { color: "#e02828", word: "HOLLOW",  chassis: "#0a0202" },
+  { color: "#d46a9f", word: "MIASMA",  chassis: "#0c0510" },
 ] as const;
 
-export const PRESET_TAGS = ["crystal", "grimy", "brutal", "cold", "haunted"] as const;
+export const PRESET_TAGS = ["haunted", "ritual", "glacial", "brutal", "dreamy"] as const;

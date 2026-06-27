@@ -43,6 +43,7 @@ export default function App() {
     setEcho(preset.echo);
     setTone(preset.tone);
     setReverb(preset.reverb);
+    setChorus(preset.chorus);
     setMasterVolume(preset.master);
   }, []);
 
