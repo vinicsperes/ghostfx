@@ -20,7 +20,7 @@ export const PRESET_META = [
   { color: "#7d22c4", word: "OCCULT",  chassis: "#0a0412" },
   { color: "#a8c4dc", word: "GLACIER", chassis: "#080a10" },
   { color: "#e02828", word: "HOLLOW",  chassis: "#0a0202" },
-  { color: "#d46a9f", word: "MIASMA",  chassis: "#0c0510" },
+  { color: "#d46a9f", word: "ETHER",   chassis: "#0c0510" },
 ] as const;
 
 export const PRESET_TAGS = ["haunted", "abyssal", "glacial", "brutal", "dreamy"] as const;
