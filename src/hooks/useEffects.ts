@@ -200,7 +200,9 @@ export function useEffects({
 
       const driveNode = ctx.createWaveShaper();
       driveNode.curve = createDistortionCurve(drive);
-      driveNode.oversample = "2x";
+      // oversample only when the gain is high enough to alias audibly — keeps the
+      // ~2.67ms upsampling latency off the clean/mid presets, on for the heavy ones
+      driveNode.oversample = drive >= 0.6 ? "2x" : "none";
 
       const toneFilter = ctx.createBiquadFilter();
       toneFilter.type = "lowpass";
@@ -385,7 +387,7 @@ export function useEffects({
 
   useEffect(() => {
     const { drive: driveNode, preGain } = nodesRef.current;
-    if (driveNode) driveNode.curve = createDistortionCurve(drive);
+    if (driveNode) { driveNode.curve = createDistortionCurve(drive); driveNode.oversample = drive >= 0.6 ? "2x" : "none"; }
     if (preGain && ctxRef.current)
       preGain.gain.setTargetAtTime(mapDrivePreGain(drive), ctxRef.current.currentTime, 0.05);
   }, [drive]);

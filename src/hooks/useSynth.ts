@@ -69,7 +69,7 @@ export function useSynth({
 
     const driveNode = ctx.createWaveShaper();
     driveNode.curve = createDistortionCurve(p.drive);
-    driveNode.oversample = "2x";
+    driveNode.oversample = p.drive >= 0.6 ? "2x" : "none";
 
     const toneFilter = ctx.createBiquadFilter();
     toneFilter.type = "lowpass";
@@ -148,6 +148,7 @@ export function useSynth({
     const t = ctx.currentTime;
     n.preGain.gain.setTargetAtTime(mapDrivePreGain(drive), t, 0.05);
     n.drive.curve = createDistortionCurve(drive);
+    n.drive.oversample = drive >= 0.6 ? "2x" : "none";
     n.tone.frequency.setTargetAtTime(500 * Math.pow(16, tone), t, 0.05);
     n.delay.delayTime.setTargetAtTime(mapDelayTime(echo), t, 0.05);
     n.feedback.gain.setTargetAtTime(mapFeedback(echo), t, 0.05);
