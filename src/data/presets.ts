@@ -23,4 +23,4 @@ export const PRESET_META = [
   { color: "#d46a9f", word: "MIASMA",  chassis: "#0c0510" },
 ] as const;
 
-export const PRESET_TAGS = ["haunted", "ritual", "glacial", "brutal", "dreamy"] as const;
+export const PRESET_TAGS = ["haunted", "abyssal", "glacial", "brutal", "dreamy"] as const;
