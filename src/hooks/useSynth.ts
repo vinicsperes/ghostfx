@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, mapChorusDepth, mapChorusFb, mapChorusMix } from "../audio/dsp";
+import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, mapFlangerDepth, mapFlangerFb, mapFlangerMix } from "../audio/dsp";
 
 export const NOTE_KEYS: Record<string, { freq: number; note: string; black?: true }> = {
   a: { freq: 261.63, note: "C4" },
@@ -28,25 +28,25 @@ type SynthNodes = {
   delay: DelayNode;
   feedback: GainNode;
   wet: GainNode;
-  chorusDepth: GainNode;
-  chorusFb: GainNode;
-  chorusWet: GainNode;
+  flangerDepth: GainNode;
+  flangerFb: GainNode;
+  flangerWet: GainNode;
   reverbWet: GainNode;
   master: GainNode;
 };
 
 export function useSynth({
-  drive, echo, tone, reverb, chorus, masterVolume,
+  drive, echo, tone, reverb, flanger, masterVolume,
 }: {
-  drive: number; echo: number; tone: number; reverb: number; chorus: number; masterVolume: number;
+  drive: number; echo: number; tone: number; reverb: number; flanger: number; masterVolume: number;
 }) {
   const ctxRef   = useRef<AudioContext | null>(null);
   const nodesRef = useRef<SynthNodes | null>(null);
   const activeRef = useRef(new Map<string, { osc: OscillatorNode; env: GainNode }>());
   const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
 
-  const paramsRef = useRef({ drive, echo, tone, reverb, chorus, masterVolume });
-  useEffect(() => { paramsRef.current = { drive, echo, tone, reverb, chorus, masterVolume }; }, [drive, echo, tone, reverb, chorus, masterVolume]);
+  const paramsRef = useRef({ drive, echo, tone, reverb, flanger, masterVolume });
+  useEffect(() => { paramsRef.current = { drive, echo, tone, reverb, flanger, masterVolume }; }, [drive, echo, tone, reverb, flanger, masterVolume]);
 
   const ensureInit = useCallback(() => {
     if (ctxRef.current && nodesRef.current) return { ctx: ctxRef.current, nodes: nodesRef.current };
@@ -84,23 +84,23 @@ export function useSynth({
     const wetGain = ctx.createGain();
     wetGain.gain.value = p.echo * 0.5;
 
-    const chorusDelay = ctx.createDelay(0.05);
-    chorusDelay.delayTime.value = 0.0025;
-    const chorusLfo = ctx.createOscillator();
-    chorusLfo.type = "sine";
-    chorusLfo.frequency.value = 0.4;
-    const chorusDepth = ctx.createGain();
-    chorusDepth.gain.value = mapChorusDepth(p.chorus);
-    chorusLfo.connect(chorusDepth);
-    chorusDepth.connect(chorusDelay.delayTime);
-    chorusLfo.start();
-    const chorusDamp = ctx.createBiquadFilter();
-    chorusDamp.type = "lowpass";
-    chorusDamp.frequency.value = 2800;
-    const chorusFb = ctx.createGain();
-    chorusFb.gain.value = mapChorusFb(p.chorus);
-    const chorusWet = ctx.createGain();
-    chorusWet.gain.value = mapChorusMix(p.chorus);
+    const flangerDelay = ctx.createDelay(0.05);
+    flangerDelay.delayTime.value = 0.0025;
+    const flangerLfo = ctx.createOscillator();
+    flangerLfo.type = "sine";
+    flangerLfo.frequency.value = 0.4;
+    const flangerDepth = ctx.createGain();
+    flangerDepth.gain.value = mapFlangerDepth(p.flanger);
+    flangerLfo.connect(flangerDepth);
+    flangerDepth.connect(flangerDelay.delayTime);
+    flangerLfo.start();
+    const flangerDamp = ctx.createBiquadFilter();
+    flangerDamp.type = "lowpass";
+    flangerDamp.frequency.value = 2800;
+    const flangerFb = ctx.createGain();
+    flangerFb.gain.value = mapFlangerFb(p.flanger);
+    const flangerWet = ctx.createGain();
+    flangerWet.gain.value = mapFlangerMix(p.flanger);
 
     const reverbDamping = ctx.createBiquadFilter();
     reverbDamping.type = "lowpass"; reverbDamping.frequency.value = 3200;
@@ -128,7 +128,7 @@ export function useSynth({
     feedbackGain.connect(delayNode);
     feedbackGain.connect(wetGain);
     wetGain.connect(master);
-    toneFilter.connect(chorusDelay); chorusDelay.connect(chorusDamp); chorusDamp.connect(chorusFb); chorusFb.connect(chorusDelay); chorusDamp.connect(chorusWet); chorusWet.connect(master);
+    toneFilter.connect(flangerDelay); flangerDelay.connect(flangerDamp); flangerDamp.connect(flangerFb); flangerFb.connect(flangerDelay); flangerDamp.connect(flangerWet); flangerWet.connect(master);
     toneFilter.connect(reverbDamping);
     reverbDamping.connect(rev1); rev1.connect(revFB1); revFB1.connect(rev1); rev1.connect(reverbWet);
     reverbDamping.connect(rev2); rev2.connect(revFB2); revFB2.connect(rev2); rev2.connect(reverbWet);
@@ -137,7 +137,7 @@ export function useSynth({
     master.connect(limiter);
     limiter.connect(ctx.destination);
 
-    const nodes: SynthNodes = { input, preGain, drive: driveNode, tone: toneFilter, delay: delayNode, feedback: feedbackGain, wet: wetGain, chorusDepth, chorusFb, chorusWet, reverbWet, master };
+    const nodes: SynthNodes = { input, preGain, drive: driveNode, tone: toneFilter, delay: delayNode, feedback: feedbackGain, wet: wetGain, flangerDepth, flangerFb, flangerWet, reverbWet, master };
     nodesRef.current = nodes;
     return { ctx, nodes };
   }, []);
@@ -153,11 +153,11 @@ export function useSynth({
     n.feedback.gain.setTargetAtTime(mapFeedback(echo), t, 0.05);
     n.wet.gain.setTargetAtTime(echo * 0.5, t, 0.05);
     n.reverbWet.gain.setTargetAtTime(reverb * 0.5, t, 0.05);
-    n.chorusDepth.gain.setTargetAtTime(mapChorusDepth(chorus), t, 0.05);
-    n.chorusFb.gain.setTargetAtTime(mapChorusFb(chorus), t, 0.05);
-    n.chorusWet.gain.setTargetAtTime(mapChorusMix(chorus), t, 0.05);
+    n.flangerDepth.gain.setTargetAtTime(mapFlangerDepth(flanger), t, 0.05);
+    n.flangerFb.gain.setTargetAtTime(mapFlangerFb(flanger), t, 0.05);
+    n.flangerWet.gain.setTargetAtTime(mapFlangerMix(flanger), t, 0.05);
     n.master.gain.setTargetAtTime(masterVolume * 0.55, t, 0.05);
-  }, [drive, echo, tone, reverb, chorus, masterVolume]);
+  }, [drive, echo, tone, reverb, flanger, masterVolume]);
 
   const playNote = useCallback((key: string, freq: number) => {
     if (activeRef.current.has(key)) return;

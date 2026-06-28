@@ -33,15 +33,15 @@ export function mapFeedback(value: number): number {
 // LFO swing in seconds around a ~2.5ms base delay; fb is the feedback that gives
 // the resonance; mix is the wet level. Feedback is kept moderate and the loop is
 // low-passed elsewhere so it sweeps instead of whistling.
-export function mapChorusDepth(value: number): number {
+export function mapFlangerDepth(value: number): number {
   return 0.0004 + value * 0.0018;
 }
 
-export function mapChorusFb(value: number): number {
+export function mapFlangerFb(value: number): number {
   return value * 0.22;
 }
 
-export function mapChorusMix(value: number): number {
+export function mapFlangerMix(value: number): number {
   return value * 0.4;
 }
 

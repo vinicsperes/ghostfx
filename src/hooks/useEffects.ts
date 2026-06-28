@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, mapChorusDepth, mapChorusFb, mapChorusMix, createLimiterCurve } from "../audio/dsp";
+import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, mapFlangerDepth, mapFlangerFb, mapFlangerMix, createLimiterCurve } from "../audio/dsp";
 
 export type EffectsState = "idle" | "bypass" | "active";
 
@@ -93,14 +93,14 @@ export function useEffects({
   echo,
   tone,
   reverb,
-  chorus,
+  flanger,
   masterVolume = 0.8,
 }: {
   drive: number;
   echo: number;
   tone: number;
   reverb: number;
-  chorus: number;
+  flanger: number;
   masterVolume?: number;
 }): EffectsApi {
   const [state, setState] = useState<EffectsState>("idle");
@@ -137,10 +137,10 @@ export function useEffects({
     lfoGain: GainNode | null;
     feedback: GainNode | null;
     wet: GainNode | null;
-    chorusDelay: DelayNode | null;
-    chorusDepth: GainNode | null;
-    chorusFb: GainNode | null;
-    chorusWet: GainNode | null;
+    flangerDelay: DelayNode | null;
+    flangerDepth: GainNode | null;
+    flangerFb: GainNode | null;
+    flangerWet: GainNode | null;
     reverbWet: GainNode | null;
     bypass: GainNode | null;
     effects: GainNode | null;
@@ -153,10 +153,10 @@ export function useEffects({
     lfoGain: null,
     feedback: null,
     wet: null,
-    chorusDelay: null,
-    chorusDepth: null,
-    chorusFb: null,
-    chorusWet: null,
+    flangerDelay: null,
+    flangerDepth: null,
+    flangerFb: null,
+    flangerWet: null,
     reverbWet: null,
     bypass: null,
     effects: null,
@@ -226,24 +226,24 @@ export function useEffects({
 
       // flanger (Electric Mistress / "Heart-Shaped Box" voiced): short modulated
       // delay with damped feedback for the resonant sweep, mixed wet
-      const chorusDelay = ctx.createDelay(0.05);
-      chorusDelay.delayTime.value = 0.0025;
-      const chorusLfo = ctx.createOscillator();
-      chorusLfo.type = "sine";
-      chorusLfo.frequency.value = 0.4;
-      const chorusDepth = ctx.createGain();
-      chorusDepth.gain.value = mapChorusDepth(chorus);
-      chorusLfo.connect(chorusDepth);
-      chorusDepth.connect(chorusDelay.delayTime);
-      chorusLfo.start();
+      const flangerDelay = ctx.createDelay(0.05);
+      flangerDelay.delayTime.value = 0.0025;
+      const flangerLfo = ctx.createOscillator();
+      flangerLfo.type = "sine";
+      flangerLfo.frequency.value = 0.4;
+      const flangerDepth = ctx.createGain();
+      flangerDepth.gain.value = mapFlangerDepth(flanger);
+      flangerLfo.connect(flangerDepth);
+      flangerDepth.connect(flangerDelay.delayTime);
+      flangerLfo.start();
       // low-pass the loop so the resonance sweeps instead of whistling
-      const chorusDamp = ctx.createBiquadFilter();
-      chorusDamp.type = "lowpass";
-      chorusDamp.frequency.value = 2800;
-      const chorusFb = ctx.createGain();
-      chorusFb.gain.value = mapChorusFb(chorus);
-      const chorusWet = ctx.createGain();
-      chorusWet.gain.value = mapChorusMix(chorus);
+      const flangerDamp = ctx.createBiquadFilter();
+      flangerDamp.type = "lowpass";
+      flangerDamp.frequency.value = 2800;
+      const flangerFb = ctx.createGain();
+      flangerFb.gain.value = mapFlangerFb(flanger);
+      const flangerWet = ctx.createGain();
+      flangerWet.gain.value = mapFlangerMix(flanger);
 
       const reverbDamping = ctx.createBiquadFilter();
       reverbDamping.type = "lowpass";
@@ -302,12 +302,12 @@ export function useEffects({
       feedbackGain.connect(wetGain);
       wetGain.connect(effectsGain);
 
-      toneFilter.connect(chorusDelay);
-      chorusDelay.connect(chorusDamp);
-      chorusDamp.connect(chorusFb);
-      chorusFb.connect(chorusDelay);
-      chorusDamp.connect(chorusWet);
-      chorusWet.connect(effectsGain);
+      toneFilter.connect(flangerDelay);
+      flangerDelay.connect(flangerDamp);
+      flangerDamp.connect(flangerFb);
+      flangerFb.connect(flangerDelay);
+      flangerDamp.connect(flangerWet);
+      flangerWet.connect(effectsGain);
 
       toneFilter.connect(reverbDamping);
 
@@ -350,10 +350,10 @@ export function useEffects({
         lfoGain,
         feedback: feedbackGain,
         wet: wetGain,
-        chorusDelay,
-        chorusDepth,
-        chorusFb,
-        chorusWet,
+        flangerDelay,
+        flangerDepth,
+        flangerFb,
+        flangerWet,
         reverbWet,
         bypass: bypassGain,
         effects: effectsGain,
@@ -381,7 +381,7 @@ export function useEffects({
         setError(e instanceof Error ? e.message : "could not access microphone");
       }
     }
-  }, [drive, echo, tone, reverb, chorus]);
+  }, [drive, echo, tone, reverb, flanger]);
 
   useEffect(() => {
     const { drive: driveNode, preGain } = nodesRef.current;
@@ -418,12 +418,12 @@ export function useEffects({
   useEffect(() => {
     const ctx = ctxRef.current;
     if (!ctx) return;
-    const { chorusDepth, chorusFb, chorusWet } = nodesRef.current;
+    const { flangerDepth, flangerFb, flangerWet } = nodesRef.current;
     const t = ctx.currentTime;
-    chorusDepth?.gain.setTargetAtTime(mapChorusDepth(chorus), t, 0.05);
-    chorusFb?.gain.setTargetAtTime(mapChorusFb(chorus), t, 0.05);
-    chorusWet?.gain.setTargetAtTime(mapChorusMix(chorus), t, 0.05);
-  }, [chorus]);
+    flangerDepth?.gain.setTargetAtTime(mapFlangerDepth(flanger), t, 0.05);
+    flangerFb?.gain.setTargetAtTime(mapFlangerFb(flanger), t, 0.05);
+    flangerWet?.gain.setTargetAtTime(mapFlangerMix(flanger), t, 0.05);
+  }, [flanger]);
 
   useEffect(() => {
     if (feedbackLatchRef.current) return; // stay muted while feedback-protected

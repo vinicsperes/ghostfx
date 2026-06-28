@@ -11,7 +11,7 @@ export function PedalScene({
   knobEcho,
   knobTone,
   knobReverb,
-  knobChorus,
+  knobFlanger,
   knobMaster,
   onKnobChange,
   setControlsEnabled,
@@ -29,9 +29,9 @@ export function PedalScene({
   knobEcho: number;
   knobTone: number;
   knobReverb: number;
-  knobChorus: number;
+  knobFlanger: number;
   knobMaster: number;
-  onKnobChange: (knob: "drive" | "echo" | "tone" | "reverb" | "chorus" | "master", value: number) => void;
+  onKnobChange: (knob: "drive" | "echo" | "tone" | "reverb" | "flanger" | "master", value: number) => void;
   setControlsEnabled: (enabled: boolean) => void;
   bootTrigger: number;
   presetIdx?: number | null;
@@ -51,7 +51,7 @@ export function PedalScene({
       knobEcho={knobEcho}
       knobTone={knobTone}
       knobReverb={knobReverb}
-      knobChorus={knobChorus}
+      knobFlanger={knobFlanger}
       knobMaster={knobMaster}
       onKnobChange={onKnobChange}
       setControlsEnabled={setControlsEnabled}
