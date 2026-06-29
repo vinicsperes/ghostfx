@@ -14,3 +14,4 @@ yarn-error.log*
 .env.production.local
 .claude/
 CLAUDE.local.md
+docs/
