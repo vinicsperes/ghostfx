@@ -1,22 +1,27 @@
 # GHOST FX
 
 Browser-based guitar effects pedal. Plug in, stomp, and shape your tone with
-drive, echo, tone and reverb — no install, no plugins. Runs entirely on the Web
-Audio API with a real-time 3D pedal you can actually turn the knobs on.
+drive, echo, tone, flanger and reverb — no install, no plugins. It runs entirely
+on the Web Audio API, with a real-time 3D pedal you can actually turn the knobs
+on.
 
 ## Features
 
-- Real-time signal chain: drive, echo, tone, reverb and master volume
-- Live input from the microphone with feedback protection
-- Interactive 3D pedal (drag the knobs, stomp the footswitch)
-- Five voiced presets, each with its own palette and animated backdrop
-- Built-in chromatic tuner and an on-screen keyboard synth
-- Shareable tone via URL parameters
+- Real-time signal chain: drive, echo, tone, flanger, reverb and master volume
+- Live microphone input with built-in feedback protection
+- Five voiced presets, each with its own amp and cabinet character, colour
+  palette and animated backdrop
+- Interactive 3D pedal — drag the knobs and stomp the footswitch
+- On-screen keyboard synth and a built-in metronome
+- Record your take and export it as MP3
 
 ## Stack
 
-React 19, TypeScript, Vite, Three.js / React Three Fiber, Tailwind CSS and the
-Web Audio API.
+- **UI** — React 19 and TypeScript, bundled with Vite, styled with Tailwind CSS
+- **3D** — Three.js via React Three Fiber and drei
+- **Audio** — the native Web Audio API. The whole effects chain and DSP — drive
+  curves, per-preset cabinet voicing, modulation and a zero-latency limiter — is
+  hand-built node by node, with no audio framework. MP3 export uses lamejs.
 
 ## Development
 
@@ -27,8 +32,8 @@ npm run dev
 
 Open the local URL Vite prints, allow microphone access and stomp to arm.
 
-> Use headphones. The pedal processes your live microphone, so open speakers
-> can feed back.
+> Use headphones. The pedal processes your live microphone, so open speakers can
+> feed back.
 
 ## Build
 
