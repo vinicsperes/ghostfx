@@ -1,23 +1,28 @@
 export function createDistortionCurve(amount: number): Float32Array<ArrayBuffer> {
   const n = 8192;
   const curve = new Float32Array(n);
-  const k = Math.pow(amount, 1.7) * 16;
+  // softer voicing: the steeper exponent keeps the lower half of the knob clean
+  // (edge-of-breakup), so the mid presets stop sounding like the heavy ones
+  const k = Math.pow(amount, 2.2) * 9;
   const asym = 1 + amount * 0.6;
+  // makeup gain — saturation fattens the wave and raises RMS, so pull the level
+  // back as drive rises; otherwise the dirty presets are just louder
+  const makeup = 1 / (1 + Math.pow(amount, 1.5) * 0.8);
 
   for (let i = 0; i < n; i++) {
     const x = (i * 2) / n - 1;
     if (x > 0) {
-      curve[i] = (1 + k) * x / (1 + k * Math.abs(x));
+      curve[i] = makeup * (1 + k) * x / (1 + k * Math.abs(x));
     } else {
       const kn = k * asym;
-      curve[i] = (1 + kn) * x / (1 + kn * Math.pow(Math.abs(x), 0.85));
+      curve[i] = makeup * (1 + kn) * x / (1 + kn * Math.pow(Math.abs(x), 0.85));
     }
   }
   return curve;
 }
 
 export function mapDrivePreGain(value: number): number {
-  return 1 + Math.pow(value, 1.4) * 3.2;
+  return 1 + Math.pow(value, 1.5) * 1.8;
 }
 
 export function mapDelayTime(value: number): number {

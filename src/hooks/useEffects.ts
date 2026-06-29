@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, mapFlangerDepth, mapFlangerFb, mapFlangerMix, createLimiterCurve } from "../audio/dsp";
+import { CABS } from "../data/presets";
 
 export type EffectsState = "idle" | "bypass" | "active";
 
@@ -95,6 +96,7 @@ export function useEffects({
   reverb,
   flanger,
   masterVolume = 0.8,
+  presetIdx = 0,
 }: {
   drive: number;
   echo: number;
@@ -102,6 +104,7 @@ export function useEffects({
   reverb: number;
   flanger: number;
   masterVolume?: number;
+  presetIdx?: number | null;
 }): EffectsApi {
   const [state, setState] = useState<EffectsState>("idle");
   const [ready, setReady] = useState(false);
@@ -132,6 +135,10 @@ export function useEffects({
   const nodesRef = useRef<{
     preGain: GainNode | null;
     drive: WaveShaperNode | null;
+    cabHP: BiquadFilterNode | null;
+    cabBody: BiquadFilterNode | null;
+    cabPres: BiquadFilterNode | null;
+    cabLP: BiquadFilterNode | null;
     toneFilter: BiquadFilterNode | null;
     delay: DelayNode | null;
     lfoGain: GainNode | null;
@@ -148,6 +155,10 @@ export function useEffects({
   }>({
     preGain: null,
     drive: null,
+    cabHP: null,
+    cabBody: null,
+    cabPres: null,
+    cabLP: null,
     toneFilter: null,
     delay: null,
     lfoGain: null,
@@ -192,8 +203,8 @@ export function useEffects({
       const midEmphasis = ctx.createBiquadFilter();
       midEmphasis.type = "peaking";
       midEmphasis.frequency.value = 700;
-      midEmphasis.Q.value = 0.8;
-      midEmphasis.gain.value = 4;
+      midEmphasis.Q.value = 0.7;
+      midEmphasis.gain.value = 2;
 
       const preGain = ctx.createGain();
       preGain.gain.value = mapDrivePreGain(drive);
@@ -203,6 +214,19 @@ export function useEffects({
       // oversample only when the gain is high enough to alias audibly — keeps the
       // ~2.67ms upsampling latency off the clean/mid presets, on for the heavy ones
       driveNode.oversample = drive >= 0.6 ? "2x" : "none";
+
+      // speaker-cabinet voicing per preset: the topCut lowpass is the speaker
+      // rolloff that tames the waveshaper fizz; body + presence give each amp its
+      // own character so the presets stop sharing one buzz
+      const cab = CABS[presetIdx ?? 0] ?? CABS[0];
+      const cabHP = ctx.createBiquadFilter();
+      cabHP.type = "highpass"; cabHP.frequency.value = cab.lowCut; cabHP.Q.value = 0.707;
+      const cabBody = ctx.createBiquadFilter();
+      cabBody.type = "peaking"; cabBody.frequency.value = cab.bodyHz; cabBody.Q.value = 0.9; cabBody.gain.value = cab.bodyGain;
+      const cabPres = ctx.createBiquadFilter();
+      cabPres.type = "peaking"; cabPres.frequency.value = cab.presHz; cabPres.Q.value = 1.0; cabPres.gain.value = cab.presGain;
+      const cabLP = ctx.createBiquadFilter();
+      cabLP.type = "lowpass"; cabLP.frequency.value = cab.topCut; cabLP.Q.value = 0.9;
 
       const toneFilter = ctx.createBiquadFilter();
       toneFilter.type = "lowpass";
@@ -294,7 +318,11 @@ export function useEffects({
       preFilter.connect(midEmphasis);
       midEmphasis.connect(preGain);
       preGain.connect(driveNode);
-      driveNode.connect(toneFilter);
+      driveNode.connect(cabHP);
+      cabHP.connect(cabBody);
+      cabBody.connect(cabPres);
+      cabPres.connect(cabLP);
+      cabLP.connect(toneFilter);
 
       toneFilter.connect(effectsGain);
 
@@ -347,6 +375,10 @@ export function useEffects({
       nodesRef.current = {
         preGain,
         drive: driveNode,
+        cabHP,
+        cabBody,
+        cabPres,
+        cabLP,
         toneFilter,
         delay: delayNode,
         lfoGain,
@@ -383,7 +415,7 @@ export function useEffects({
         setError(e instanceof Error ? e.message : "could not access microphone");
       }
     }
-  }, [drive, echo, tone, reverb, flanger]);
+  }, [drive, echo, tone, reverb, flanger, presetIdx]);
 
   useEffect(() => {
     const { drive: driveNode, preGain } = nodesRef.current;
@@ -409,6 +441,20 @@ export function useEffects({
     const { toneFilter } = nodesRef.current;
     toneFilter?.frequency.setTargetAtTime(500 * Math.pow(16, tone), ctx.currentTime, 0.05);
   }, [tone]);
+
+  useEffect(() => {
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    const { cabHP, cabBody, cabPres, cabLP } = nodesRef.current;
+    const cab = CABS[presetIdx ?? 0] ?? CABS[0];
+    const t = ctx.currentTime;
+    cabHP?.frequency.setTargetAtTime(cab.lowCut, t, 0.05);
+    cabBody?.frequency.setTargetAtTime(cab.bodyHz, t, 0.05);
+    cabBody?.gain.setTargetAtTime(cab.bodyGain, t, 0.05);
+    cabPres?.frequency.setTargetAtTime(cab.presHz, t, 0.05);
+    cabPres?.gain.setTargetAtTime(cab.presGain, t, 0.05);
+    cabLP?.frequency.setTargetAtTime(cab.topCut, t, 0.05);
+  }, [presetIdx]);
 
   useEffect(() => {
     const ctx = ctxRef.current;

@@ -1,9 +1,9 @@
 export const PRESETS = [
-  { name: "GHOST",   drive: 0.55, echo: 0.48, tone: 0.50, reverb: 0.58, flanger: 0.45, master: 0.76 },
-  { name: "DOOM",    drive: 0.66, echo: 0.16, tone: 0.56, reverb: 0.42, flanger: 0.32, master: 0.80 },
-  { name: "FROST",   drive: 0.05, echo: 0.20, tone: 0.66, reverb: 0.34, flanger: 0.62, master: 0.95 },
-  { name: "HEAVY",   drive: 0.85, echo: 0.08, tone: 0.40, reverb: 0.10, flanger: 0.00, master: 0.82 },
-  { name: "HAZE",    drive: 0.50, echo: 0.35, tone: 0.52, reverb: 0.82, flanger: 0.70, master: 0.80 },
+  { name: "GHOST",   drive: 0.35, echo: 0.58, tone: 0.55, reverb: 0.78, flanger: 0.30, master: 0.85 },
+  { name: "DOOM",    drive: 0.72, echo: 0.10, tone: 0.36, reverb: 0.30, flanger: 0.12, master: 0.85 },
+  { name: "FROST",   drive: 0.00, echo: 0.20, tone: 0.80, reverb: 0.45, flanger: 0.75, master: 0.95 },
+  { name: "HEAVY",   drive: 0.92, echo: 0.04, tone: 0.48, reverb: 0.06, flanger: 0.00, master: 0.80 },
+  { name: "HAZE",    drive: 0.30, echo: 0.42, tone: 0.52, reverb: 0.82, flanger: 0.60, master: 0.72 },
 ] as const;
 
 export const PALETTE = {
@@ -24,3 +24,20 @@ export const PRESET_META = [
 ] as const;
 
 export const PRESET_TAGS = ["haunted", "abyssal", "glacial", "brutal", "dreamy"] as const;
+
+export type CabProfile = {
+  lowCut: number;
+  bodyHz: number;
+  bodyGain: number;
+  presHz: number;
+  presGain: number;
+  topCut: number;
+};
+
+export const CABS: CabProfile[] = [
+  { lowCut: 90, bodyHz: 110, bodyGain: 1.5, presHz: 2600, presGain: 2.5, topCut: 5500 },
+  { lowCut: 80, bodyHz: 120, bodyGain: 3.0, presHz: 1500, presGain: 1.5, topCut: 4000 },
+  { lowCut: 95, bodyHz: 100, bodyGain: 0.0, presHz: 3200, presGain: 2.0, topCut: 7000 },
+  { lowCut: 115, bodyHz: 130, bodyGain: 2.0, presHz: 3400, presGain: 3.5, topCut: 5200 },
+  { lowCut: 100, bodyHz: 110, bodyGain: 2.0, presHz: 1800, presGain: 1.0, topCut: 4600 },
+];

@@ -54,7 +54,7 @@ export default function App() {
     applyPreset(PRESETS[i]);
   }, [applyPreset]);
 
-  const fx = useEffects({ drive, echo, tone, reverb, flanger, masterVolume });
+  const fx = useEffects({ drive, echo, tone, reverb, flanger, masterVolume, presetIdx });
   useEffect(() => { if (!fx.micBlocked) setMicDismissed(false); }, [fx.micBlocked]);
 
   useEffect(() => {
