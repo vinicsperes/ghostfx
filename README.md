@@ -1,4 +1,10 @@
-# GHOST FX
+<div align="center">
+
+<img src="assets/hero.png" alt="GHOSTFX — Signal Processor MK.I" width="660" />
+
+<video src="assets/spin.mp4" width="420" autoplay loop muted playsinline></video>
+
+</div>
 
 Browser-based guitar effects pedal. Plug in, stomp, and shape your tone with
 drive, echo, tone, flanger and reverb — no install, no plugins. It runs entirely
