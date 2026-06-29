@@ -6,10 +6,7 @@ export function LabelText(props: React.ComponentProps<typeof Text>) {
   const ref = useRef<any>(null);
   useFrame(() => {
     const mat = ref.current?.material;
-    if (mat) {
-      if (mat.alphaTest !== 0.5) { mat.alphaTest = 0.5; mat.needsUpdate = true; }
-      if (mat.depthTest !== false) { mat.depthTest = false; mat.needsUpdate = true; }
-    }
+    if (mat && mat.depthTest !== false) mat.depthTest = false;
   });
   return <Text ref={ref} renderOrder={100} {...props} />;
 }

@@ -69,8 +69,9 @@ export default function Pedal3D({
         dpr={IS_NARROW ? [1, 1.5] : [1, 2]}
         camera={{ position: view ?? (IS_NARROW ? [-1.3, 5.9, 4.6] : [-1.5, 7.0, 5.5]), fov: 34, near: 0.1, far: 60 }}
         gl={{ antialias: true, alpha: true }}
-        onCreated={({ camera }) => {
+        onCreated={({ camera, gl }) => {
           camera.lookAt(0, 0, 0);
+          gl.debug.checkShaderErrors = false;
         }}
       >
 
