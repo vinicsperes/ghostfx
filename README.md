@@ -1,8 +1,14 @@
 <div align="center">
 
-<img src="assets/hero.png" alt="GHOSTFX — Signal Processor MK.I" width="660" />
+<img src="assets/hero.png" alt="GHOSTFX — Signal Processor MK.I" width="760" />
 
-<video src="assets/spin.mp4" width="420" autoplay loop muted playsinline></video>
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="assets/spin.webp" alt="Interactive 3D pedal" width="240" /><br/><sub><b>Turn the knobs in 3D</b></sub></td>
+    <td align="center" width="33%"><img src="assets/presets.webp" alt="Five voiced presets" width="240" /><br/><sub><b>Five presets re-theme the rig</b></sub></td>
+    <td align="center" width="33%"><img src="assets/stomp.webp" alt="Stomp to arm" width="240" /><br/><sub><b>Stomp to arm the LED</b></sub></td>
+  </tr>
+</table>
 
 </div>
 
