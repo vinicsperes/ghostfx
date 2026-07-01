@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Group } from "three";
 import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls } from "@react-three/drei";
-import { ResponsiveCamera, CameraShake, HintSystem, AutoSpin, PedalScene } from "./pedal/scene";
+import { ResponsiveCamera, CameraShake, HintSystem, PedalScene } from "./pedal/scene";
 
 const IS_TOUCH =
   typeof window !== "undefined" && (window.matchMedia?.("(pointer: coarse)").matches ?? false);
@@ -50,7 +49,6 @@ export default function Pedal3D({
   const [bootTrigger, setBootTrigger] = useState(0);
   const chassisHoveredRef = useRef(false);
   const orbitingRef = useRef(false);
-  const spinRef = useRef<Group>(null);
 
   const onChassisEnter = useCallback(() => {
     chassisHoveredRef.current = true;
@@ -130,8 +128,7 @@ export default function Pedal3D({
         />
         <CameraShake stompCount={stompCount} />
 
-        <group ref={spinRef} position={[0, 0, 0]} onPointerDown={() => setHasInteracted(true)}>
-          {!hasInteracted && !view && <AutoSpin target={spinRef} />}
+        <group position={[0, 0, 0]} onPointerDown={() => setHasInteracted(true)}>
           {!hasInteracted && !IS_TOUCH && !view && <HintSystem accent={palette.accent} />}
           <PedalScene
             palette={palette}
