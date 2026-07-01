@@ -503,7 +503,7 @@ export default function App() {
             />
             <span
               className="font-[var(--font-mono)] uppercase tracking-[0.22em]"
-              style={{ fontSize: 10, color: themeColor }}
+              style={{ fontSize: 10, color: `${themeColor}b3` }}
             >
               Signal Processor MK.I
             </span>
@@ -569,10 +569,10 @@ export default function App() {
         {keyboardMode && (
           <div className="flex flex-col" style={{ gap: 7 }}>
             <div className="flex items-center gap-2">
-              <div style={{ width: 8, height: 1, background: themeColor }} />
+              <div style={{ width: 8, height: 1, background: `${themeColor}99` }} />
               <span
                 className="font-[var(--font-mono)] uppercase tracking-[0.35em]"
-                style={{ fontSize: 9, color: themeColor }}
+                style={{ fontSize: 9, color: `${themeColor}99` }}
               >
                 Teclado
               </span>
@@ -590,10 +590,10 @@ export default function App() {
 
         <div className="flex flex-col pointer-events-auto" style={{ gap: 4 }}>
           <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
-            <div style={{ width: 8, height: 1, background: themeColor }} />
+            <div style={{ width: 8, height: 1, background: `${themeColor}99` }} />
             <span
               className="font-[var(--font-mono)] uppercase tracking-[0.35em]"
-              style={{ fontSize: 9, color: themeColor }}
+              style={{ fontSize: 9, color: `${themeColor}99` }}
             >
               Signal
             </span>
@@ -641,10 +641,10 @@ export default function App() {
 
         <div className="flex flex-col pointer-events-auto" style={{ gap: 8 }}>
           <div className="flex items-center gap-2">
-            <div style={{ width: 8, height: 1, background: themeColor }} />
+            <div style={{ width: 8, height: 1, background: `${themeColor}99` }} />
             <span
               className="font-[var(--font-mono)] uppercase tracking-[0.35em]"
-              style={{ fontSize: 9, color: themeColor }}
+              style={{ fontSize: 9, color: `${themeColor}99` }}
             >
               Tools
             </span>

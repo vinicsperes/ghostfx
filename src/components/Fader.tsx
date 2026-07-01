@@ -110,8 +110,8 @@ export function Fader({
             height: 4,
             width: `${pct}%`,
             borderRadius: 2,
-            background: accent,
-            boxShadow: `0 0 8px ${accent}80`,
+            background: `${accent}b3`,
+            boxShadow: `0 0 6px ${accent}40`,
           }}
         />
 
