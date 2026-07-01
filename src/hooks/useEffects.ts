@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, mapFlangerDepth, mapFlangerFb, mapFlangerMix, createLimiterCurve } from "../audio/dsp";
-import { CABS } from "../data/presets";
+import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, mapFlangerDepth, mapFlangerFb, mapFlangerMix, createLimiterCurve, createTapeCurve, createReverbIR } from "../audio/dsp";
+import { CABS, REVERBS } from "../data/presets";
 
 export type EffectsState = "idle" | "bypass" | "active";
 
@@ -119,7 +119,12 @@ export function useEffects({
   // when true, output is force-muted + mic track disabled until the user resumes;
   // the volume effect below must respect it (otherwise it instantly un-mutes)
   const feedbackLatchRef = useRef(false);
-  const guardBufRef = useRef<Float32Array | null>(null);
+  const guardBufRef = useRef<Float32Array<ArrayBuffer> | null>(null);
+
+  // per-preset reverb impulse responses, built once at init; activeConv tracks
+  // which convolver is live so a preset switch crossfades to the other one
+  const irBuffersRef = useRef<AudioBuffer[]>([]);
+  const activeConvRef = useRef<"A" | "B">("A");
 
   // recording (taps the post-limiter signal — the final processed sound)
   const recordDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
@@ -148,6 +153,11 @@ export function useEffects({
     flangerDepth: GainNode | null;
     flangerFb: GainNode | null;
     flangerWet: GainNode | null;
+    reverbPre: DelayNode | null;
+    convolverA: ConvolverNode | null;
+    convolverB: ConvolverNode | null;
+    reverbWetA: GainNode | null;
+    reverbWetB: GainNode | null;
     reverbWet: GainNode | null;
     bypass: GainNode | null;
     effects: GainNode | null;
@@ -168,6 +178,11 @@ export function useEffects({
     flangerDepth: null,
     flangerFb: null,
     flangerWet: null,
+    reverbPre: null,
+    convolverA: null,
+    convolverB: null,
+    reverbWetA: null,
+    reverbWetB: null,
     reverbWet: null,
     bypass: null,
     effects: null,
@@ -247,6 +262,23 @@ export function useEffects({
       const feedbackGain = ctx.createGain();
       feedbackGain.gain.value = mapFeedback(echo);
 
+      // tape-voiced feedback loop: each pass loses lows (highpass, thins the
+      // repeats) and highs (lowpass, the head/tape HF loss) and soft-saturates, so
+      // echoes darken and bloom into the mix instead of piling up bright. All inside
+      // the loop → no latency added to the through signal, and the rolled-off loop
+      // gain also makes runaway buildup less likely.
+      const delayLoopHP = ctx.createBiquadFilter();
+      delayLoopHP.type = "highpass";
+      delayLoopHP.frequency.value = 180;
+      delayLoopHP.Q.value = 0.707;
+      const delayLoopLP = ctx.createBiquadFilter();
+      delayLoopLP.type = "lowpass";
+      delayLoopLP.frequency.value = 2800;
+      delayLoopLP.Q.value = 0.707;
+      const delaySat = ctx.createWaveShaper();
+      delaySat.curve = createTapeCurve();
+      delaySat.oversample = "none";
+
       const wetGain = ctx.createGain();
       wetGain.gain.value = echo * 0.5;
 
@@ -271,24 +303,33 @@ export function useEffects({
       const flangerWet = ctx.createGain();
       flangerWet.gain.value = mapFlangerMix(flanger);
 
-      const reverbDamping = ctx.createBiquadFilter();
-      reverbDamping.type = "lowpass";
-      reverbDamping.frequency.value = 3200;
+      // convolution reverb: a procedural stereo IR per preset gives each preset its
+      // own space (size/decay/tone) and decorrelated L/R for width from a mono DI.
+      // ConvolverNode adds no lookahead latency, so the live path stays tight. Two
+      // convolvers (A/B) so a preset switch crossfades the space instead of hard-
+      // cutting the tail — the IR swap happens on the silent (gain 0) one.
+      const reverbIdx = presetIdx ?? 0;
+      irBuffersRef.current = REVERBS.map((r) => {
+        const [l, rr] = createReverbIR(ctx.sampleRate, r.decay, r.tone, r.width);
+        const buf = ctx.createBuffer(2, l.length, ctx.sampleRate);
+        buf.copyToChannel(l, 0);
+        buf.copyToChannel(rr, 1);
+        return buf;
+      });
 
-      const reverbDelay1 = ctx.createDelay(0.1);
-      reverbDelay1.delayTime.value = 0.0233;
-      const reverbFB1 = ctx.createGain();
-      reverbFB1.gain.value = 0.72;
+      const reverbPre = ctx.createDelay(0.2);
+      reverbPre.delayTime.value = REVERBS[reverbIdx].predelay;
 
-      const reverbDelay2 = ctx.createDelay(0.1);
-      reverbDelay2.delayTime.value = 0.0371;
-      const reverbFB2 = ctx.createGain();
-      reverbFB2.gain.value = 0.68;
+      const convolverA = ctx.createConvolver();
+      convolverA.normalize = true;
+      convolverA.buffer = irBuffersRef.current[reverbIdx];
+      const convolverB = ctx.createConvolver();
+      convolverB.normalize = true;
 
-      const reverbDelay3 = ctx.createDelay(0.1);
-      reverbDelay3.delayTime.value = 0.0531;
-      const reverbFB3 = ctx.createGain();
-      reverbFB3.gain.value = 0.64;
+      const reverbWetA = ctx.createGain();
+      reverbWetA.gain.value = 1;
+      const reverbWetB = ctx.createGain();
+      reverbWetB.gain.value = 0;
 
       const reverbWet = ctx.createGain();
       reverbWet.gain.value = reverb * 0.5;
@@ -327,9 +368,12 @@ export function useEffects({
       toneFilter.connect(effectsGain);
 
       toneFilter.connect(delayNode);
-      delayNode.connect(feedbackGain);
+      delayNode.connect(delayLoopHP);
+      delayLoopHP.connect(delayLoopLP);
+      delayLoopLP.connect(delaySat);
+      delaySat.connect(feedbackGain);
       feedbackGain.connect(delayNode);
-      feedbackGain.connect(wetGain);
+      delaySat.connect(wetGain);
       wetGain.connect(effectsGain);
 
       toneFilter.connect(flangerDelay);
@@ -339,23 +383,13 @@ export function useEffects({
       flangerDamp.connect(flangerWet);
       flangerWet.connect(effectsGain);
 
-      toneFilter.connect(reverbDamping);
-
-      reverbDamping.connect(reverbDelay1);
-      reverbDelay1.connect(reverbFB1);
-      reverbFB1.connect(reverbDelay1);
-      reverbDelay1.connect(reverbWet);
-
-      reverbDamping.connect(reverbDelay2);
-      reverbDelay2.connect(reverbFB2);
-      reverbFB2.connect(reverbDelay2);
-      reverbDelay2.connect(reverbWet);
-
-      reverbDamping.connect(reverbDelay3);
-      reverbDelay3.connect(reverbFB3);
-      reverbFB3.connect(reverbDelay3);
-      reverbDelay3.connect(reverbWet);
-
+      toneFilter.connect(reverbPre);
+      reverbPre.connect(convolverA);
+      reverbPre.connect(convolverB);
+      convolverA.connect(reverbWetA);
+      convolverB.connect(reverbWetB);
+      reverbWetA.connect(reverbWet);
+      reverbWetB.connect(reverbWet);
       reverbWet.connect(effectsGain);
 
       bypassGain.connect(masterGain);
@@ -388,6 +422,11 @@ export function useEffects({
         flangerDepth,
         flangerFb,
         flangerWet,
+        reverbPre,
+        convolverA,
+        convolverB,
+        reverbWetA,
+        reverbWetB,
         reverbWet,
         bypass: bypassGain,
         effects: effectsGain,
@@ -454,6 +493,31 @@ export function useEffects({
     cabPres?.frequency.setTargetAtTime(cab.presHz, t, 0.05);
     cabPres?.gain.setTargetAtTime(cab.presGain, t, 0.05);
     cabLP?.frequency.setTargetAtTime(cab.topCut, t, 0.05);
+  }, [presetIdx]);
+
+  // crossfade the reverb to the new preset's space: load its IR on the inactive
+  // (silent) convolver, then fade across — the outgoing tail rings out naturally
+  // instead of clicking off when the buffer is swapped
+  useEffect(() => {
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    const idx = presetIdx ?? 0;
+    const buf = irBuffersRef.current[idx];
+    const { convolverA, convolverB, reverbWetA, reverbWetB, reverbPre } = nodesRef.current;
+    if (!buf || !convolverA || !convolverB || !reverbWetA || !reverbWetB) return;
+    const t = ctx.currentTime;
+    reverbPre?.delayTime.setTargetAtTime(REVERBS[idx].predelay, t, 0.05);
+    if (activeConvRef.current === "A") {
+      convolverB.buffer = buf;
+      reverbWetB.gain.setTargetAtTime(1, t, 0.06);
+      reverbWetA.gain.setTargetAtTime(0, t, 0.06);
+      activeConvRef.current = "B";
+    } else {
+      convolverA.buffer = buf;
+      reverbWetA.gain.setTargetAtTime(1, t, 0.06);
+      reverbWetB.gain.setTargetAtTime(0, t, 0.06);
+      activeConvRef.current = "A";
+    }
   }, [presetIdx]);
 
   useEffect(() => {

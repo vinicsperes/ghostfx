@@ -41,3 +41,18 @@ export const CABS: CabProfile[] = [
   { lowCut: 115, bodyHz: 130, bodyGain: 2.0, presHz: 3400, presGain: 3.5, topCut: 5200 },
   { lowCut: 100, bodyHz: 110, bodyGain: 2.0, presHz: 1800, presGain: 1.0, topCut: 4600 },
 ];
+
+export type ReverbProfile = {
+  decay: number;
+  predelay: number;
+  tone: number;
+  width: number;
+};
+
+export const REVERBS: ReverbProfile[] = [
+  { decay: 3.4, predelay: 0.030, tone: 4200, width: 0.90 },
+  { decay: 4.2, predelay: 0.050, tone: 2400, width: 0.85 },
+  { decay: 2.4, predelay: 0.012, tone: 8000, width: 1.00 },
+  { decay: 0.9, predelay: 0.008, tone: 5000, width: 0.50 },
+  { decay: 3.8, predelay: 0.040, tone: 3600, width: 1.00 },
+];

@@ -69,3 +69,55 @@ export function createLimiterCurve(threshold = 0.82): Float32Array<ArrayBuffer> 
   }
   return curve;
 }
+
+// Procedural stereo reverb impulse response — no assets, generated at init. An
+// exponentially-decaying noise tail (reaches ~-60dB at `decay`), tone-shaped by a
+// one-pole lowpass (lower `tone` = darker/bigger room), with a short onset fade so
+// it diffuses in instead of clicking. L/R are decorrelated by `width` (1 = fully
+// independent/widest, 0 = mono center) so a mono DI gets stereo width in the cans.
+// Returns [left, right]; the caller wraps them in a 2-channel AudioBuffer.
+export function createReverbIR(
+  sampleRate: number,
+  decay: number,
+  tone: number,
+  width: number,
+): [Float32Array<ArrayBuffer>, Float32Array<ArrayBuffer>] {
+  const len = Math.floor(sampleRate * decay);
+  const left = new Float32Array(len);
+  const right = new Float32Array(len);
+
+  const tau = decay / 6.9078; // ln(1000) → env hits ~-60dB at t = decay
+  const dt = 1 / sampleRate;
+  const rc = 1 / (2 * Math.PI * tone);
+  const a = dt / (rc + dt); // one-pole lowpass smoothing factor
+
+  let lpL = 0;
+  let lpR = 0;
+  for (let i = 0; i < len; i++) {
+    const t = i / sampleRate;
+    const env = Math.exp(-t / tau) * Math.min(1, t / 0.006);
+    const s = Math.random() * 2 - 1;
+    const nl = Math.random() * 2 - 1;
+    const nr = Math.random() * 2 - 1;
+    lpL += a * (s * (1 - width) + nl * width - lpL);
+    lpR += a * (s * (1 - width) + nr * width - lpR);
+    left[i] = lpL * env;
+    right[i] = lpR * env;
+  }
+  return [left, right];
+}
+
+// Gentle tape-style saturation for the delay feedback loop. Normalised so the
+// small-signal slope is ~1 (unity at low level → doesn't add loop gain / runaway)
+// and only the peaks soft-compress — gives repeats a warm, slightly squashed tape
+// character instead of clean digital copies. oversample:"none" so it adds no
+// latency inside the loop.
+export function createTapeCurve(drive = 1.3): Float32Array<ArrayBuffer> {
+  const n = 8192;
+  const curve = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (i * 2) / n - 1;
+    curve[i] = Math.tanh(x * drive) / drive;
+  }
+  return curve;
+}
