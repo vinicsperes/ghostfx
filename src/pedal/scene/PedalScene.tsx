@@ -31,7 +31,10 @@ export function PedalScene({
   knobReverb: number;
   knobFlanger: number;
   knobMaster: number;
-  onKnobChange: (knob: "drive" | "echo" | "tone" | "reverb" | "flanger" | "master", value: number) => void;
+  onKnobChange: (
+    knob: "drive" | "echo" | "tone" | "reverb" | "flanger" | "master",
+    value: number,
+  ) => void;
   setControlsEnabled: (enabled: boolean) => void;
   bootTrigger: number;
   presetIdx?: number | null;
@@ -60,7 +63,12 @@ export function PedalScene({
       onChassisLeave={onChassisLeave}
       pressed={pressed}
       onPress={() => setPressed(true)}
-      onRelease={() => { if (pressed) { setPressed(false); onTap(); } }}
+      onRelease={() => {
+        if (pressed) {
+          setPressed(false);
+          onTap();
+        }
+      }}
       onCancel={() => setPressed(false)}
     />
   );

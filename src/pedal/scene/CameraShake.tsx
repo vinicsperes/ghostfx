@@ -17,7 +17,8 @@ export function CameraShake({ stompCount }: { stompCount: number }) {
       camera.position.y = s.current.baseY;
       return;
     }
-    camera.position.y = s.current.baseY + Math.sin(s.current.t * 32) * 0.28 * Math.exp(-s.current.t * 9);
+    camera.position.y =
+      s.current.baseY + Math.sin(s.current.t * 32) * 0.28 * Math.exp(-s.current.t * 9);
   });
   return null;
 }

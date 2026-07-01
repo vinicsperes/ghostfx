@@ -4,7 +4,8 @@ import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls } from "@react-three/drei";
 import { ResponsiveCamera, CameraShake, HintSystem, AutoSpin, PedalScene } from "./pedal/scene";
 
-const IS_TOUCH = typeof window !== "undefined" && (window.matchMedia?.("(pointer: coarse)").matches ?? false);
+const IS_TOUCH =
+  typeof window !== "undefined" && (window.matchMedia?.("(pointer: coarse)").matches ?? false);
 const IS_NARROW = typeof window !== "undefined" && window.innerWidth < 768;
 
 export default function Pedal3D({
@@ -33,7 +34,10 @@ export default function Pedal3D({
   knobReverb: number;
   knobFlanger: number;
   knobMaster: number;
-  onKnobChange: (knob: "drive" | "echo" | "tone" | "reverb" | "flanger" | "master", value: number) => void;
+  onKnobChange: (
+    knob: "drive" | "echo" | "tone" | "reverb" | "flanger" | "master",
+    value: number,
+  ) => void;
   palette: { pedal: string; ink: string; accent: string; cream: string; metal: string };
   presetIdx?: number | null;
   stompCount?: number;
@@ -58,28 +62,46 @@ export default function Pedal3D({
   }, []);
   const prevPlaying = useRef(false);
   useEffect(() => {
-    if (isPlaying && !prevPlaying.current) setBootTrigger(t => t + 1);
+    if (isPlaying && !prevPlaying.current) setBootTrigger((t) => t + 1);
     prevPlaying.current = isPlaying;
   }, [isPlaying]);
 
   return (
-    <div style={{ width: "100%", height: "100%", userSelect: "none", WebkitUserSelect: "none", touchAction: "none" }}>
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        touchAction: "none",
+      }}
+    >
       <Canvas
         shadows="percentage"
         dpr={IS_NARROW ? [1, 1.5] : [1, 2]}
-        camera={{ position: view ?? (IS_NARROW ? [-1.3, 5.9, 4.6] : [-1.5, 7.0, 5.5]), fov: 34, near: 0.1, far: 60 }}
+        camera={{
+          position: view ?? (IS_NARROW ? [-1.3, 5.9, 4.6] : [-1.5, 7.0, 5.5]),
+          fov: 34,
+          near: 0.1,
+          far: 60,
+        }}
         gl={{ antialias: true, alpha: true }}
         onCreated={({ camera, gl }) => {
           camera.lookAt(0, 0, 0);
           gl.debug.checkShaderErrors = false;
         }}
       >
-
         <Environment preset="city" environmentIntensity={0.8} />
 
         <ambientLight intensity={0.25} />
 
-        <directionalLight position={[-4, 6, 3]} intensity={2.8} color="#e8dfc8" castShadow shadow-mapSize={IS_NARROW ? [1024, 1024] : [2048, 2048]} />
+        <directionalLight
+          position={[-4, 6, 3]}
+          intensity={2.8}
+          color="#e8dfc8"
+          castShadow
+          shadow-mapSize={IS_NARROW ? [1024, 1024] : [2048, 2048]}
+        />
 
         <directionalLight position={[5, 4, -3]} intensity={1.6} color="#c8d8f0" />
 
@@ -108,11 +130,7 @@ export default function Pedal3D({
         />
         <CameraShake stompCount={stompCount} />
 
-        <group
-          ref={spinRef}
-          position={[0, 0, 0]}
-          onPointerDown={() => setHasInteracted(true)}
-        >
+        <group ref={spinRef} position={[0, 0, 0]} onPointerDown={() => setHasInteracted(true)}>
           {!hasInteracted && !view && <AutoSpin target={spinRef} />}
           {!hasInteracted && !IS_TOUCH && !view && <HintSystem accent={palette.accent} />}
           <PedalScene

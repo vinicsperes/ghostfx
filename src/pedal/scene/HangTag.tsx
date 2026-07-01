@@ -6,12 +6,15 @@ export function HangTag() {
   const { tex, redraw } = useMemo(() => {
     const TAG_DPR = 3;
     const c = document.createElement("canvas");
-    c.width = 512 * TAG_DPR; c.height = 640 * TAG_DPR;
+    c.width = 512 * TAG_DPR;
+    c.height = 640 * TAG_DPR;
     const ctx = c.getContext("2d")!;
     const t = new THREE.CanvasTexture(c);
     t.anisotropy = 16;
 
-    const ink = "#14120e", card = "#f6f3ea", dim = "#2b2720";
+    const ink = "#14120e",
+      card = "#f6f3ea",
+      dim = "#2b2720";
     const UNB = "'Unbounded', sans-serif";
     const MONO = "'Space Mono', monospace";
     const rr = (x: number, y: number, w: number, h: number, r: number) => {
@@ -75,22 +78,33 @@ export function HangTag() {
         ctx.translate(gx, gy);
         ctx.scale(gs, gs);
         ctx.fillStyle = ink;
-        ctx.fill(new Path2D("M16 51 L16 28 C16 16 23 9 32 9 C41 9 48 16 48 28 L48 51 Q44 47 40 51 Q36 55 32 51 Q28 47 24 51 Q20 55 16 51 Z"));
+        ctx.fill(
+          new Path2D(
+            "M16 51 L16 28 C16 16 23 9 32 9 C41 9 48 16 48 28 L48 51 Q44 47 40 51 Q36 55 32 51 Q28 47 24 51 Q20 55 16 51 Z",
+          ),
+        );
         ctx.fillStyle = "#41ff77";
         ctx.globalAlpha = 0.26;
-        ctx.beginPath(); ctx.arc(36, 27, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(36, 27, 9, 0, Math.PI * 2);
+        ctx.fill();
         ctx.globalAlpha = 1;
         ctx.fillStyle = "#10a042";
-        ctx.beginPath(); ctx.arc(36, 27, 5.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(36, 27, 5.5, 0, Math.PI * 2);
+        ctx.fill();
         ctx.restore();
       }
 
       ctx.strokeStyle = ink;
-      ctx.beginPath(); ctx.arc(256, 54, 24, 0, Math.PI * 2);
+      ctx.beginPath();
+      ctx.arc(256, 54, 24, 0, Math.PI * 2);
       ctx.lineWidth = 11;
       ctx.stroke();
       ctx.globalCompositeOperation = "destination-out";
-      ctx.beginPath(); ctx.arc(256, 54, 16, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath();
+      ctx.arc(256, 54, 16, 0, Math.PI * 2);
+      ctx.fill();
       ctx.globalCompositeOperation = "source-over";
 
       t.needsUpdate = true;
@@ -102,25 +116,31 @@ export function HangTag() {
   useEffect(() => {
     let alive = true;
     document.fonts.ready
-      .then(() => Promise.all([
-        document.fonts.load("900 150px Unbounded"),
-        document.fonts.load("700 20px Unbounded"),
-        document.fonts.load("700 15px 'Space Mono'"),
-        document.fonts.load("400 11px 'Space Mono'"),
-      ]))
-      .then(() => { if (alive) redraw(); })
+      .then(() =>
+        Promise.all([
+          document.fonts.load("900 150px Unbounded"),
+          document.fonts.load("700 20px Unbounded"),
+          document.fonts.load("700 15px 'Space Mono'"),
+          document.fonts.load("400 11px 'Space Mono'"),
+        ]),
+      )
+      .then(() => {
+        if (alive) redraw();
+      })
       .catch(() => {});
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [redraw]);
 
   const stringGeo = useMemo(() => {
     const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0.00, 0.50, 1.08),
-      new THREE.Vector3(0.05, 0.50, 1.40),
-      new THREE.Vector3(0.10, 0.45, 1.62),
+      new THREE.Vector3(0.0, 0.5, 1.08),
+      new THREE.Vector3(0.05, 0.5, 1.4),
+      new THREE.Vector3(0.1, 0.45, 1.62),
       new THREE.Vector3(0.117, 0.36, 1.648),
       new THREE.Vector3(0.121, 0.295, 1.642),
-      new THREE.Vector3(0.123, 0.262, 1.610),
+      new THREE.Vector3(0.123, 0.262, 1.61),
     ]);
     return new THREE.TubeGeometry(curve, 32, 0.006, 6, false);
   }, []);
@@ -135,23 +155,39 @@ export function HangTag() {
     g.rotation.z = THREE.MathUtils.damp(g.rotation.z, hovered ? -0.13 : -0.07, 6, dt);
   });
 
-  useEffect(() => { redraw(hovered); }, [hovered, redraw]);
+  useEffect(() => {
+    redraw(hovered);
+  }, [hovered, redraw]);
 
   return (
     <group
-      onPointerEnter={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = "pointer"; }}
-      onPointerLeave={() => { setHovered(false); document.body.style.cursor = ""; }}
-      onClick={(e) => { e.stopPropagation(); window.open("https://github.com/vinicsperes", "_blank", "noopener"); }}
+      onPointerEnter={(e) => {
+        e.stopPropagation();
+        setHovered(true);
+        document.body.style.cursor = "pointer";
+      }}
+      onPointerLeave={() => {
+        setHovered(false);
+        document.body.style.cursor = "";
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        window.open("https://github.com/vinicsperes", "_blank", "noopener");
+      }}
     >
       <mesh geometry={stringGeo}>
         <meshStandardMaterial color="#cfc8b4" roughness={0.8} metalness={0} />
       </mesh>
       <group ref={pivot} position={[0.123, 0.269, 1.62]} rotation={[0, 0, -0.07]}>
         <mesh position={[0, -EYELET_LOCAL_Y, 0]}>
-          <planeGeometry args={[0.50, 0.625]} />
-          {/* alphaTest sem transparent: renderiza no passe opaco e evita
-              erro de ordenação com o chassi translúcido visto por trás */}
-          <meshStandardMaterial map={tex} alphaTest={0.5} side={THREE.DoubleSide} roughness={0.85} metalness={0} />
+          <planeGeometry args={[0.5, 0.625]} />
+          <meshStandardMaterial
+            map={tex}
+            alphaTest={0.5}
+            side={THREE.DoubleSide}
+            roughness={0.85}
+            metalness={0}
+          />
         </mesh>
       </group>
     </group>

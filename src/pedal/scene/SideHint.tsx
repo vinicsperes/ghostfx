@@ -15,7 +15,6 @@ export function SideHint({
 }) {
   return (
     <group>
-
       <Line
         points={[labelPos, targetPos]}
         color={accent}

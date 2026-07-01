@@ -2,7 +2,9 @@ import { PRESET_META, PRESETS, PRESET_TAGS } from "../data/presets";
 import { PresetCard } from "./PresetCard";
 
 export function BottomBar({
-  presets, activePresetIdx, onPresetSelect,
+  presets,
+  activePresetIdx,
+  onPresetSelect,
 }: {
   presets: typeof PRESETS;
   activePresetIdx: number | null;

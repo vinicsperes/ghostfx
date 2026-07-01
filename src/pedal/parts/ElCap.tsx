@@ -1,7 +1,17 @@
 import { PCB_BH } from "../constants";
 
-export function ElCap({ x, z, h = 0.18, r = 0.055, color = "#1a1a1a" }: {
-  x: number; z: number; h?: number; r?: number; color?: string;
+export function ElCap({
+  x,
+  z,
+  h = 0.18,
+  r = 0.055,
+  color = "#1a1a1a",
+}: {
+  x: number;
+  z: number;
+  h?: number;
+  r?: number;
+  color?: string;
 }) {
   return (
     <group position={[x, 0, z]}>

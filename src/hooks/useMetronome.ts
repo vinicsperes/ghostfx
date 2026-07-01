@@ -44,7 +44,9 @@ export function useMetronome() {
   };
 
   useEffect(() => {
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   return { bpm, setBpm, isPlaying, toggle };

@@ -3,12 +3,15 @@ import * as THREE from "three";
 import { PCB_BH } from "../constants";
 
 export function BeltonBrick({ x, z }: { x: number; z: number }) {
-  const W = 0.38, L = 0.74, H = 0.22;
+  const W = 0.38,
+    L = 0.74,
+    H = 0.22;
   const topY = PCB_BH / 2 + 0.02 + H;
 
   const labelTex = useMemo(() => {
     const c = document.createElement("canvas");
-    c.width = 512; c.height = 320;
+    c.width = 512;
+    c.height = 320;
     const ctx = c.getContext("2d")!;
     ctx.fillStyle = "#e8e6da";
     ctx.fillRect(0, 0, 512, 320);
@@ -31,7 +34,7 @@ export function BeltonBrick({ x, z }: { x: number; z: number }) {
     <group position={[x, 0, z]}>
       <mesh position={[0, PCB_BH / 2 + 0.02 + H / 2, 0]} castShadow>
         <boxGeometry args={[W, H, L]} />
-        <meshStandardMaterial color="#0d0d10" roughness={0.55} metalness={0.10} />
+        <meshStandardMaterial color="#0d0d10" roughness={0.55} metalness={0.1} />
       </mesh>
       <mesh position={[0, topY + 0.001, -0.04]} rotation={[-Math.PI / 2, 0, -Math.PI / 2]}>
         <planeGeometry args={[0.56, 0.35]} />

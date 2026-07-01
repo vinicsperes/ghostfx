@@ -19,8 +19,8 @@ export function PotBody({ x, z, topY }: { x: number; z: number; topY: number }) 
         <meshStandardMaterial color="#777" metalness={0.7} roughness={0.4} />
       </mesh>
       {[-0.067, 0, 0.067].map((dx, i) => (
-        <mesh key={i} position={[dx, canBottom - 0.020, lugZ]}>
-          <boxGeometry args={[0.026, 0.046, 0.010]} />
+        <mesh key={i} position={[dx, canBottom - 0.02, lugZ]}>
+          <boxGeometry args={[0.026, 0.046, 0.01]} />
           <meshStandardMaterial color="#c9b070" metalness={0.78} roughness={0.22} />
         </mesh>
       ))}

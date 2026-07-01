@@ -123,26 +123,47 @@ void main(){
 }`;
 
 export const PRESET_FS = [GHOST_FS, CLEAN_FS, FROST_FS, HEAVY_FS, HAZE_FS];
-export const PRESET_OPACITY = [0.70, 0.65, 0.74, 0.82, 0.88];
+export const PRESET_OPACITY = [0.7, 0.65, 0.74, 0.82, 0.88];
 
-export type GlState = { tLoc: WebGLUniformLocation; rLoc: WebGLUniformLocation; blendLoc: WebGLUniformLocation; prog: WebGLProgram };
+export type GlState = {
+  tLoc: WebGLUniformLocation;
+  rLoc: WebGLUniformLocation;
+  blendLoc: WebGLUniformLocation;
+  prog: WebGLProgram;
+};
 
 export const BLEND_OUT = 550;
-export const BLEND_IN  = 750;
+export const BLEND_IN = 750;
 
 export const INTRO_IDX = 3;
 
 export function buildShader(gl: WebGLRenderingContext, idx: number, old?: WebGLProgram): GlState {
   if (old) gl.deleteProgram(old);
-  const compile = (type: number, src: string) => { const s = gl.createShader(type)!; gl.shaderSource(s, src); gl.compileShader(s); return s; };
+  const compile = (type: number, src: string) => {
+    const s = gl.createShader(type)!;
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    return s;
+  };
   const prog = gl.createProgram()!;
   gl.attachShader(prog, compile(gl.VERTEX_SHADER, BG_VS));
   gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, PRESET_FS[idx]));
-  gl.linkProgram(prog); gl.useProgram(prog);
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
   const buf = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+    gl.STATIC_DRAW,
+  );
   const pos = gl.getAttribLocation(prog, "a_pos");
-  gl.enableVertexAttribArray(pos); gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
-  return { tLoc: gl.getUniformLocation(prog, "u_t")!, rLoc: gl.getUniformLocation(prog, "u_res")!, blendLoc: gl.getUniformLocation(prog, "u_blend")!, prog };
+  gl.enableVertexAttribArray(pos);
+  gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+  return {
+    tLoc: gl.getUniformLocation(prog, "u_t")!,
+    rLoc: gl.getUniformLocation(prog, "u_res")!,
+    blendLoc: gl.getUniformLocation(prog, "u_blend")!,
+    prog,
+  };
 }

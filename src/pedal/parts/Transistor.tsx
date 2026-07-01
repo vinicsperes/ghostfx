@@ -7,7 +7,7 @@ export function Transistor({ x, z, rot = 0 }: { x: number; z: number; rot?: numb
   return (
     <group position={[x, 0, z]} rotation={[0, rot, 0]}>
       <mesh position={[0, bodyCY, 0]} castShadow scale={[1, 1, 0.62]}>
-        <cylinderGeometry args={[0.060, 0.060, h, 16]} />
+        <cylinderGeometry args={[0.06, 0.06, h, 16]} />
         <meshStandardMaterial color="#141414" roughness={0.55} metalness={0.06} />
       </mesh>
       {[-0.034, 0, 0.034].map((dx, i) => (

@@ -35,10 +35,14 @@ export function Knob3D({
   const isHoveredRef = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
   const onChangeRef = useRef(onChange);
-  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
-    const noSelect = (e: Event) => { if (dragRef.current) e.preventDefault(); };
+    const noSelect = (e: Event) => {
+      if (dragRef.current) e.preventDefault();
+    };
     const onMove = (e: PointerEvent) => {
       if (!dragRef.current) return;
       const dy = dragRef.current.startY - e.clientY;
@@ -71,9 +75,10 @@ export function Knob3D({
   const transRef = useRef({ active: false, from: 0, to: 0, progress: 0 });
   const transTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const initialValueRef = useRef(value);
   useEffect(() => {
     const g = knobGroupRef.current;
-    if (g) g.rotation.y = (3 / 4) * Math.PI - value * (3 / 2) * Math.PI;
+    if (g) g.rotation.y = (3 / 4) * Math.PI - initialValueRef.current * (3 / 2) * Math.PI;
   }, []);
 
   useEffect(() => {
@@ -100,7 +105,9 @@ export function Knob3D({
       if (Math.abs(from - targetAngle) < 0.01) return;
       transRef.current = { active: true, from, to: targetAngle, progress: 0 };
     }, delay * 400);
-    return () => { if (transTimeoutRef.current) clearTimeout(transTimeoutRef.current); };
+    return () => {
+      if (transTimeoutRef.current) clearTimeout(transTimeoutRef.current);
+    };
   }, [value, delay]);
 
   useFrame((_, delta) => {
@@ -109,7 +116,7 @@ export function Knob3D({
     if (animRef.current.progress >= 0) {
       animRef.current.progress = Math.min(1, animRef.current.progress + delta / 1.1);
       const p = easeOutBack(animRef.current.progress);
-      g.rotation.y = (3 / 4) * Math.PI - (animRef.current.targetValue * p) * (3 / 2) * Math.PI;
+      g.rotation.y = (3 / 4) * Math.PI - animRef.current.targetValue * p * (3 / 2) * Math.PI;
       if (animRef.current.progress >= 1) animRef.current.progress = -1;
       return;
     }
@@ -124,8 +131,18 @@ export function Knob3D({
   return (
     <group
       position={position}
-      onPointerEnter={() => { isHoveredRef.current = true; setControlsEnabled(false); document.body.style.cursor = "grab"; }}
-      onPointerLeave={() => { isHoveredRef.current = false; if (!dragRef.current) { setControlsEnabled(true); document.body.style.cursor = ""; } }}
+      onPointerEnter={() => {
+        isHoveredRef.current = true;
+        setControlsEnabled(false);
+        document.body.style.cursor = "grab";
+      }}
+      onPointerLeave={() => {
+        isHoveredRef.current = false;
+        if (!dragRef.current) {
+          setControlsEnabled(true);
+          document.body.style.cursor = "";
+        }
+      }}
       onWheel={(e: ThreeEvent<WheelEvent>) => {
         e.stopPropagation();
         const step = e.deltaY < 0 ? 0.04 : -0.04;
@@ -150,15 +167,14 @@ export function Knob3D({
       <group ref={knobGroupRef}>
         {knobStyle === "bigmuff" ? (
           <>
-
             <mesh position={[0, 0.008, 0]} castShadow>
-              <cylinderGeometry args={[0.168, 0.180, 0.016, 36]} />
+              <cylinderGeometry args={[0.168, 0.18, 0.016, 36]} />
               <meshStandardMaterial color="#131313" roughness={0.92} metalness={0} />
             </mesh>
 
             <mesh position={[0, 0.108, 0]} castShadow>
               <cylinderGeometry args={[0.128, 0.138, 0.195, 36]} />
-              <meshStandardMaterial color="#111111" roughness={0.90} metalness={0} />
+              <meshStandardMaterial color="#111111" roughness={0.9} metalness={0} />
             </mesh>
 
             <mesh position={[0, 0.206, 0]} castShadow>
@@ -173,30 +189,50 @@ export function Knob3D({
           </>
         ) : knobStyle === "strat" ? (
           <>
-
             <mesh position={[0, 0.009, 0]} castShadow>
               <cylinderGeometry args={[0.215, 0.218, 0.018, 40]} />
-              <meshStandardMaterial color={knobTheme === "cream" ? "#c8b870" : "#1e1e1e"} roughness={0.60} metalness={0} />
+              <meshStandardMaterial
+                color={knobTheme === "cream" ? "#c8b870" : "#1e1e1e"}
+                roughness={0.6}
+                metalness={0}
+              />
             </mesh>
 
             <mesh position={[0, 0.105, 0]} castShadow>
               <cylinderGeometry args={[0.138, 0.143, 0.172, 40]} />
-              <meshStandardMaterial color={knobTheme === "cream" ? "#bfae72" : "#161616"} roughness={0.60} metalness={0} />
+              <meshStandardMaterial
+                color={knobTheme === "cream" ? "#bfae72" : "#161616"}
+                roughness={0.6}
+                metalness={0}
+              />
             </mesh>
 
             {[...Array(26)].map((_, i) => {
               const a = (i / 26) * Math.PI * 2;
               return (
-                <mesh key={i} position={[Math.cos(a) * 0.145, 0.105, Math.sin(a) * 0.145]} rotation={[0, a, 0]} castShadow>
+                <mesh
+                  key={i}
+                  position={[Math.cos(a) * 0.145, 0.105, Math.sin(a) * 0.145]}
+                  rotation={[0, a, 0]}
+                  castShadow
+                >
                   <boxGeometry args={[0.006, 0.172, 0.012]} />
-                  <meshStandardMaterial color={knobTheme === "cream" ? "#d0be80" : "#242424"} roughness={0.58} metalness={0} />
+                  <meshStandardMaterial
+                    color={knobTheme === "cream" ? "#d0be80" : "#242424"}
+                    roughness={0.58}
+                    metalness={0}
+                  />
                 </mesh>
               );
             })}
 
             <mesh position={[0, 0.196, 0]} castShadow>
-              <cylinderGeometry args={[0.140, 0.140, 0.010, 40]} />
-              <meshStandardMaterial color={knobTheme === "cream" ? "#d4c27a" : "#1a1a1a"} roughness={0.52} metalness={0} />
+              <cylinderGeometry args={[0.14, 0.14, 0.01, 40]} />
+              <meshStandardMaterial
+                color={knobTheme === "cream" ? "#d4c27a" : "#1a1a1a"}
+                roughness={0.52}
+                metalness={0}
+              />
             </mesh>
 
             <mesh position={[0, 0.202, -0.068]}>
@@ -206,30 +242,42 @@ export function Knob3D({
           </>
         ) : knobStyle === "orb" ? (
           <>
-
-            <mesh position={[0, 0.010, 0]} castShadow>
-              <cylinderGeometry args={[0.175, 0.183, 0.020, 32]} />
-              <meshStandardMaterial color="#0a0a0a" roughness={0.85} metalness={0.20} />
+            <mesh position={[0, 0.01, 0]} castShadow>
+              <cylinderGeometry args={[0.175, 0.183, 0.02, 32]} />
+              <meshStandardMaterial color="#0a0a0a" roughness={0.85} metalness={0.2} />
             </mesh>
 
             {[...Array(20)].map((_, i) => {
               const a = (i / 20) * Math.PI * 2;
               return (
-                <mesh key={i} position={[Math.cos(a) * 0.168, 0.032, Math.sin(a) * 0.168]} rotation={[0, a, 0]} castShadow>
+                <mesh
+                  key={i}
+                  position={[Math.cos(a) * 0.168, 0.032, Math.sin(a) * 0.168]}
+                  rotation={[0, a, 0]}
+                  castShadow
+                >
                   <boxGeometry args={[0.007, 0.024, 0.014]} />
                   <meshStandardMaterial color="#141414" roughness={0.9} metalness={0} />
                 </mesh>
               );
             })}
 
-            <mesh position={[0, 0.100, 0]} castShadow>
-              <cylinderGeometry args={[0.050, 0.080, 0.140, 24]} />
-              <meshStandardMaterial color="#0c0c0c" roughness={0.80} metalness={0.12} />
+            <mesh position={[0, 0.1, 0]} castShadow>
+              <cylinderGeometry args={[0.05, 0.08, 0.14, 24]} />
+              <meshStandardMaterial color="#0c0c0c" roughness={0.8} metalness={0.12} />
             </mesh>
 
             <mesh position={[0, 0.215, 0]}>
               <sphereGeometry args={[0.092, 28, 28]} />
-              <meshPhysicalMaterial color={accent} emissive={accent} emissiveIntensity={1.0} roughness={0.05} metalness={0} transparent opacity={0.78} />
+              <meshPhysicalMaterial
+                color={accent}
+                emissive={accent}
+                emissiveIntensity={1.0}
+                roughness={0.05}
+                metalness={0}
+                transparent
+                opacity={0.78}
+              />
             </mesh>
 
             <mesh position={[0, 0.215, 0]}>
@@ -238,21 +286,28 @@ export function Knob3D({
             </mesh>
 
             <mesh position={[0, 0.058, -0.082]}>
-              <boxGeometry args={[0.008, 0.036, 0.010]} />
+              <boxGeometry args={[0.008, 0.036, 0.01]} />
               <meshBasicMaterial color={accent} />
             </mesh>
           </>
         ) : (
           <>
-
             <mesh position={[0, -0.01, 0]} castShadow>
               <cylinderGeometry args={[0.15, 0.17, 0.04, 32]} />
-              <meshStandardMaterial color={knobTheme === "cream" ? "#c4b890" : "#050505"} roughness={0.85} metalness={0} />
+              <meshStandardMaterial
+                color={knobTheme === "cream" ? "#c4b890" : "#050505"}
+                roughness={0.85}
+                metalness={0}
+              />
             </mesh>
 
             <mesh position={[0, 0.1, 0]} castShadow>
               <cylinderGeometry args={[0.08, 0.09, 0.22, 32]} />
-              <meshStandardMaterial color={knobTheme === "cream" ? "#d4c8a0" : "#080808"} roughness={0.8} metalness={0} />
+              <meshStandardMaterial
+                color={knobTheme === "cream" ? "#d4c8a0" : "#080808"}
+                roughness={0.8}
+                metalness={0}
+              />
             </mesh>
 
             {[...Array(8)].map((_, i) => {
@@ -261,14 +316,22 @@ export function Knob3D({
               return (
                 <mesh key={i} position={[Math.cos(a) * r, 0.1, Math.sin(a) * r]} castShadow>
                   <cylinderGeometry args={[0.035, 0.035, 0.22, 12]} />
-                  <meshStandardMaterial color={knobTheme === "cream" ? "#ddd0ac" : "#0a0a0a"} roughness={0.8} metalness={0} />
+                  <meshStandardMaterial
+                    color={knobTheme === "cream" ? "#ddd0ac" : "#0a0a0a"}
+                    roughness={0.8}
+                    metalness={0}
+                  />
                 </mesh>
               );
             })}
 
             <mesh position={[0, 0.21, 0]} castShadow>
               <cylinderGeometry args={[0.105, 0.115, 0.025, 32]} />
-              <meshStandardMaterial color={knobTheme === "cream" ? "#e8dcbc" : "#111118"} roughness={0.75} metalness={0} />
+              <meshStandardMaterial
+                color={knobTheme === "cream" ? "#e8dcbc" : "#111118"}
+                roughness={0.75}
+                metalness={0}
+              />
             </mesh>
 
             <group position={[0, 0.11, -0.115]}>

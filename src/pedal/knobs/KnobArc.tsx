@@ -1,6 +1,10 @@
 import { useMemo } from "react";
 import { Line } from "@react-three/drei";
 
+const START = -2.35;
+const RANGE = 4.7;
+const N_TRACK = 64;
+
 export function KnobArc({
   value,
   radius,
@@ -12,16 +16,14 @@ export function KnobArc({
   color: string;
   yOffset?: number;
 }) {
-  const START = -2.35;
-  const RANGE = 4.70;
-  const N_TRACK = 64;
-
-  const trackPoints = useMemo<[number, number, number][]>(() => (
-    Array.from({ length: N_TRACK }, (_, i) => {
-      const θ = START + (i / (N_TRACK - 1)) * RANGE;
-      return [Math.sin(θ) * radius, yOffset, -Math.cos(θ) * radius];
-    })
-  ), [radius, yOffset]);
+  const trackPoints = useMemo<[number, number, number][]>(
+    () =>
+      Array.from({ length: N_TRACK }, (_, i) => {
+        const θ = START + (i / (N_TRACK - 1)) * RANGE;
+        return [Math.sin(θ) * radius, yOffset, -Math.cos(θ) * radius];
+      }),
+    [radius, yOffset],
+  );
 
   const activePoints = useMemo<[number, number, number][]>(() => {
     const clamped = Math.max(0.001, Math.min(1, value));

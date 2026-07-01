@@ -18,7 +18,7 @@ export default function LoadingScreen({ onComplete }: { onComplete?: () => void 
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [progress]);
+  }, [progress, onComplete]);
 
   if (!visible) return null;
 

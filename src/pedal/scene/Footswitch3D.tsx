@@ -34,8 +34,12 @@ export function Footswitch3D({
     <group
       position={position}
       scale={0.8}
-      onPointerEnter={() => { document.body.style.cursor = "pointer"; }}
-      onPointerLeave={() => { document.body.style.cursor = ""; }}
+      onPointerEnter={() => {
+        document.body.style.cursor = "pointer";
+      }}
+      onPointerLeave={() => {
+        document.body.style.cursor = "";
+      }}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
         (e.target as Element).setPointerCapture(e.pointerId);
@@ -47,10 +51,14 @@ export function Footswitch3D({
       }}
       onPointerCancel={() => onCancel()}
     >
-
       <mesh position={[0, 0, 0]} receiveShadow>
         <cylinderGeometry args={[0.22, 0.22, 0.02, 32]} />
-        <meshStandardMaterial color={accent} roughness={0.5} emissive={accent} emissiveIntensity={0.12} />
+        <meshStandardMaterial
+          color={accent}
+          roughness={0.5}
+          emissive={accent}
+          emissiveIntensity={0.12}
+        />
       </mesh>
 
       <mesh position={[0, 0.04, 0]} castShadow>

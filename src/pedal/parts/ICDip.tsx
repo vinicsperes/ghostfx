@@ -1,8 +1,20 @@
 import { Text } from "@react-three/drei";
 import { PCB_BH } from "../constants";
 
-export function ICDip({ x, z, pins = 8, rot = 0, color = "#101010", label = "" }: {
-  x: number; z: number; pins?: number; rot?: number; color?: string; label?: string;
+export function ICDip({
+  x,
+  z,
+  pins = 8,
+  rot = 0,
+  color = "#101010",
+  label = "",
+}: {
+  x: number;
+  z: number;
+  pins?: number;
+  rot?: number;
+  color?: string;
+  label?: string;
 }) {
   const half = pins / 2;
   const chipW = 0.171;
@@ -21,7 +33,7 @@ export function ICDip({ x, z, pins = 8, rot = 0, color = "#101010", label = "" }
         <boxGeometry args={[chipW, chipH, chipL]} />
         <meshStandardMaterial color={color} roughness={0.65} metalness={0.04} />
       </mesh>
-      <mesh position={[0, topY + chipH / 2 + 0.0005, -chipL / 2 + 0.030]}>
+      <mesh position={[0, topY + chipH / 2 + 0.0005, -chipL / 2 + 0.03]}>
         <cylinderGeometry args={[0.016, 0.016, 0.001, 12]} />
         <meshBasicMaterial color="#383838" />
       </mesh>

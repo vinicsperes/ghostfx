@@ -1,13 +1,17 @@
-export function SideJack({ position, metal }: { position: [number, number, number], metal: string }) {
+export function SideJack({
+  position,
+  metal,
+}: {
+  position: [number, number, number];
+  metal: string;
+}) {
   const isLeft = position[0] < 0;
   const chrome = "#d6d6da";
 
   return (
     <group position={position} rotation={[0, 0, isLeft ? -Math.PI / 2 : Math.PI / 2]}>
-
-      {/* enclosed-jack body: a smaller rectangular plastic box (not cylindrical) */}
       <mesh position={[0, 0.205, 0]} castShadow>
-        <boxGeometry args={[0.20, 0.24, 0.17]} />
+        <boxGeometry args={[0.2, 0.24, 0.17]} />
         <meshStandardMaterial color="#0a0a0a" roughness={0.62} metalness={0.12} />
       </mesh>
       <mesh position={[0, 0.335, 0]} castShadow>
@@ -17,7 +21,7 @@ export function SideJack({ position, metal }: { position: [number, number, numbe
 
       {[-0.05, 0.05].map((dx, i) => (
         <mesh key={`lug${i}`} position={[dx, 0.385, 0]} castShadow>
-          <boxGeometry args={[0.028, 0.045, 0.010]} />
+          <boxGeometry args={[0.028, 0.045, 0.01]} />
           <meshStandardMaterial color="#c9b070" metalness={0.78} roughness={0.24} />
         </mesh>
       ))}
@@ -28,7 +32,7 @@ export function SideJack({ position, metal }: { position: [number, number, numbe
       </mesh>
 
       <mesh position={[0, 0.012, 0]}>
-        <cylinderGeometry args={[0.115, 0.115, 0.010, 20]} />
+        <cylinderGeometry args={[0.115, 0.115, 0.01, 20]} />
         <meshStandardMaterial color={metal} metalness={0.85} roughness={0.24} />
       </mesh>
 
@@ -39,9 +43,9 @@ export function SideJack({ position, metal }: { position: [number, number, numbe
 
       <mesh position={[0, -0.054, 0]}>
         <cylinderGeometry args={[0.092, 0.092, 0.012, 20]} />
-        <meshStandardMaterial color={chrome} metalness={0.92} roughness={0.20} />
+        <meshStandardMaterial color={chrome} metalness={0.92} roughness={0.2} />
       </mesh>
-      <mesh position={[0, -0.050, 0]}>
+      <mesh position={[0, -0.05, 0]}>
         <cylinderGeometry args={[0.062, 0.062, 0.022, 16]} />
         <meshBasicMaterial color="#000000" />
       </mesh>

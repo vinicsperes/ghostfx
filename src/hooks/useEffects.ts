@@ -1,5 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createDistortionCurve, mapDrivePreGain, mapDelayTime, mapFeedback, mapFlangerDepth, mapFlangerFb, mapFlangerMix, createLimiterCurve, createTapeCurve, createReverbIR } from "../audio/dsp";
+import {
+  createDistortionCurve,
+  mapDrivePreGain,
+  mapDelayTime,
+  mapFeedback,
+  mapFlangerDepth,
+  mapFlangerFb,
+  mapFlangerMix,
+  createLimiterCurve,
+  createTapeCurve,
+  createReverbIR,
+} from "../audio/dsp";
 import { CABS, REVERBS } from "../data/presets";
 
 export type EffectsState = "idle" | "bypass" | "active";
@@ -22,9 +33,8 @@ type EffectsApi = {
   resumeFromFeedback: () => void;
 };
 
-const MAX_REC_MS = 30000; // 30s cap so nobody hogs memory / abuses
+const MAX_REC_MS = 30000;
 
-// max-abs peaks per bucket — drives the recorded-clip waveform
 function computePeaks(buf: AudioBuffer, buckets = 360): Float32Array {
   const ch = buf.getChannelData(0);
   const block = Math.max(1, Math.floor(ch.length / buckets));
@@ -41,7 +51,6 @@ function computePeaks(buf: AudioBuffer, buckets = 360): Float32Array {
   return peaks;
 }
 
-// 16-bit PCM WAV from an AudioBuffer (universal, no dependency)
 function encodeWav(buf: AudioBuffer): Blob {
   const numCh = Math.min(buf.numberOfChannels, 2);
   const sr = buf.sampleRate;
@@ -50,12 +59,22 @@ function encodeWav(buf: AudioBuffer): Blob {
   const dataSize = len * blockAlign;
   const out = new ArrayBuffer(44 + dataSize);
   const dv = new DataView(out);
-  const str = (off: number, s: string) => { for (let i = 0; i < s.length; i++) dv.setUint8(off + i, s.charCodeAt(i)); };
-  str(0, "RIFF"); dv.setUint32(4, 36 + dataSize, true); str(8, "WAVE");
-  str(12, "fmt "); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true);
-  dv.setUint16(22, numCh, true); dv.setUint32(24, sr, true);
-  dv.setUint32(28, sr * blockAlign, true); dv.setUint16(32, blockAlign, true);
-  dv.setUint16(34, 16, true); str(36, "data"); dv.setUint32(40, dataSize, true);
+  const str = (off: number, s: string) => {
+    for (let i = 0; i < s.length; i++) dv.setUint8(off + i, s.charCodeAt(i));
+  };
+  str(0, "RIFF");
+  dv.setUint32(4, 36 + dataSize, true);
+  str(8, "WAVE");
+  str(12, "fmt ");
+  dv.setUint32(16, 16, true);
+  dv.setUint16(20, 1, true);
+  dv.setUint16(22, numCh, true);
+  dv.setUint32(24, sr, true);
+  dv.setUint32(28, sr * blockAlign, true);
+  dv.setUint16(32, blockAlign, true);
+  dv.setUint16(34, 16, true);
+  str(36, "data");
+  dv.setUint32(40, dataSize, true);
   const chans: Float32Array[] = [];
   for (let c = 0; c < numCh; c++) chans.push(buf.getChannelData(c));
   let off = 44;
@@ -69,10 +88,9 @@ function encodeWav(buf: AudioBuffer): Blob {
   return new Blob([out], { type: "audio/wav" });
 }
 
-// MP3 via lamejs — lazy-imported so it only loads on first download
 async function encodeMp3(buf: AudioBuffer): Promise<Blob> {
   const { Mp3Encoder } = await import("@breezystack/lamejs");
-  const ch = buf.getChannelData(0); // mono (the signal is mono-summed)
+  const ch = buf.getChannelData(0);
   const enc = new Mp3Encoder(1, buf.sampleRate, 128);
   const pcm = new Int16Array(ch.length);
   for (let i = 0; i < ch.length; i++) {
@@ -116,17 +134,12 @@ export function useEffects({
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const guardIntervalRef = useRef<number | null>(null);
-  // when true, output is force-muted + mic track disabled until the user resumes;
-  // the volume effect below must respect it (otherwise it instantly un-mutes)
   const feedbackLatchRef = useRef(false);
   const guardBufRef = useRef<Float32Array<ArrayBuffer> | null>(null);
 
-  // per-preset reverb impulse responses, built once at init; activeConv tracks
-  // which convolver is live so a preset switch crossfades to the other one
   const irBuffersRef = useRef<AudioBuffer[]>([]);
   const activeConvRef = useRef<"A" | "B">("A");
 
-  // recording (taps the post-limiter signal — the final processed sound)
   const recordDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -193,9 +206,6 @@ export function useEffects({
     if (ctxRef.current) return;
 
     try {
-      // "interactive" = smallest output buffer the device allows → lowest
-      // monitoring latency (this is a live guitar FX). A dedicated interface
-      // handles the small buffer without glitching.
       const ctx = new AudioContext({ latencyHint: "interactive" });
       ctxRef.current = ctx;
 
@@ -226,22 +236,27 @@ export function useEffects({
 
       const driveNode = ctx.createWaveShaper();
       driveNode.curve = createDistortionCurve(drive);
-      // oversample only when the gain is high enough to alias audibly — keeps the
-      // ~2.67ms upsampling latency off the clean/mid presets, on for the heavy ones
       driveNode.oversample = drive >= 0.6 ? "2x" : "none";
 
-      // speaker-cabinet voicing per preset: the topCut lowpass is the speaker
-      // rolloff that tames the waveshaper fizz; body + presence give each amp its
-      // own character so the presets stop sharing one buzz
       const cab = CABS[presetIdx ?? 0] ?? CABS[0];
       const cabHP = ctx.createBiquadFilter();
-      cabHP.type = "highpass"; cabHP.frequency.value = cab.lowCut; cabHP.Q.value = 0.707;
+      cabHP.type = "highpass";
+      cabHP.frequency.value = cab.lowCut;
+      cabHP.Q.value = 0.707;
       const cabBody = ctx.createBiquadFilter();
-      cabBody.type = "peaking"; cabBody.frequency.value = cab.bodyHz; cabBody.Q.value = 0.9; cabBody.gain.value = cab.bodyGain;
+      cabBody.type = "peaking";
+      cabBody.frequency.value = cab.bodyHz;
+      cabBody.Q.value = 0.9;
+      cabBody.gain.value = cab.bodyGain;
       const cabPres = ctx.createBiquadFilter();
-      cabPres.type = "peaking"; cabPres.frequency.value = cab.presHz; cabPres.Q.value = 1.0; cabPres.gain.value = cab.presGain;
+      cabPres.type = "peaking";
+      cabPres.frequency.value = cab.presHz;
+      cabPres.Q.value = 1.0;
+      cabPres.gain.value = cab.presGain;
       const cabLP = ctx.createBiquadFilter();
-      cabLP.type = "lowpass"; cabLP.frequency.value = cab.topCut; cabLP.Q.value = 0.9;
+      cabLP.type = "lowpass";
+      cabLP.frequency.value = cab.topCut;
+      cabLP.Q.value = 0.9;
 
       const toneFilter = ctx.createBiquadFilter();
       toneFilter.type = "lowpass";
@@ -262,11 +277,6 @@ export function useEffects({
       const feedbackGain = ctx.createGain();
       feedbackGain.gain.value = mapFeedback(echo);
 
-      // tape-voiced feedback loop: each pass loses lows (highpass, thins the
-      // repeats) and highs (lowpass, the head/tape HF loss) and soft-saturates, so
-      // echoes darken and bloom into the mix instead of piling up bright. All inside
-      // the loop → no latency added to the through signal, and the rolled-off loop
-      // gain also makes runaway buildup less likely.
       const delayLoopHP = ctx.createBiquadFilter();
       delayLoopHP.type = "highpass";
       delayLoopHP.frequency.value = 180;
@@ -282,8 +292,6 @@ export function useEffects({
       const wetGain = ctx.createGain();
       wetGain.gain.value = echo * 0.5;
 
-      // flanger (Electric Mistress / "Heart-Shaped Box" voiced): short modulated
-      // delay with damped feedback for the resonant sweep, mixed wet
       const flangerDelay = ctx.createDelay(0.05);
       flangerDelay.delayTime.value = 0.0025;
       const flangerLfo = ctx.createOscillator();
@@ -294,7 +302,6 @@ export function useEffects({
       flangerLfo.connect(flangerDepth);
       flangerDepth.connect(flangerDelay.delayTime);
       flangerLfo.start();
-      // low-pass the loop so the resonance sweeps instead of whistling
       const flangerDamp = ctx.createBiquadFilter();
       flangerDamp.type = "lowpass";
       flangerDamp.frequency.value = 2800;
@@ -303,11 +310,6 @@ export function useEffects({
       const flangerWet = ctx.createGain();
       flangerWet.gain.value = mapFlangerMix(flanger);
 
-      // convolution reverb: a procedural stereo IR per preset gives each preset its
-      // own space (size/decay/tone) and decorrelated L/R for width from a mono DI.
-      // ConvolverNode adds no lookahead latency, so the live path stays tight. Two
-      // convolvers (A/B) so a preset switch crossfades the space instead of hard-
-      // cutting the tail — the IR swap happens on the silent (gain 0) one.
       const reverbIdx = presetIdx ?? 0;
       irBuffersRef.current = REVERBS.map((r) => {
         const [l, rr] = createReverbIR(ctx.sampleRate, r.decay, r.tone, r.width);
@@ -334,9 +336,6 @@ export function useEffects({
       const reverbWet = ctx.createGain();
       reverbWet.gain.value = reverb * 0.5;
 
-      // zero-latency soft-clip limiter (a WaveShaper) — replaces a
-      // DynamicsCompressor whose ~6ms lookahead was pure round-trip latency.
-      // oversample "none" so it adds no latency of its own.
       const limiter = ctx.createWaveShaper();
       limiter.curve = createLimiterCurve();
       limiter.oversample = "none";
@@ -395,13 +394,10 @@ export function useEffects({
       bypassGain.connect(masterGain);
       effectsGain.connect(masterGain);
 
-      // analyser taps PRE-limiter so the feedback guard sees the true (unlimited)
-      // peak — the soft limiter caps output below the guard's 0.98 threshold.
       masterGain.connect(analyser);
       masterGain.connect(limiter);
       limiter.connect(ctx.destination);
 
-      // parallel tap for the recorder (post-limiter = the final sound)
       const recordDest = ctx.createMediaStreamDestination();
       limiter.connect(recordDest);
       recordDestRef.current = recordDest;
@@ -438,9 +434,10 @@ export function useEffects({
       setError(null);
       setState("bypass");
       masterGain.gain.setTargetAtTime(0.8, ctx.currentTime, 0.5);
-
     } catch (e) {
-      try { await ctxRef.current?.close(); } catch { }
+      try {
+        await ctxRef.current?.close();
+      } catch {}
       ctxRef.current = null;
 
       const name = e instanceof DOMException ? e.name : "";
@@ -458,7 +455,10 @@ export function useEffects({
 
   useEffect(() => {
     const { drive: driveNode, preGain } = nodesRef.current;
-    if (driveNode) { driveNode.curve = createDistortionCurve(drive); driveNode.oversample = drive >= 0.6 ? "2x" : "none"; }
+    if (driveNode) {
+      driveNode.curve = createDistortionCurve(drive);
+      driveNode.oversample = drive >= 0.6 ? "2x" : "none";
+    }
     if (preGain && ctxRef.current)
       preGain.gain.setTargetAtTime(mapDrivePreGain(drive), ctxRef.current.currentTime, 0.05);
   }, [drive]);
@@ -495,9 +495,6 @@ export function useEffects({
     cabLP?.frequency.setTargetAtTime(cab.topCut, t, 0.05);
   }, [presetIdx]);
 
-  // crossfade the reverb to the new preset's space: load its IR on the inactive
-  // (silent) convolver, then fade across — the outgoing tail rings out naturally
-  // instead of clicking off when the buffer is swapped
   useEffect(() => {
     const ctx = ctxRef.current;
     if (!ctx) return;
@@ -538,26 +535,20 @@ export function useEffects({
   }, [flanger]);
 
   useEffect(() => {
-    if (feedbackLatchRef.current) return; // stay muted while feedback-protected
+    if (feedbackLatchRef.current) return;
     const { masterGain } = nodesRef.current;
     if (masterGain && ctxRef.current && state !== "idle")
       masterGain.gain.setTargetAtTime(masterVolume, ctxRef.current.currentTime, 0.05);
   }, [masterVolume, state]);
 
-  // Feedback guard. Output is live in BOTH "active" and "bypass" (bypass still
-  // routes the mic out), so watch both. Trip on *sustained* loudness — a single
-  // loud note decays, acoustic feedback holds/grows — to avoid muting real
-  // playing. On trip: latch muted + disable the mic track (kills the loop at the
-  // source) + raise the educational modal; the user resumes deliberately.
   useEffect(() => {
     if (state !== "active" && state !== "bypass") {
       if (guardIntervalRef.current) clearInterval(guardIntervalRef.current);
       return;
     }
     let over = 0;
-    const RMS_TRIP = 0.5;   // sustained RMS above this = runaway (above a hot,
-                            // wet preset's normal peaks; the limiter guards ears)
-    const TRIP_CHECKS = 6;  // × 100ms = 0.6s held before muting
+    const RMS_TRIP = 0.5;
+    const TRIP_CHECKS = 6;
 
     const checkFeedback = () => {
       const analyser = analyserRef.current;
@@ -572,12 +563,12 @@ export function useEffects({
       if (over < TRIP_CHECKS) return;
 
       feedbackLatchRef.current = true;
-      // belt + suspenders: mute output, cut the mic at the source, AND suspend the
-      // whole audio thread (stops tails/loops too — nothing can leak through).
       const { masterGain } = nodesRef.current;
       masterGain?.gain.cancelScheduledValues(ctx.currentTime);
       masterGain?.gain.setValueAtTime(0, ctx.currentTime);
-      streamRef.current?.getAudioTracks().forEach((t) => { t.enabled = false; });
+      streamRef.current?.getAudioTracks().forEach((t) => {
+        t.enabled = false;
+      });
       ctx.suspend();
       setState("bypass");
       setFeedbackBlocked(true);
@@ -585,7 +576,9 @@ export function useEffects({
     };
 
     guardIntervalRef.current = window.setInterval(checkFeedback, 100);
-    return () => { if (guardIntervalRef.current) clearInterval(guardIntervalRef.current); };
+    return () => {
+      if (guardIntervalRef.current) clearInterval(guardIntervalRef.current);
+    };
   }, [state]);
 
   const resumeFromFeedback = useCallback(() => {
@@ -608,8 +601,10 @@ export function useEffects({
   }, []);
 
   const toggle = useCallback(async () => {
-    // if we're muted by the feedback guard, a stomp just safely re-arms
-    if (feedbackLatchRef.current) { resumeFromFeedback(); return; }
+    if (feedbackLatchRef.current) {
+      resumeFromFeedback();
+      return;
+    }
     if (!ctxRef.current) await init();
     const ctx = ctxRef.current;
     if (!ctx) return;
@@ -620,7 +615,9 @@ export function useEffects({
 
     if (state === "idle" || state === "bypass") {
       setError(null);
-      streamRef.current?.getAudioTracks().forEach((tr) => { tr.enabled = true; });
+      streamRef.current?.getAudioTracks().forEach((tr) => {
+        tr.enabled = true;
+      });
       masterGain?.gain.setTargetAtTime(0.8, t, 0.1);
       bypass?.gain.setTargetAtTime(0, t, 0.02);
       effects?.gain.setTargetAtTime(1, t, 0.02);
@@ -640,7 +637,6 @@ export function useEffects({
     };
   }, []);
 
-  // buffers de leitura reutilizados — chamados a cada frame, alocar aqui vira lixo de GC
   const scratchRef = useRef<Float32Array<ArrayBuffer> | null>(null);
   const emptyRef = useRef<Float32Array<ArrayBuffer> | null>(null);
 
@@ -666,14 +662,20 @@ export function useEffects({
   }, []);
 
   const stopRecording = useCallback(() => {
-    if (recTimeoutRef.current) { clearTimeout(recTimeoutRef.current); recTimeoutRef.current = null; }
+    if (recTimeoutRef.current) {
+      clearTimeout(recTimeoutRef.current);
+      recTimeoutRef.current = null;
+    }
     const rec = recorderRef.current;
     if (rec && rec.state !== "inactive") rec.stop();
     setIsRecording(false);
   }, []);
 
   const toggleRecording = useCallback(async () => {
-    if (isRecording) { stopRecording(); return; }
+    if (isRecording) {
+      stopRecording();
+      return;
+    }
 
     if (!ctxRef.current) await init();
     const ctx = ctxRef.current;
@@ -684,12 +686,14 @@ export function useEffects({
     const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
     const mime =
       typeof MediaRecorder !== "undefined"
-        ? candidates.find((t) => MediaRecorder.isTypeSupported(t)) ?? ""
+        ? (candidates.find((t) => MediaRecorder.isTypeSupported(t)) ?? "")
         : "";
 
     const rec = new MediaRecorder(dest.stream, mime ? { mimeType: mime } : undefined);
     chunksRef.current = [];
-    rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+    rec.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data);
+    };
     rec.onstop = async () => {
       const blob = new Blob(chunksRef.current, { type: mime || "audio/webm" });
       try {
@@ -698,7 +702,7 @@ export function useEffects({
         recordedPeaksRef.current = computePeaks(buf);
         setRecordedDuration(buf.duration);
         setHasRecording(true);
-      } catch { /* decode failed — keep previous take */ }
+      } catch {}
     };
     rec.start();
     recorderRef.current = rec;
@@ -710,8 +714,13 @@ export function useEffects({
     const buf = recordedBufferRef.current;
     if (!buf) return;
     let blob: Blob, ext: string;
-    try { blob = await encodeMp3(buf); ext = "mp3"; }
-    catch { blob = encodeWav(buf); ext = "wav"; } // fallback if the encoder fails
+    try {
+      blob = await encodeMp3(buf);
+      ext = "mp3";
+    } catch {
+      blob = encodeWav(buf);
+      ext = "wav";
+    }
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -733,8 +742,20 @@ export function useEffects({
   }, []);
 
   return {
-    state, ready, error, micBlocked, toggle, getLevel, getWaveform,
-    isRecording, hasRecording, recordedDuration, toggleRecording, downloadRecording, getRecordedPeaks,
-    feedbackBlocked, resumeFromFeedback,
+    state,
+    ready,
+    error,
+    micBlocked,
+    toggle,
+    getLevel,
+    getWaveform,
+    isRecording,
+    hasRecording,
+    recordedDuration,
+    toggleRecording,
+    downloadRecording,
+    getRecordedPeaks,
+    feedbackBlocked,
+    resumeFromFeedback,
   };
 }
