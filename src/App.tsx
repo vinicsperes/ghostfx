@@ -130,7 +130,7 @@ export default function App() {
   }, [fx]);
 
   const isActive = fx.state === "active";
-  const themeTarget = presetIdx !== null ? PRESET_META[presetIdx].color : "#20f040";
+  const themeTarget = presetIdx !== null ? PRESET_META[presetIdx].color : PALETTE.accent;
   const liveColorRef = useRef<string>(themeTarget);
   const colorAnimRaf = useRef(0);
   const [themeColor, setThemeColor] = useState<string>(themeTarget);
@@ -443,7 +443,7 @@ export default function App() {
         </div>
       </div>
 
-      <div className="absolute left-0 right-0 top-[88px] bottom-[150px] z-[2] lg:top-[78px] lg:left-[360px] lg:right-0 lg:bottom-[92px]">
+      <div className="absolute inset-0 z-[2]">
         <Pedal3D
           ledColor={themeColor}
           isPlaying={isActive}

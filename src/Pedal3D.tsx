@@ -78,7 +78,7 @@ export default function Pedal3D({
         shadows="percentage"
         dpr={IS_NARROW ? [1, 1.5] : [1, 2]}
         camera={{
-          position: view ?? (IS_NARROW ? [-1.3, 5.9, 4.6] : [-1.5, 7.0, 5.5]),
+          position: view ?? (IS_NARROW ? [-1.1, 4.8, 3.8] : [-1.2, 5.5, 4.3]),
           fov: 34,
           near: 0.1,
           far: 60,
