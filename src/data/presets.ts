@@ -6,17 +6,19 @@ export const PRESETS = [
   { name: "HAZE", drive: 0.3, echo: 0.42, tone: 0.52, reverb: 0.82, flanger: 0.6, master: 0.72 },
 ] as const;
 
+import { shifted } from "./accent";
+
 export const PALETTE = {
   bg: "#030308",
   pedal: "#1a1a1c",
   ink: "#e0e0ec",
-  accent: "#20f040",
+  accent: shifted("#20f040"),
   cream: "#a8a8bc",
   metal: "#505060",
 };
 
 export const PRESET_META = [
-  { color: "#20f040", word: "HAUNTED", chassis: "#0a0a10" },
+  { color: shifted("#20f040"), word: "HAUNTED", chassis: "#0a0a10" },
   { color: "#7d22c4", word: "OCCULT", chassis: "#0a0412" },
   { color: "#a8c4dc", word: "GLACIER", chassis: "#080a10" },
   { color: "#e02828", word: "HOLLOW", chassis: "#0a0202" },

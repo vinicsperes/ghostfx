@@ -1,5 +1,6 @@
 import { RoundedBox, Svg } from "@react-three/drei";
 import { FrontSide } from "three";
+import { shifted } from "../../data/accent";
 import { Wire, CableClip, SideJack, PotBody, SwitchBody, Battery9V } from "../parts";
 import { Knob3D, MasterKnob3D } from "../knobs";
 import { Internals } from "../internals";
@@ -23,11 +24,11 @@ type PresetVisual = {
 };
 const PRESET_VISUALS: PresetVisual[] = [
   {
-    pickguard: { top: "#0a0a0e", mid: "#1a3520", base: "#06060a", screw: "#3a3a48" },
+    pickguard: { top: "#0a0a0e", mid: shifted("#1a3520"), base: "#06060a", screw: "#3a3a48" },
     knobTheme: "dark",
-    silk: "#20f040",
+    silk: shifted("#20f040"),
     ink: "#e0e0ec",
-    knobAccent: "#16a030",
+    knobAccent: shifted("#16a030"),
     showArc: false,
   },
   {

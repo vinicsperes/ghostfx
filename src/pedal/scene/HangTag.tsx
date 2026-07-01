@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { shifted } from "../../data/accent";
 
 export function HangTag() {
   const { tex, redraw } = useMemo(() => {
@@ -59,8 +60,8 @@ export function HangTag() {
       ctx.letterSpacing = "0px";
       ctx.font = `700 28px ${MONO}`;
       if (hover) {
-        ctx.fillStyle = "#10a042";
-        ctx.shadowColor = "#41ff77";
+        ctx.fillStyle = shifted("#10a042");
+        ctx.shadowColor = shifted("#41ff77");
         ctx.shadowBlur = 20;
       } else {
         ctx.fillStyle = ink;
@@ -83,13 +84,13 @@ export function HangTag() {
             "M16 51 L16 28 C16 16 23 9 32 9 C41 9 48 16 48 28 L48 51 Q44 47 40 51 Q36 55 32 51 Q28 47 24 51 Q20 55 16 51 Z",
           ),
         );
-        ctx.fillStyle = "#41ff77";
+        ctx.fillStyle = shifted("#41ff77");
         ctx.globalAlpha = 0.26;
         ctx.beginPath();
         ctx.arc(36, 27, 9, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1;
-        ctx.fillStyle = "#10a042";
+        ctx.fillStyle = shifted("#10a042");
         ctx.beginPath();
         ctx.arc(36, 27, 5.5, 0, Math.PI * 2);
         ctx.fill();

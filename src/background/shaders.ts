@@ -1,3 +1,8 @@
+import { shiftedRgb } from "../data/accent";
+
+const [GR, GG, GB] = shiftedRgb("#05b920");
+const [DR, DG, DB] = shiftedRgb("#0a3c14");
+
 export const BG_VS = `attribute vec2 a_pos; void main(){gl_Position=vec4(a_pos,0.,1.);}`;
 
 export const CLEAN_FS = `
@@ -117,8 +122,8 @@ void main(){
   float c=abs(cos(v*4.2));
   float thresh=mix(1.0,0.76,u_blend);
   vec4 col;
-  if(c>thresh){float b=pow((c-.76)/.24,.55);col=vec4(b*5./255.,b*185./255.,b*32./255.,b*.82);}
-  else{float d=(cos(v*1.8)+1.)*.12;col=vec4(d*1./255.,d*6./255.,d*2./255.,1.);}
+  if(c>thresh){float b=pow((c-.76)/.24,.55);col=vec4(b*${GR}./255.,b*${GG}./255.,b*${GB}./255.,b*.82);}
+  else{float d=(cos(v*1.8)+1.)*.12;col=vec4(d*${DR}./2550.,d*${DG}./2550.,d*${DB}./2550.,1.);}
   gl_FragColor=col;
 }`;
 
