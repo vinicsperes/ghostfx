@@ -36,45 +36,67 @@ export function RecorderControls({
     const c = canvas.getContext("2d");
     if (!c) return;
     const draw = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = canvas.clientWidth || 520;
+      const cssH = canvas.clientHeight || 48;
+      if (canvas.width !== Math.round(cssW * dpr) || canvas.height !== Math.round(cssH * dpr)) {
+        canvas.width = Math.round(cssW * dpr);
+        canvas.height = Math.round(cssH * dpr);
+      }
       const W = canvas.width,
         H = canvas.height,
         mid = H / 2;
+      const BARW = Math.max(2, Math.round(3 * dpr));
+      const STEP = BARW + Math.max(1, Math.round(2 * dpr));
+      const minH = Math.max(1, 1.5 * dpr);
+      const maxH = mid - 3 * dpr;
       c.clearRect(0, 0, W, H);
-      c.beginPath();
-      c.moveTo(0, mid);
-      c.lineTo(W, mid);
-      c.strokeStyle = "rgba(255,255,255,0.06)";
-      c.lineWidth = 1;
-      c.stroke();
+
+      const bar = (x: number, h: number, alpha: number) => {
+        c.globalAlpha = alpha;
+        c.beginPath();
+        c.roundRect(x, mid - h, BARW, h * 2, BARW / 2);
+        c.fill();
+      };
 
       c.fillStyle = accent;
       c.shadowColor = accent;
-      c.shadowBlur = 5;
+      c.shadowBlur = 4 * dpr;
       if (isRecording) {
         liveRef.current.push(getLevelRef.current?.() ?? 0);
         const samples = liveRef.current;
-        const STEP = 3,
-          BARW = 2;
         const visible = Math.ceil(W / STEP);
         if (samples.length > visible + 4) samples.splice(0, samples.length - visible - 4);
         const n = samples.length;
+        let maxL = 0;
+        for (const v of samples) if (v > maxL) maxL = v;
+        const scale = 1 / Math.max(0.12, maxL);
         for (let k = 0; k < n; k++) {
           const x = W - (n - k) * STEP;
           if (x < -BARW) continue;
-          const h = Math.min(1, samples[k]) * (mid - 2);
-          c.fillRect(x, mid - h, BARW, h * 2);
+          const v = Math.min(1, samples[k] * scale);
+          const h = Math.max(minH, Math.pow(v, 0.75) * maxH);
+          bar(x, h, 0.55 + 0.45 * v);
         }
       } else if (hasRecording) {
         const data = getRecordedPeaks();
         if (data && data.length > 0) {
-          const n = data.length;
-          for (let i = 0; i < n; i++) {
-            const x = (i / n) * W;
-            const h = Math.min(1, data[i]) * (mid - 2);
-            c.fillRect(x, mid - h, Math.max(1, (W / n) * 0.7), h * 2);
+          let maxP = 0;
+          for (const v of data) if (v > maxP) maxP = v;
+          const scale = 1 / Math.max(0.12, maxP);
+          const nBars = Math.floor(W / STEP);
+          for (let b = 0; b < nBars; b++) {
+            const from = Math.floor((b / nBars) * data.length);
+            const to = Math.max(from + 1, Math.floor(((b + 1) / nBars) * data.length));
+            let p = 0;
+            for (let i = from; i < to; i++) if (data[i] > p) p = data[i];
+            const v = Math.min(1, p * scale);
+            const h = Math.max(minH, Math.pow(v, 0.8) * maxH);
+            bar(b * STEP + (STEP - BARW) / 2, h, 0.5 + 0.5 * v);
           }
         }
       }
+      c.globalAlpha = 1;
       c.shadowBlur = 0;
       rafRef.current = requestAnimationFrame(draw);
     };
