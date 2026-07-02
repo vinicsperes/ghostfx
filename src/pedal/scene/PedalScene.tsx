@@ -7,11 +7,12 @@ export function PedalScene({
   ledColor,
   ledActive,
   onTap,
+  onStomp,
   knobDrive,
   knobEcho,
   knobTone,
   knobReverb,
-  knobFlanger,
+  knobMod,
   knobMaster,
   onKnobChange,
   setControlsEnabled,
@@ -25,14 +26,15 @@ export function PedalScene({
   ledColor: string;
   ledActive: boolean;
   onTap: () => void;
+  onStomp: () => void;
   knobDrive: number;
   knobEcho: number;
   knobTone: number;
   knobReverb: number;
-  knobFlanger: number;
+  knobMod: number;
   knobMaster: number;
   onKnobChange: (
-    knob: "drive" | "echo" | "tone" | "reverb" | "flanger" | "master",
+    knob: "drive" | "echo" | "tone" | "reverb" | "mod" | "master",
     value: number,
   ) => void;
   setControlsEnabled: (enabled: boolean) => void;
@@ -54,7 +56,7 @@ export function PedalScene({
       knobEcho={knobEcho}
       knobTone={knobTone}
       knobReverb={knobReverb}
-      knobFlanger={knobFlanger}
+      knobMod={knobMod}
       knobMaster={knobMaster}
       onKnobChange={onKnobChange}
       setControlsEnabled={setControlsEnabled}
@@ -62,7 +64,10 @@ export function PedalScene({
       onChassisEnter={onChassisEnter}
       onChassisLeave={onChassisLeave}
       pressed={pressed}
-      onPress={() => setPressed(true)}
+      onPress={() => {
+        setPressed(true);
+        onStomp();
+      }}
       onRelease={() => {
         if (pressed) {
           setPressed(false);

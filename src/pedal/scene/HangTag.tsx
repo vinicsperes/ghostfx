@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { shifted } from "../../data/accent";
 
 export function HangTag() {
   const { tex, redraw } = useMemo(() => {
@@ -18,27 +17,52 @@ export function HangTag() {
       dim = "#2b2720";
     const UNB = "'Unbounded', sans-serif";
     const MONO = "'Space Mono', monospace";
-    const rr = (x: number, y: number, w: number, h: number, r: number) => {
+    const tagShape = () => {
+      const ch = 64;
+      const r = 27;
       ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.arcTo(x + w, y, x + w, y + h, r);
-      ctx.arcTo(x + w, y + h, x, y + h, r);
-      ctx.arcTo(x, y + h, x, y, r);
-      ctx.arcTo(x, y, x + w, y, r);
+      ctx.moveTo(8 + ch, 8);
+      ctx.lineTo(504 - ch, 8);
+      ctx.lineTo(504, 8 + ch);
+      ctx.lineTo(504, 632 - r);
+      ctx.arcTo(504, 632, 504 - r, 632, r);
+      ctx.lineTo(8 + r, 632);
+      ctx.arcTo(8, 632, 8, 632 - r, r);
+      ctx.lineTo(8, 8 + ch);
       ctx.closePath();
     };
+
+    const BARS = [
+      3, 1, 2, 4, 1, 2, 1, 3, 2, 1, 4, 2, 1, 1, 3, 2, 4, 1, 2, 3, 1, 2, 1, 4, 2, 3, 1, 2, 4, 1, 1,
+      2, 3, 1, 2, 4,
+    ];
 
     const redraw = (hover = false) => {
       ctx.setTransform(TAG_DPR, 0, 0, TAG_DPR, 0, 0);
       ctx.clearRect(0, 0, 512, 640);
       ctx.letterSpacing = "0px";
 
-      rr(8, 8, 496, 624, 27);
+      tagShape();
       ctx.fillStyle = card;
       ctx.fill();
       ctx.strokeStyle = ink;
       ctx.lineWidth = 5;
       ctx.stroke();
+
+      ctx.save();
+      ctx.translate(256, 152);
+      ctx.rotate(-0.055);
+      ctx.textAlign = "center";
+      ctx.font = `700 40px ${MONO}`;
+      ctx.fillStyle = dim;
+      ctx.fillText("$199", 0, 0);
+      ctx.strokeStyle = "#c0392b";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(-62, -10);
+      ctx.lineTo(62, -16);
+      ctx.stroke();
+      ctx.restore();
 
       ctx.textAlign = "center";
       ctx.fillStyle = ink;
@@ -51,30 +75,44 @@ export function HangTag() {
       ctx.fillText("OPEN SOURCE · ZERO INSTALL", 256, 320);
       ctx.letterSpacing = "0px";
 
+      {
+        let bx = 128;
+        ctx.fillStyle = ink;
+        for (const w of BARS) {
+          ctx.fillRect(bx, 356, w * 2, 48);
+          bx += w * 2 + 3;
+        }
+        ctx.font = `700 14px ${MONO}`;
+        ctx.fillStyle = dim;
+        ctx.letterSpacing = "3px";
+        ctx.fillText("GFX-001 · MK.I", 256, 428);
+        ctx.letterSpacing = "0px";
+      }
+
       ctx.fillStyle = ink;
-      ctx.fillRect(72, 430, 368, 4);
+      ctx.fillRect(72, 452, 368, 4);
       ctx.font = `700 18px ${MONO}`;
       ctx.fillStyle = dim;
       ctx.letterSpacing = "6px";
-      ctx.fillText("SOURCE", 256, 468);
+      ctx.fillText("SOURCE", 256, 490);
       ctx.letterSpacing = "0px";
       ctx.font = `700 28px ${MONO}`;
       if (hover) {
-        ctx.fillStyle = shifted("#10a042");
-        ctx.shadowColor = shifted("#41ff77");
+        ctx.fillStyle = "#10a042";
+        ctx.shadowColor = "#41ff77";
         ctx.shadowBlur = 20;
       } else {
         ctx.fillStyle = ink;
       }
-      ctx.fillText("github.com/vinicsperes", 256, 514);
+      ctx.fillText("github.com/vinicsperes", 256, 534);
       ctx.shadowBlur = 0;
       ctx.fillStyle = ink;
-      ctx.fillRect(72, 544, 368, 4);
+      ctx.fillRect(72, 562, 368, 4);
 
       {
-        const gs = 0.75;
+        const gs = 0.62;
         const gx = 256 - 32 * gs;
-        const gy = 571 - 32 * gs;
+        const gy = 592 - 32 * gs;
         ctx.save();
         ctx.translate(gx, gy);
         ctx.scale(gs, gs);
@@ -84,13 +122,13 @@ export function HangTag() {
             "M16 51 L16 28 C16 16 23 9 32 9 C41 9 48 16 48 28 L48 51 Q44 47 40 51 Q36 55 32 51 Q28 47 24 51 Q20 55 16 51 Z",
           ),
         );
-        ctx.fillStyle = shifted("#41ff77");
+        ctx.fillStyle = "#41ff77";
         ctx.globalAlpha = 0.26;
         ctx.beginPath();
         ctx.arc(36, 27, 9, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1;
-        ctx.fillStyle = shifted("#10a042");
+        ctx.fillStyle = "#10a042";
         ctx.beginPath();
         ctx.arc(36, 27, 5.5, 0, Math.PI * 2);
         ctx.fill();
@@ -136,14 +174,15 @@ export function HangTag() {
 
   const stringGeo = useMemo(() => {
     const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0.0, 0.5, 1.08),
-      new THREE.Vector3(0.05, 0.5, 1.4),
-      new THREE.Vector3(0.1, 0.45, 1.62),
-      new THREE.Vector3(0.117, 0.36, 1.648),
-      new THREE.Vector3(0.121, 0.295, 1.642),
-      new THREE.Vector3(0.123, 0.262, 1.61),
+      new THREE.Vector3(0.0, 0.51, 1.202),
+      new THREE.Vector3(0.05, 0.505, 1.38),
+      new THREE.Vector3(0.08, 0.5, 1.52),
+      new THREE.Vector3(0.105, 0.44, 1.66),
+      new THREE.Vector3(0.118, 0.34, 1.683),
+      new THREE.Vector3(0.121, 0.295, 1.675),
+      new THREE.Vector3(0.123, 0.262, 1.65),
     ]);
-    return new THREE.TubeGeometry(curve, 32, 0.006, 6, false);
+    return new THREE.TubeGeometry(curve, 32, 0.0075, 8, false);
   }, []);
 
   const EYELET_LOCAL_Y = 0.625 * (0.5 - 54 / 640);
@@ -177,9 +216,21 @@ export function HangTag() {
       }}
     >
       <mesh geometry={stringGeo}>
-        <meshStandardMaterial color="#cfc8b4" roughness={0.8} metalness={0} />
+        <meshStandardMaterial color="#bfb397" roughness={0.9} metalness={0} />
       </mesh>
-      <group ref={pivot} position={[0.123, 0.269, 1.62]} rotation={[0, 0, -0.07]}>
+      <mesh position={[0, 0.515, 1.05]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.152, 0.006, 8, 40]} />
+        <meshStandardMaterial color="#bfb397" roughness={0.9} metalness={0} />
+      </mesh>
+      <mesh position={[0.015, 0.512, 1.198]}>
+        <sphereGeometry args={[0.01, 10, 8]} />
+        <meshStandardMaterial color="#b3a688" roughness={0.95} metalness={0} />
+      </mesh>
+      <mesh position={[0.122, 0.275, 1.668]}>
+        <sphereGeometry args={[0.0125, 12, 10]} />
+        <meshStandardMaterial color="#b3a688" roughness={0.95} metalness={0} />
+      </mesh>
+      <group ref={pivot} position={[0.123, 0.269, 1.66]} rotation={[0, 0, -0.07]}>
         <mesh position={[0, -EYELET_LOCAL_Y, 0]}>
           <planeGeometry args={[0.5, 0.625]} />
           <meshStandardMaterial

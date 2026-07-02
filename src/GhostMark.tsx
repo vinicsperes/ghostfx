@@ -1,7 +1,6 @@
 import type { CSSProperties } from "react";
-import { shifted } from "./data/accent";
 
-const DEFAULT_LED = shifted("#41ff77");
+const DEFAULT_LED = "#41ff77";
 
 const BODY =
   "M16 51 L16 28 C16 16 23 9 32 9 C41 9 48 16 48 28 L48 51 Q44 47 40 51 Q36 55 32 51 Q28 47 24 51 Q20 55 16 51 Z";

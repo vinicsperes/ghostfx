@@ -25,9 +25,11 @@ export function PresetCard({
         borderRadius: 14,
         cursor: "pointer",
         color: isActive ? color : "rgba(184,204,192,0.6)",
-        border: `1.5px solid ${isActive ? color : "rgba(231,228,220,0.13)"}`,
+        border: `2px solid ${isActive ? color : "rgba(231,228,220,0.13)"}`,
         background: isActive ? "rgba(9,12,10,0.92)" : idle,
-        boxShadow: isActive ? `0 0 18px ${color}3d, inset 0 0 22px ${color}18` : "none",
+        boxShadow: isActive
+          ? `0 0 0 1px ${color}55, 0 0 22px ${color}55, inset 0 0 22px ${color}18`
+          : "none",
         transition:
           "color 260ms ease, border-color 260ms ease, background 260ms ease, box-shadow 260ms ease, transform 200ms ease",
       }}

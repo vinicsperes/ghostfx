@@ -72,17 +72,14 @@ export function MasterKnob3D({
   const masterTransRef = useRef({ active: false, from: 0, to: 0, progress: 0 });
   const masterTransTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const initialValueRef = useRef(value);
   useEffect(() => {
     const g = masterGroupRef.current;
-    if (g) g.rotation.y = (3 / 4) * Math.PI - initialValueRef.current * (3 / 2) * Math.PI;
+    if (g) g.rotation.y = (3 / 4) * Math.PI;
   }, []);
 
   useEffect(() => {
     if (bootTrigger > masterAnimRef.current.seenTrigger) {
       masterAnimRef.current.seenTrigger = bootTrigger;
-      const g = masterGroupRef.current;
-      if (g) g.rotation.y = 0;
       const t = setTimeout(() => {
         masterAnimRef.current.targetValue = value;
         masterAnimRef.current.progress = 0;
@@ -97,7 +94,8 @@ export function MasterKnob3D({
     if (masterTransTimeoutRef.current) clearTimeout(masterTransTimeoutRef.current);
     masterTransTimeoutRef.current = setTimeout(() => {
       const g = masterGroupRef.current;
-      if (!g || masterAnimRef.current.progress >= 0) return;
+      if (!g || masterAnimRef.current.progress >= 0 || masterAnimRef.current.seenTrigger === 0)
+        return;
       const from = g.rotation.y;
       if (Math.abs(from - targetAngle) < 0.01) return;
       masterTransRef.current = { active: true, from, to: targetAngle, progress: 0 };
@@ -110,6 +108,10 @@ export function MasterKnob3D({
   useFrame((_, delta) => {
     const g = masterGroupRef.current;
     if (!g) return;
+    if (dragRef.current) {
+      g.rotation.y = (3 / 4) * Math.PI - value * (3 / 2) * Math.PI;
+      return;
+    }
     if (masterAnimRef.current.progress >= 0) {
       masterAnimRef.current.progress = Math.min(1, masterAnimRef.current.progress + delta / 1.1);
       const p = easeOutBack(masterAnimRef.current.progress);
@@ -143,11 +145,13 @@ export function MasterKnob3D({
       }}
       onWheel={(e: ThreeEvent<WheelEvent>) => {
         e.stopPropagation();
+        if (masterAnimRef.current.seenTrigger === 0) masterAnimRef.current.seenTrigger = 1;
         const step = e.deltaY < 0 ? 0.04 : -0.04;
         onChange(Math.max(0, Math.min(1, value + step)));
       }}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
+        if (masterAnimRef.current.seenTrigger === 0) masterAnimRef.current.seenTrigger = 1;
         const now = performance.now();
         if (now - lastClickRef.current < 280) {
           onChange(0.5);

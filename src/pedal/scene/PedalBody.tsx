@@ -1,6 +1,7 @@
+import { useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import { RoundedBox, Svg } from "@react-three/drei";
-import { FrontSide } from "three";
-import { shifted } from "../../data/accent";
+import { FrontSide, MathUtils, type Group, type PointLight } from "three";
 import { Wire, CableClip, SideJack, PotBody, SwitchBody, Battery9V } from "../parts";
 import { Knob3D, MasterKnob3D } from "../knobs";
 import { Internals } from "../internals";
@@ -24,11 +25,11 @@ type PresetVisual = {
 };
 const PRESET_VISUALS: PresetVisual[] = [
   {
-    pickguard: { top: "#0a0a0e", mid: shifted("#1a3520"), base: "#06060a", screw: "#3a3a48" },
+    pickguard: { top: "#0a0a0e", mid: "#1a3520", base: "#06060a", screw: "#3a3a48" },
     knobTheme: "dark",
-    silk: shifted("#20f040"),
+    silk: "#20f040",
     ink: "#e0e0ec",
-    knobAccent: shifted("#16a030"),
+    knobAccent: "#16a030",
     showArc: false,
   },
   {
@@ -63,6 +64,14 @@ const PRESET_VISUALS: PresetVisual[] = [
     knobAccent: "#d46a9f",
     showArc: false,
   },
+  {
+    pickguard: { top: "#0f0614", mid: "#210a26", base: "#070310", screw: "#3c1648" },
+    knobTheme: "dark",
+    silk: "#f02a96",
+    ink: "#f8c8e6",
+    knobAccent: "#d8228a",
+    showArc: false,
+  },
 ];
 
 export function PedalBody({
@@ -74,7 +83,7 @@ export function PedalBody({
   knobEcho,
   knobTone,
   knobReverb,
-  knobFlanger,
+  knobMod,
   knobMaster,
   onKnobChange,
   setControlsEnabled,
@@ -95,10 +104,10 @@ export function PedalBody({
   knobEcho: number;
   knobTone: number;
   knobReverb: number;
-  knobFlanger: number;
+  knobMod: number;
   knobMaster: number;
   onKnobChange: (
-    knob: "drive" | "echo" | "tone" | "reverb" | "flanger" | "master",
+    knob: "drive" | "echo" | "tone" | "reverb" | "mod" | "master",
     value: number,
   ) => void;
   setControlsEnabled: (enabled: boolean) => void;
@@ -117,6 +126,18 @@ export function PedalBody({
   const knobAccent = v?.knobAccent ?? palette.accent;
   const knobTheme: "dark" | "cream" = v?.knobTheme ?? "dark";
 
+  const rootRef = useRef<Group>(null);
+  const glowRef = useRef<PointLight>(null);
+  useFrame((_, delta) => {
+    const g = rootRef.current;
+    if (g) {
+      g.position.y = MathUtils.damp(g.position.y, pressed ? -0.011 : 0, 9, delta);
+      g.rotation.x = MathUtils.damp(g.rotation.x, pressed ? 0.009 : 0, 9, delta);
+    }
+    const gl = glowRef.current;
+    if (gl) gl.intensity = MathUtils.damp(gl.intensity, ledActive ? 0.55 : 0, 5, delta);
+  });
+
   const W = 2.1;
   const H = 0.95;
   const L = 3.2;
@@ -128,13 +149,22 @@ export function PedalBody({
     echo: [0.0, H / 2, -1.05] as [number, number, number],
     reverb: [0.62, H / 2, -1.05] as [number, number, number],
     tone: [-0.62, H / 2, -0.52] as [number, number, number],
-    flanger: [0.0, H / 2, -0.52] as [number, number, number],
+    mod: [0.0, H / 2, -0.52] as [number, number, number],
     master: [0.62, H / 2, -0.52] as [number, number, number],
   };
 
   return (
-    <group>
+    <group ref={rootRef}>
       <Internals width={W} length={L} height={H} />
+
+      <pointLight
+        ref={glowRef}
+        position={[0, 0.18, 0.2]}
+        color={ledColor}
+        intensity={0}
+        distance={2.4}
+        decay={2}
+      />
 
       <RoundedBox
         position={[0, 0, 0]}
@@ -160,6 +190,20 @@ export function PedalBody({
       <SideJack position={[-W / 2 - 0.04, 0.08, -0.6]} metal={palette.metal} />
       <SideJack position={[W / 2 + 0.04, 0.08, -0.6]} metal={palette.metal} />
       <HangTag />
+
+      {(
+        [
+          [-0.8, -1.25],
+          [0.8, -1.25],
+          [0.8, 1.25],
+          [-0.8, 1.25],
+        ] as [number, number][]
+      ).map(([fx, fz], i) => (
+        <mesh key={`foot${i}`} position={[fx, -H / 2 - 0.02, fz]} castShadow>
+          <cylinderGeometry args={[0.085, 0.095, 0.04, 20]} />
+          <meshStandardMaterial color="#0e0e10" roughness={0.9} metalness={0} />
+        </mesh>
+      ))}
 
       <group position={[0, H / 2 + 0.02, 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
         <Svg
@@ -254,7 +298,7 @@ export function PedalBody({
         REVERB
       </LabelText>
       <LabelText
-        position={[kp.flanger[0], H / 2 + 0.005, kp.flanger[2] + 0.22]}
+        position={[kp.mod[0], H / 2 + 0.005, kp.mod[2] + 0.22]}
         rotation={[-Math.PI / 2, 0, 0]}
         fontSize={0.062}
         color={silkColor}
@@ -262,7 +306,7 @@ export function PedalBody({
         outlineWidth="1%"
         anchorX="center"
       >
-        FLANGER
+        MOD
       </LabelText>
       <LabelText
         position={[kp.master[0], H / 2 + 0.005, kp.master[2] + 0.22]}
@@ -274,6 +318,31 @@ export function PedalBody({
         anchorX="center"
       >
         VOLUME
+      </LabelText>
+
+      <LabelText
+        position={[W / 2 + 0.002, 0.33, -0.6]}
+        rotation={[0, Math.PI / 2, 0]}
+        fontSize={0.062}
+        color={silkColor}
+        outlineColor={silkColor}
+        outlineWidth="1%"
+        anchorX="center"
+        letterSpacing={0.14}
+      >
+        OUT
+      </LabelText>
+      <LabelText
+        position={[-W / 2 - 0.002, 0.33, -0.6]}
+        rotation={[0, -Math.PI / 2, 0]}
+        fontSize={0.062}
+        color={silkColor}
+        outlineColor={silkColor}
+        outlineWidth="1%"
+        anchorX="center"
+        letterSpacing={0.14}
+      >
+        IN
       </LabelText>
 
       <Knob3D
@@ -333,12 +402,12 @@ export function PedalBody({
         showArc={v?.showArc}
       />
       <Knob3D
-        position={kp.flanger}
-        value={knobFlanger}
-        onChange={(val) => onKnobChange("flanger", val)}
+        position={kp.mod}
+        value={knobMod}
+        onChange={(val) => onKnobChange("mod", val)}
         ink={inkColor}
         accent={knobAccent}
-        label="Flanger"
+        label="Mod"
         setControlsEnabled={setControlsEnabled}
         bootTrigger={bootTrigger}
         delay={0.32}
@@ -382,24 +451,21 @@ export function PedalBody({
             <PotBody x={kp.echo[0]} z={kp.echo[2]} topY={topY} />
             <PotBody x={kp.reverb[0]} z={kp.reverb[2]} topY={topY} />
             <PotBody x={kp.tone[0]} z={kp.tone[2]} topY={topY} />
-            <PotBody x={kp.flanger[0]} z={kp.flanger[2]} topY={topY} />
+            <PotBody x={kp.mod[0]} z={kp.mod[2]} topY={topY} />
             <PotBody x={kp.master[0]} z={kp.master[2]} topY={topY} />
             <SwitchBody x={0} z={FSZ} topY={topY} />
             <Battery9V />
 
             <Wire
               start={[0.32, -0.26, -0.7]}
-              mid={[0.5, -0.14, -1.32]}
-              end={[0.5, PAD_Y, -1.31]}
+              mid={[0.41, -0.12, -0.76]}
+              end={[0.45, PAD_Y, -0.8]}
               color="#d02020"
             />
             <Wire
               start={[0.32, -0.26, -0.48]}
-              mids={[
-                [0.43, -0.19, -0.8],
-                [0.4, -0.13, -1.18],
-              ]}
-              end={[-0.06, PAD_Y, -1.31]}
+              mid={[0.42, -0.12, -0.5]}
+              end={[0.47, PAD_Y, -0.56]}
               color="#181818"
             />
 
@@ -428,8 +494,8 @@ export function PedalBody({
               color="#e8e8e8"
             />
             <Wire
-              start={[kp.flanger[0], POT_LUG_Y, kp.flanger[2] + POT_LUG_Z]}
-              mid={[kp.flanger[0], 0.03, kp.flanger[2] + POT_LUG_Z]}
+              start={[kp.mod[0], POT_LUG_Y, kp.mod[2] + POT_LUG_Z]}
+              mid={[kp.mod[0], 0.03, kp.mod[2] + POT_LUG_Z]}
               end={[0.02, PAD_Y, -0.6]}
               color="#3a6ad0"
             />
@@ -452,7 +518,8 @@ export function PedalBody({
                 [0.8, -0.01, -0.45],
                 [0.8, -0.02, 0.3],
                 [0.8, -0.02, 0.8],
-                [0.42, -0.01, 1.0],
+                [0.46, -0.01, 1.02],
+                [0.16, -0.01, 1.08],
               ]}
               end={[0.08, SW_LUG_Y, FSZ - 0.08]}
               color="#e8e8e8"
@@ -467,6 +534,7 @@ export function PedalBody({
             />
             <CableClip x={0.8} z={-0.2} />
             <CableClip x={0.8} z={0.4} />
+            <CableClip x={0.8} z={0.72} />
             <Wire
               start={[0.08, SW_LUG_Y, FSZ + 0.08]}
               end={[-0.08, SW_LUG_Y, FSZ + 0.08]}

@@ -1,7 +1,6 @@
-import { shiftedRgb } from "../data/accent";
-
-const [GR, GG, GB] = shiftedRgb("#05b920");
-const [DR, DG, DB] = shiftedRgb("#0a3c14");
+const [GR, GG, GB] = [5, 185, 32];
+const [SR, SG, SB] = [14, 90, 74];
+const [DR, DG, DB] = [10, 60, 20];
 
 export const BG_VS = `attribute vec2 a_pos; void main(){gl_Position=vec4(a_pos,0.,1.);}`;
 
@@ -18,13 +17,16 @@ void main(){
   float pulse=0.82+0.18*sin(u_t*0.90);
   float c=smoothstep(-0.30,1.0,s)*pulse;
   float thresh=mix(1.0,0.30,u_blend);
+  float alt=sin(r*22.0-u_t*0.80)*.5+.5;
   vec4 col;
   if(c>thresh){
     float b=pow((c-0.30)/0.70,0.5);
-    col=vec4(b*118./255., b*30./255., b*205./255., b*0.90);
+    vec3 violet=vec3(118.,30.,205.)/255.;
+    vec3 abyss=vec3(186.,34.,150.)/255.;
+    col=vec4(mix(violet,abyss,alt*.6)*b, b*0.90);
   } else {
-    float d=(s*0.5+0.5)*0.14;
-    col=vec4(d*12./255., d*3./255., d*24./255., 1.0);
+    float d=(s*0.5+0.5)*(0.14+0.10*alt);
+    col=vec4(d*(14.+alt*20.)/255., d*3./255., d*(26.+alt*16.)/255., 1.0);
   }
   gl_FragColor=col;
 }`;
@@ -120,15 +122,60 @@ void main(){
               sin(p.x*2.2-q.y*2.1-u_t*.08)+sin(p.y*3.1+q.x*1.9+u_t*.10));
   float v=length(r);
   float c=abs(cos(v*4.2));
+  float c2=abs(cos(v*4.2+1.57));
   float thresh=mix(1.0,0.76,u_blend);
+  float t2=mix(1.0,0.93,u_blend);
   vec4 col;
   if(c>thresh){float b=pow((c-.76)/.24,.55);col=vec4(b*${GR}./255.,b*${GG}./255.,b*${GB}./255.,b*.82);}
+  else if(c2>t2){float b2=pow((c2-.93)/.07,.8)*.30;col=vec4(b2*${SR}./255.,b2*${SG}./255.,b2*${SB}./255.,b2);}
   else{float d=(cos(v*1.8)+1.)*.12;col=vec4(d*${DR}./2550.,d*${DG}./2550.,d*${DB}./2550.,1.);}
   gl_FragColor=col;
 }`;
 
-export const PRESET_FS = [GHOST_FS, CLEAN_FS, FROST_FS, HEAVY_FS, HAZE_FS];
-export const PRESET_OPACITY = [0.7, 0.65, 0.74, 0.82, 0.88];
+export const FEVER_FS = `
+#ifdef GL_OES_standard_derivatives
+#extension GL_OES_standard_derivatives : enable
+#endif
+precision mediump float;
+uniform float u_t; uniform vec2 u_res; uniform float u_blend;
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res;
+  vec2 p=(uv-0.5)*vec2(u_res.x/u_res.y,1.0);
+  vec2 q=abs(p);
+  vec2 w=vec2(sin(q.y*4.0+u_t*.35)+sin(q.x*6.3-u_t*.28),
+              sin(q.x*5.1-u_t*.30)+sin(q.y*3.7+u_t*.40));
+  vec2 g=q+0.13*w;
+  float curl=sin(g.y*14.0+w.x*1.6-u_t*.9)*2.2;
+  float strands=abs(sin(g.x*80.0+curl));
+  float phase=sin(g.y*14.0+sin(g.x*9.0)*1.8-u_t*2.2);
+  float breaks=smoothstep(-.75,.15,phase);
+  float c=strands*breaks;
+  float thresh=mix(1.0,0.45,u_blend);
+  vec4 col;
+#ifdef GL_OES_standard_derivatives
+  float aa=fwidth(c)*1.5;
+#else
+  float aa=.02;
+#endif
+  if(c>thresh-aa){
+    float edge=smoothstep(thresh-aa,thresh+aa+.05,c);
+    float hueMix=.5+.5*sin(g.x*6.0+g.y*3.5+w.y*.8-u_t*.6);
+    float grad=smoothstep(-.6,1.0,phase);
+    vec3 roxo=vec3(122.,38.,215.)/255.;
+    vec3 magenta=vec3(240.,42.,150.)/255.;
+    vec3 tint=mix(roxo,magenta,hueMix)*(0.74+0.34*grad);
+    float d=(sin(g.x*3.0+g.y*2.0)+1.)*.5;
+    vec3 bg=vec3((9.+d*7.)/255., (4.+d*3.)/255., (24.+d*12.)/255.);
+    col=vec4(mix(bg,tint,edge),1.0);
+  } else {
+    float d=(sin(g.x*3.0+g.y*2.0)+1.)*.5;
+    col=vec4((9.+d*7.)/255., (4.+d*3.)/255., (24.+d*12.)/255., 1.0);
+  }
+  gl_FragColor=col;
+}`;
+
+export const PRESET_FS = [GHOST_FS, CLEAN_FS, FROST_FS, HEAVY_FS, HAZE_FS, FEVER_FS];
+export const PRESET_OPACITY = [0.7, 0.65, 0.74, 0.82, 0.88, 0.82];
 
 export type GlState = {
   tLoc: WebGLUniformLocation;

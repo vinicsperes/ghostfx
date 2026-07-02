@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { shifted } from "./data/accent";
 
 const RED = "#f53e3e";
-const GREEN = shifted("#20f040");
+const GREEN = "#20f040";
 
 const pt = {
   badge: "ATENÇÃO",

@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createDistortionCurve,
+  driveOversample,
   mapDrivePreGain,
-  mapDelayTime,
-  mapFeedback,
-  mapFlangerDepth,
-  mapFlangerFb,
-  mapFlangerMix,
+  synthDriveTrim,
 } from "../audio/dsp";
+import { DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
 
 export const NOTE_KEYS: Record<string, { freq: number; note: string; black?: true }> = {
   a: { freq: 261.63, note: "C4" },
@@ -30,15 +28,21 @@ export const NOTE_KEYS: Record<string, { freq: number; note: string; black?: tru
 
 type SynthNodes = {
   input: GainNode;
+  midEmphasis: BiquadFilterNode;
   preGain: GainNode;
   drive: WaveShaperNode;
+  driveTrim: GainNode;
   tone: BiquadFilterNode;
   delay: DelayNode;
   feedback: GainNode;
   wet: GainNode;
-  flangerDepth: GainNode;
-  flangerFb: GainNode;
-  flangerWet: GainNode;
+  modLfo: OscillatorNode;
+  modDelay: DelayNode;
+  modDepth: GainNode;
+  modDamp: BiquadFilterNode;
+  modFb: GainNode;
+  modWet: GainNode;
+  revDamp: BiquadFilterNode;
   reverbWet: GainNode;
   master: GainNode;
 };
@@ -48,30 +52,37 @@ export function useSynth({
   echo,
   tone,
   reverb,
-  flanger,
+  mod,
   masterVolume,
+  presetIdx = 0,
 }: {
   drive: number;
   echo: number;
   tone: number;
   reverb: number;
-  flanger: number;
+  mod: number;
   masterVolume: number;
+  presetIdx?: number | null;
 }) {
   const ctxRef = useRef<AudioContext | null>(null);
   const nodesRef = useRef<SynthNodes | null>(null);
   const activeRef = useRef(new Map<string, { osc: OscillatorNode; env: GainNode }>());
   const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
 
-  const paramsRef = useRef({ drive, echo, tone, reverb, flanger, masterVolume });
+  const paramsRef = useRef({ drive, echo, tone, reverb, mod, masterVolume, presetIdx });
   useEffect(() => {
-    paramsRef.current = { drive, echo, tone, reverb, flanger, masterVolume };
-  }, [drive, echo, tone, reverb, flanger, masterVolume]);
+    paramsRef.current = { drive, echo, tone, reverb, mod, masterVolume, presetIdx };
+  }, [drive, echo, tone, reverb, mod, masterVolume, presetIdx]);
 
   const ensureInit = useCallback(() => {
     if (ctxRef.current && nodesRef.current) return { ctx: ctxRef.current, nodes: nodesRef.current };
 
     const p = paramsRef.current;
+    const idx = p.presetIdx ?? 0;
+    const dp = DRIVES[idx] ?? DRIVES[0];
+    const dl = DELAYS[idx] ?? DELAYS[0];
+    const mp = MODS[idx] ?? MODS[0];
+    const rv = REVERBS[idx] ?? REVERBS[0];
     const ctx = new AudioContext();
     ctxRef.current = ctx;
 
@@ -80,51 +91,54 @@ export function useSynth({
 
     const midEmphasis = ctx.createBiquadFilter();
     midEmphasis.type = "peaking";
-    midEmphasis.frequency.value = 700;
+    midEmphasis.frequency.value = dp.midHz;
     midEmphasis.Q.value = 0.8;
-    midEmphasis.gain.value = 4;
+    midEmphasis.gain.value = dp.midGain + 2;
 
     const preGain = ctx.createGain();
     preGain.gain.value = mapDrivePreGain(p.drive);
 
     const driveNode = ctx.createWaveShaper();
-    driveNode.curve = createDistortionCurve(p.drive);
-    driveNode.oversample = p.drive >= 0.6 ? "2x" : "none";
+    driveNode.curve = createDistortionCurve(p.drive, dp.shape);
+    driveNode.oversample = driveOversample(p.drive, dp.shape);
+
+    const driveTrim = ctx.createGain();
+    driveTrim.gain.value = synthDriveTrim(p.drive, dp.shape);
 
     const toneFilter = ctx.createBiquadFilter();
     toneFilter.type = "lowpass";
-    toneFilter.frequency.value = 500 * Math.pow(16, p.tone);
+    toneFilter.frequency.value = 600 * Math.pow(20, p.tone);
 
     const delayNode = ctx.createDelay(2.0);
-    delayNode.delayTime.value = mapDelayTime(p.echo);
+    delayNode.delayTime.value = dl.timeMin + p.echo * (dl.timeMax - dl.timeMin);
 
     const feedbackGain = ctx.createGain();
-    feedbackGain.gain.value = mapFeedback(p.echo);
+    feedbackGain.gain.value = dl.fbMin + p.echo * (dl.fbMax - dl.fbMin);
 
     const wetGain = ctx.createGain();
     wetGain.gain.value = p.echo * 0.5;
 
-    const flangerDelay = ctx.createDelay(0.05);
-    flangerDelay.delayTime.value = 0.0025;
-    const flangerLfo = ctx.createOscillator();
-    flangerLfo.type = "sine";
-    flangerLfo.frequency.value = 0.4;
-    const flangerDepth = ctx.createGain();
-    flangerDepth.gain.value = mapFlangerDepth(p.flanger);
-    flangerLfo.connect(flangerDepth);
-    flangerDepth.connect(flangerDelay.delayTime);
-    flangerLfo.start();
-    const flangerDamp = ctx.createBiquadFilter();
-    flangerDamp.type = "lowpass";
-    flangerDamp.frequency.value = 2800;
-    const flangerFb = ctx.createGain();
-    flangerFb.gain.value = mapFlangerFb(p.flanger);
-    const flangerWet = ctx.createGain();
-    flangerWet.gain.value = mapFlangerMix(p.flanger);
+    const modDelay = ctx.createDelay(0.05);
+    modDelay.delayTime.value = mp.base;
+    const modLfo = ctx.createOscillator();
+    modLfo.type = "sine";
+    modLfo.frequency.value = mp.rate;
+    const modDepth = ctx.createGain();
+    modDepth.gain.value = mp.depthMin + p.mod * (mp.depthMax - mp.depthMin);
+    modLfo.connect(modDepth);
+    modDepth.connect(modDelay.delayTime);
+    modLfo.start();
+    const modDamp = ctx.createBiquadFilter();
+    modDamp.type = "lowpass";
+    modDamp.frequency.value = mp.damp;
+    const modFb = ctx.createGain();
+    modFb.gain.value = p.mod * mp.fbMax;
+    const modWet = ctx.createGain();
+    modWet.gain.value = p.mod * mp.mixMax;
 
     const reverbDamping = ctx.createBiquadFilter();
     reverbDamping.type = "lowpass";
-    reverbDamping.frequency.value = 3200;
+    reverbDamping.frequency.value = Math.min(8000, rv.tone);
     const rev1 = ctx.createDelay(0.1);
     rev1.delayTime.value = 0.0233;
     const revFB1 = ctx.createGain();
@@ -153,19 +167,20 @@ export function useSynth({
     input.connect(midEmphasis);
     midEmphasis.connect(preGain);
     preGain.connect(driveNode);
-    driveNode.connect(toneFilter);
+    driveNode.connect(driveTrim);
+    driveTrim.connect(toneFilter);
     toneFilter.connect(master);
     toneFilter.connect(delayNode);
     delayNode.connect(feedbackGain);
     feedbackGain.connect(delayNode);
     feedbackGain.connect(wetGain);
     wetGain.connect(master);
-    toneFilter.connect(flangerDelay);
-    flangerDelay.connect(flangerDamp);
-    flangerDamp.connect(flangerFb);
-    flangerFb.connect(flangerDelay);
-    flangerDamp.connect(flangerWet);
-    flangerWet.connect(master);
+    toneFilter.connect(modDelay);
+    modDelay.connect(modDamp);
+    modDamp.connect(modFb);
+    modFb.connect(modDelay);
+    modDamp.connect(modWet);
+    modWet.connect(master);
     toneFilter.connect(reverbDamping);
     reverbDamping.connect(rev1);
     rev1.connect(revFB1);
@@ -185,15 +200,21 @@ export function useSynth({
 
     const nodes: SynthNodes = {
       input,
+      midEmphasis,
       preGain,
       drive: driveNode,
+      driveTrim,
       tone: toneFilter,
       delay: delayNode,
       feedback: feedbackGain,
       wet: wetGain,
-      flangerDepth,
-      flangerFb,
-      flangerWet,
+      modLfo,
+      modDelay,
+      modDepth,
+      modDamp,
+      modFb,
+      modWet,
+      revDamp: reverbDamping,
       reverbWet,
       master,
     };
@@ -205,20 +226,32 @@ export function useSynth({
     const n = nodesRef.current;
     const ctx = ctxRef.current;
     if (!n || !ctx) return;
+    const idx = presetIdx ?? 0;
+    const dp = DRIVES[idx] ?? DRIVES[0];
+    const dl = DELAYS[idx] ?? DELAYS[0];
+    const mp = MODS[idx] ?? MODS[0];
+    const rv = REVERBS[idx] ?? REVERBS[0];
     const t = ctx.currentTime;
     n.preGain.gain.setTargetAtTime(mapDrivePreGain(drive), t, 0.05);
-    n.drive.curve = createDistortionCurve(drive);
-    n.drive.oversample = drive >= 0.6 ? "2x" : "none";
-    n.tone.frequency.setTargetAtTime(500 * Math.pow(16, tone), t, 0.05);
-    n.delay.delayTime.setTargetAtTime(mapDelayTime(echo), t, 0.05);
-    n.feedback.gain.setTargetAtTime(mapFeedback(echo), t, 0.05);
+    n.drive.curve = createDistortionCurve(drive, dp.shape);
+    n.drive.oversample = driveOversample(drive, dp.shape);
+    n.driveTrim.gain.setTargetAtTime(synthDriveTrim(drive, dp.shape), t, 0.05);
+    n.midEmphasis.frequency.setTargetAtTime(dp.midHz, t, 0.05);
+    n.midEmphasis.gain.setTargetAtTime(dp.midGain + 2, t, 0.05);
+    n.tone.frequency.setTargetAtTime(600 * Math.pow(20, tone), t, 0.05);
+    n.delay.delayTime.setTargetAtTime(dl.timeMin + echo * (dl.timeMax - dl.timeMin), t, 0.05);
+    n.feedback.gain.setTargetAtTime(dl.fbMin + echo * (dl.fbMax - dl.fbMin), t, 0.05);
     n.wet.gain.setTargetAtTime(echo * 0.5, t, 0.05);
+    n.revDamp.frequency.setTargetAtTime(Math.min(8000, rv.tone), t, 0.05);
     n.reverbWet.gain.setTargetAtTime(reverb * 0.5, t, 0.05);
-    n.flangerDepth.gain.setTargetAtTime(mapFlangerDepth(flanger), t, 0.05);
-    n.flangerFb.gain.setTargetAtTime(mapFlangerFb(flanger), t, 0.05);
-    n.flangerWet.gain.setTargetAtTime(mapFlangerMix(flanger), t, 0.05);
+    n.modLfo.frequency.setTargetAtTime(mp.rate, t, 0.1);
+    n.modDelay.delayTime.setTargetAtTime(mp.base, t, 0.1);
+    n.modDamp.frequency.setTargetAtTime(mp.damp, t, 0.05);
+    n.modDepth.gain.setTargetAtTime(mp.depthMin + mod * (mp.depthMax - mp.depthMin), t, 0.05);
+    n.modFb.gain.setTargetAtTime(mod * mp.fbMax, t, 0.05);
+    n.modWet.gain.setTargetAtTime(mod * mp.mixMax, t, 0.05);
     n.master.gain.setTargetAtTime(masterVolume * 0.55, t, 0.05);
-  }, [drive, echo, tone, reverb, flanger, masterVolume]);
+  }, [drive, echo, tone, reverb, mod, masterVolume, presetIdx]);
 
   const playNote = useCallback(
     (key: string, freq: number) => {

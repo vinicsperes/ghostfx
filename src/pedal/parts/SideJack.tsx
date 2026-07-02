@@ -30,6 +30,12 @@ export function SideJack({
         <cylinderGeometry args={[0.092, 0.092, 0.14, 20]} />
         <meshStandardMaterial color={chrome} metalness={0.9} roughness={0.28} />
       </mesh>
+      {[0.01, 0.024, 0.038].map((ty, i) => (
+        <mesh key={`thr${i}`} position={[0, ty, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.093, 0.0032, 8, 28]} />
+          <meshStandardMaterial color="#b8b8be" metalness={0.85} roughness={0.35} />
+        </mesh>
+      ))}
 
       <mesh position={[0, 0.012, 0]}>
         <cylinderGeometry args={[0.115, 0.115, 0.01, 20]} />
@@ -39,6 +45,10 @@ export function SideJack({
       <mesh position={[0, -0.022, 0]} castShadow>
         <cylinderGeometry args={[0.14, 0.14, 0.05, 6]} />
         <meshStandardMaterial color={chrome} metalness={0.95} roughness={0.16} />
+      </mesh>
+      <mesh position={[0, -0.0505, 0]}>
+        <cylinderGeometry args={[0.14, 0.124, 0.011, 6]} />
+        <meshStandardMaterial color={chrome} metalness={0.95} roughness={0.2} />
       </mesh>
 
       <mesh position={[0, -0.054, 0]}>

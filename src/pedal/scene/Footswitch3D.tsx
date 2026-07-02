@@ -20,14 +20,27 @@ export function Footswitch3D({
   accent?: string;
 }) {
   const plungerRef = useRef<THREE.Group>(null);
+  const bezelMat = useRef<THREE.MeshStandardMaterial>(null);
   const yRef = useRef(0);
-  const targetY = pressed ? -0.05 : 0;
+  const vRef = useRef(0);
+  const flashRef = useRef(0);
+  const prevPressed = useRef(false);
 
   useFrame((_, delta) => {
     const g = plungerRef.current;
     if (!g) return;
-    yRef.current += (targetY - yRef.current) * Math.min(1, delta * 28);
+    const dt = Math.min(delta, 0.033);
+    const target = pressed ? -0.05 : 0;
+    const k = pressed ? 900 : 320;
+    const c = pressed ? 60 : 16;
+    vRef.current += (-k * (yRef.current - target) - c * vRef.current) * dt;
+    yRef.current += vRef.current * dt;
     g.position.y = 0.18 + yRef.current;
+
+    if (pressed && !prevPressed.current) flashRef.current = 1;
+    prevPressed.current = pressed;
+    flashRef.current = Math.max(0, flashRef.current - dt * 4);
+    if (bezelMat.current) bezelMat.current.emissiveIntensity = 0.12 + flashRef.current * 0.9;
   });
 
   return (
@@ -54,6 +67,7 @@ export function Footswitch3D({
       <mesh position={[0, 0, 0]} receiveShadow>
         <cylinderGeometry args={[0.22, 0.22, 0.02, 32]} />
         <meshStandardMaterial
+          ref={bezelMat}
           color={accent}
           roughness={0.5}
           emissive={accent}
