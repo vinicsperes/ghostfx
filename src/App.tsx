@@ -15,7 +15,18 @@ import {
   BottomBar,
   KeyboardDisplay,
   Fader,
+  WebGLFallback,
+  PresetInfo,
 } from "./components";
+
+const WEBGL_OK = (() => {
+  try {
+    const c = document.createElement("canvas");
+    return !!(c.getContext("webgl2") || c.getContext("webgl"));
+  } catch {
+    return false;
+  }
+})();
 
 function hexToRgb(h: string): [number, number, number] {
   return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
@@ -96,7 +107,23 @@ export default function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [warningDone, toggleRecording]);
-  const synth = useSynth({ drive, echo, tone, reverb, mod, masterVolume });
+
+  useEffect(() => {
+    if (!warningDone) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      const n = Number(e.key);
+      if (!Number.isInteger(n) || n < 1 || n > PRESETS.length) return;
+      const el = document.activeElement as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable))
+        return;
+      handlePresetSelect(n - 1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [warningDone, handlePresetSelect]);
+
+  const synth = useSynth({ drive, echo, tone, reverb, mod, masterVolume, presetIdx });
   const { playNote, stopNote } = synth;
 
   useEffect(() => {
@@ -126,8 +153,11 @@ export default function App() {
 
   const handleTap = useCallback(() => {
     fx.toggle();
-    setStompCount((c) => c + 1);
   }, [fx]);
+
+  const handleStomp = useCallback(() => {
+    setStompCount((c) => c + 1);
+  }, []);
 
   const isActive = fx.state === "active";
   const themeTarget = presetIdx !== null ? PRESET_META[presetIdx].color : PALETTE.accent;
@@ -169,7 +199,7 @@ export default function App() {
 
   return (
     <div className="h-screen w-full overflow-hidden relative" style={{ background: PALETTE.bg }}>
-      <LoadingScreen />
+      {WEBGL_OK && <LoadingScreen />}
       {!warningDone && (
         <WarningModal
           onDismiss={() => {
@@ -302,7 +332,8 @@ export default function App() {
             borderTopRightRadius: 18,
             borderTop: "1px solid rgba(231,228,220,0.16)",
             background: "linear-gradient(180deg,#0a0e0c,#070a09)",
-            boxShadow: "0 -10px 30px rgba(0,0,0,0.5)",
+            boxShadow: "0 -10px 30px rgba(0,0,0,0.5), 0 2px 0 #070a09",
+            marginBottom: -1,
           }}
         >
           <button
@@ -327,7 +358,7 @@ export default function App() {
             {(
               [
                 ["signal", "Signal"],
-                ["keyboard", "Teclado"],
+                ["keyboard", "Keys"],
                 ["rec", "Rec"],
               ] as const
             ).map(([key, label]) => {
@@ -414,6 +445,9 @@ export default function App() {
                     onChange={(v) => handleKnobChange("master", v)}
                     highlight
                   />
+                  <div style={{ marginTop: 12 }}>
+                    <PresetInfo presetIdx={presetIdx} accent={themeColor} />
+                  </div>
                 </div>
               )}
               {sheetTab === "keyboard" && (
@@ -443,27 +477,32 @@ export default function App() {
         </div>
       </div>
 
-      <div className="absolute inset-0 z-[2]">
-        <Pedal3D
-          ledColor={themeColor}
-          isPlaying={isActive}
-          onTap={handleTap}
-          knobDrive={drive}
-          knobEcho={echo}
-          knobTone={tone}
-          knobReverb={reverb}
-          knobMod={mod}
-          knobMaster={masterVolume}
-          onKnobChange={handleKnobChange}
-          palette={{
-            ...PALETTE,
-            accent: themeColor,
-            pedal: presetIdx !== null ? PRESET_META[presetIdx].chassis : PALETTE.pedal,
-          }}
-          presetIdx={presetIdx}
-          stompCount={stompCount}
-        />
-      </div>
+      {WEBGL_OK ? (
+        <div className="absolute inset-0 z-[2]">
+          <Pedal3D
+            ledColor={themeColor}
+            isPlaying={isActive}
+            onTap={handleTap}
+            onStomp={handleStomp}
+            knobDrive={drive}
+            knobEcho={echo}
+            knobTone={tone}
+            knobReverb={reverb}
+            knobMod={mod}
+            knobMaster={masterVolume}
+            onKnobChange={handleKnobChange}
+            palette={{
+              ...PALETTE,
+              accent: themeColor,
+              pedal: presetIdx !== null ? PRESET_META[presetIdx].chassis : PALETTE.pedal,
+            }}
+            presetIdx={presetIdx}
+            stompCount={stompCount}
+          />
+        </div>
+      ) : (
+        <WebGLFallback isActive={isActive} onTap={handleTap} accent={themeColor} />
+      )}
 
       <aside
         className="hud-scroll hidden lg:flex fixed left-0 top-0 h-full z-[25] select-none flex-col"
@@ -566,6 +605,8 @@ export default function App() {
           </p>
         </div>
 
+        <PresetInfo presetIdx={presetIdx} accent={themeColor} />
+
         {keyboardMode && (
           <div className="flex flex-col" style={{ gap: 7 }}>
             <div className="flex items-center gap-2">
@@ -574,7 +615,7 @@ export default function App() {
                 className="font-[var(--font-mono)] uppercase tracking-[0.35em]"
                 style={{ fontSize: 9, color: `${themeColor}99` }}
               >
-                Teclado
+                Keys
               </span>
               <div style={{ flex: 1, height: 1, background: `${themeColor}30` }} />
             </div>

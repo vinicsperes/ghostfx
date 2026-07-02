@@ -5,3 +5,5 @@ export { PresetCard } from "./PresetCard";
 export { BottomBar } from "./BottomBar";
 export { KeyboardDisplay } from "./KeyboardDisplay";
 export { Fader } from "./Fader";
+export { WebGLFallback } from "./WebGLFallback";
+export { PresetInfo } from "./PresetInfo";
