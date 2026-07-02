@@ -3,10 +3,10 @@ import type { DriveShape } from "../audio/dsp";
 
 export const PRESETS = [
   { name: "GHOST", drive: 0.35, echo: 0.58, tone: 0.55, reverb: 0.78, mod: 0.3, master: 0.85 },
-  { name: "DOOM", drive: 0.72, echo: 0.1, tone: 0.36, reverb: 0.3, mod: 0.12, master: 0.85 },
-  { name: "FROST", drive: 0.0, echo: 0.2, tone: 0.8, reverb: 0.45, mod: 0.75, master: 0.95 },
-  { name: "HEAVY", drive: 0.92, echo: 0.04, tone: 0.48, reverb: 0.06, mod: 0.0, master: 0.8 },
-  { name: "HAZE", drive: 0.3, echo: 0.42, tone: 0.52, reverb: 0.82, mod: 0.6, master: 0.72 },
+  { name: "DOOM", drive: 0.75, echo: 0.25, tone: 0.36, reverb: 0.35, mod: 0.1, master: 0.82 },
+  { name: "FROST", drive: 0.25, echo: 0.35, tone: 0.78, reverb: 0.4, mod: 0.65, master: 0.95 },
+  { name: "HEAVY", drive: 0.92, echo: 0.06, tone: 0.5, reverb: 0.08, mod: 0.0, master: 0.8 },
+  { name: "HAZE", drive: 0.55, echo: 0.62, tone: 0.45, reverb: 0.85, mod: 0.7, master: 0.7 },
 ] as const;
 
 export const PALETTE = {
@@ -19,11 +19,11 @@ export const PALETTE = {
 };
 
 export const PRESET_META = [
-  { color: shifted("#20f040"), word: "HAUNTED", chassis: "#0a0a10" },
-  { color: "#7d22c4", word: "OCCULT", chassis: "#0a0412" },
-  { color: "#a8c4dc", word: "GLACIER", chassis: "#080a10" },
-  { color: "#e02828", word: "HOLLOW", chassis: "#0a0202" },
-  { color: "#d46a9f", word: "ETHER", chassis: "#0c0510" },
+  { color: shifted("#20f040"), word: "HAUNTED", chassis: shifted("#07120b") },
+  { color: "#7d22c4", word: "OCCULT", chassis: "#0d0518" },
+  { color: "#a8c4dc", word: "GLACIER", chassis: "#0a1018" },
+  { color: "#e02828", word: "HOLLOW", chassis: "#120404" },
+  { color: "#d46a9f", word: "ETHER", chassis: "#140812" },
 ] as const;
 
 export const PRESET_TAGS = ["haunted", "abyssal", "glacial", "brutal", "dreamy"] as const;
