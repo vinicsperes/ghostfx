@@ -46,10 +46,12 @@ export default function PresetBg({
     if (!canvas) return;
     const gl = canvas.getContext("webgl");
     if (!gl) return;
+    gl.getExtension("OES_standard_derivatives");
     glRef.current = gl;
     const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(window.innerWidth * dpr);
+      canvas.height = Math.round(window.innerHeight * dpr);
       gl.viewport(0, 0, canvas.width, canvas.height);
     };
     resize();
@@ -102,7 +104,8 @@ export default function PresetBg({
       const s = glState.current;
       if (s && gl) {
         const time = (now - startRef.current) * 0.00012;
-        const sidebar = window.innerWidth >= 1024 ? 360 : 0;
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const sidebar = window.innerWidth >= 1024 ? 360 * dpr : 0;
         gl.uniform1f(s.tLoc, time);
         gl.uniform2f(s.rLoc, gl.canvas.width + sidebar, gl.canvas.height);
         gl.uniform1f(s.blendLoc, t.blend);
