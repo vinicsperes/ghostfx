@@ -24,7 +24,7 @@ function shapeClean(x: number, a: number): number {
 }
 
 function shapeRectifier(x: number, a: number): number {
-  const th = 1 / (1 + a * 24);
+  const th = 1 / (1 + a * 32);
   const makeup = 0.9 / Math.pow(th, 0.75);
   const u = x / th;
   return ((th * u) / Math.pow(1 + Math.pow(Math.abs(u), 8), 1 / 8)) * makeup;

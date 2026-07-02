@@ -81,7 +81,7 @@ export const DRIVES: DriveProfile[] = [
   { shape: "screamer", preHp: 140, midHz: 700, midGain: 2, trim: 2.7 },
   { shape: "fuzz", preHp: 80, midHz: 450, midGain: 3, trim: 0.25 },
   { shape: "clean", preHp: 120, midHz: 2200, midGain: 2.5, trim: 3.8 },
-  { shape: "rectifier", preHp: 180, midHz: 850, midGain: -2, trim: 0.33 },
+  { shape: "rectifier", preHp: 165, midHz: 850, midGain: -1, trim: 0.33 },
   { shape: "smooth", preHp: 100, midHz: 550, midGain: 2, trim: 0.95 },
   { shape: "octafuzz", preHp: 110, midHz: 1200, midGain: 2, trim: 0.95 },
 ];
