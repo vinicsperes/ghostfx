@@ -82,3 +82,7 @@ Open the URL Vite prints, allow microphone access, and stomp to arm.
 > can feed back.
 
 Build for production with `npm run build`, then preview it with `npm run preview`.
+
+## License
+
+[MIT](LICENSE)
