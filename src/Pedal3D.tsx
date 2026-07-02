@@ -60,11 +60,10 @@ export default function Pedal3D({
     chassisHoveredRef.current = false;
     if (!orbitingRef.current) document.body.style.cursor = "";
   }, []);
-  const prevPlaying = useRef(false);
   useEffect(() => {
-    if (isPlaying && !prevPlaying.current) setBootTrigger((t) => (t === 0 ? 1 : t));
-    prevPlaying.current = isPlaying;
-  }, [isPlaying]);
+    const t = setTimeout(() => setBootTrigger(1), 1200);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <div
