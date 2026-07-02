@@ -262,7 +262,7 @@ export function PedalBody({
         outlineWidth="1%"
         anchorX="center"
       >
-        FLANGER
+        MOD
       </LabelText>
       <LabelText
         position={[kp.master[0], H / 2 + 0.005, kp.master[2] + 0.22]}
@@ -338,7 +338,7 @@ export function PedalBody({
         onChange={(val) => onKnobChange("flanger", val)}
         ink={inkColor}
         accent={knobAccent}
-        label="Flanger"
+        label="Mod"
         setControlsEnabled={setControlsEnabled}
         bootTrigger={bootTrigger}
         delay={0.32}

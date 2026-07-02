@@ -7,6 +7,7 @@ export const PRESETS = [
 ] as const;
 
 import { shifted } from "./accent";
+import type { DriveShape } from "../audio/dsp";
 
 export const PALETTE = {
   bg: "#030308",
@@ -26,6 +27,39 @@ export const PRESET_META = [
 ] as const;
 
 export const PRESET_TAGS = ["haunted", "abyssal", "glacial", "brutal", "dreamy"] as const;
+
+export type DriveProfile = {
+  shape: DriveShape;
+  preHp: number;
+  midHz: number;
+  midGain: number;
+};
+
+export const DRIVES: DriveProfile[] = [
+  { shape: "screamer", preHp: 140, midHz: 700, midGain: 2 },
+  { shape: "fuzz", preHp: 80, midHz: 320, midGain: 1.5 },
+  { shape: "clean", preHp: 120, midHz: 2200, midGain: 1.5 },
+  { shape: "rectifier", preHp: 180, midHz: 950, midGain: 1.5 },
+  { shape: "smooth", preHp: 100, midHz: 550, midGain: 2 },
+];
+
+export type DelayProfile = {
+  timeMin: number;
+  timeMax: number;
+  fbMin: number;
+  fbMax: number;
+  loopHp: number;
+  loopLp: number;
+  sat: number;
+};
+
+export const DELAYS: DelayProfile[] = [
+  { timeMin: 0.3, timeMax: 0.6, fbMin: 0.25, fbMax: 0.7, loopHp: 180, loopLp: 2800, sat: 1.3 },
+  { timeMin: 0.08, timeMax: 0.16, fbMin: 0.1, fbMax: 0.45, loopHp: 150, loopLp: 2200, sat: 1.5 },
+  { timeMin: 0.12, timeMax: 0.3, fbMin: 0.15, fbMax: 0.5, loopHp: 200, loopLp: 5500, sat: 1.1 },
+  { timeMin: 0.1, timeMax: 0.35, fbMin: 0.1, fbMax: 0.4, loopHp: 220, loopLp: 3000, sat: 1.2 },
+  { timeMin: 0.35, timeMax: 0.75, fbMin: 0.35, fbMax: 0.8, loopHp: 160, loopLp: 1800, sat: 1.7 },
+];
 
 export type CabProfile = {
   lowCut: number;

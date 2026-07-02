@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createDistortionCurve,
+  driveOversample,
   mapDrivePreGain,
-  mapDelayTime,
-  mapFeedback,
   mapFlangerDepth,
   mapFlangerFb,
   mapFlangerMix,
@@ -11,7 +10,7 @@ import {
   createTapeCurve,
   createReverbIR,
 } from "../audio/dsp";
-import { CABS, REVERBS } from "../data/presets";
+import { CABS, DELAYS, DRIVES, REVERBS } from "../data/presets";
 
 export type EffectsState = "idle" | "bypass" | "active";
 
@@ -152,6 +151,8 @@ export function useEffects({
   const [recordedDuration, setRecordedDuration] = useState(0);
 
   const nodesRef = useRef<{
+    preFilter: BiquadFilterNode | null;
+    midEmphasis: BiquadFilterNode | null;
     preGain: GainNode | null;
     drive: WaveShaperNode | null;
     cabHP: BiquadFilterNode | null;
@@ -162,6 +163,9 @@ export function useEffects({
     delay: DelayNode | null;
     lfoGain: GainNode | null;
     feedback: GainNode | null;
+    delayLoopHP: BiquadFilterNode | null;
+    delayLoopLP: BiquadFilterNode | null;
+    delaySat: WaveShaperNode | null;
     wet: GainNode | null;
     flangerDelay: DelayNode | null;
     flangerDepth: GainNode | null;
@@ -177,6 +181,8 @@ export function useEffects({
     effects: GainNode | null;
     masterGain: GainNode | null;
   }>({
+    preFilter: null,
+    midEmphasis: null,
     preGain: null,
     drive: null,
     cabHP: null,
@@ -187,6 +193,9 @@ export function useEffects({
     delay: null,
     lfoGain: null,
     feedback: null,
+    delayLoopHP: null,
+    delayLoopLP: null,
+    delaySat: null,
     wet: null,
     flangerDelay: null,
     flangerDepth: null,
@@ -228,22 +237,24 @@ export function useEffects({
       monoSum.channelCount = 1;
       monoSum.channelCountMode = "explicit";
 
+      const dp = DRIVES[presetIdx ?? 0] ?? DRIVES[0];
+
       const preFilter = ctx.createBiquadFilter();
       preFilter.type = "highpass";
-      preFilter.frequency.value = 140;
+      preFilter.frequency.value = dp.preHp;
 
       const midEmphasis = ctx.createBiquadFilter();
       midEmphasis.type = "peaking";
-      midEmphasis.frequency.value = 700;
+      midEmphasis.frequency.value = dp.midHz;
       midEmphasis.Q.value = 0.7;
-      midEmphasis.gain.value = 2;
+      midEmphasis.gain.value = dp.midGain;
 
       const preGain = ctx.createGain();
       preGain.gain.value = mapDrivePreGain(drive);
 
       const driveNode = ctx.createWaveShaper();
-      driveNode.curve = createDistortionCurve(drive);
-      driveNode.oversample = drive >= 0.6 ? "2x" : "none";
+      driveNode.curve = createDistortionCurve(drive, dp.shape);
+      driveNode.oversample = driveOversample(drive, dp.shape);
 
       const cab = CABS[presetIdx ?? 0] ?? CABS[0];
       const cabHP = ctx.createBiquadFilter();
@@ -269,8 +280,10 @@ export function useEffects({
       toneFilter.type = "lowpass";
       toneFilter.frequency.value = 500 * Math.pow(16, tone);
 
+      const dl = DELAYS[presetIdx ?? 0] ?? DELAYS[0];
+
       const delayNode = ctx.createDelay(2.0);
-      delayNode.delayTime.value = mapDelayTime(echo);
+      delayNode.delayTime.value = dl.timeMin + echo * (dl.timeMax - dl.timeMin);
 
       const lfo = ctx.createOscillator();
       const lfoGain = ctx.createGain();
@@ -282,18 +295,18 @@ export function useEffects({
       lfo.start();
 
       const feedbackGain = ctx.createGain();
-      feedbackGain.gain.value = mapFeedback(echo);
+      feedbackGain.gain.value = dl.fbMin + echo * (dl.fbMax - dl.fbMin);
 
       const delayLoopHP = ctx.createBiquadFilter();
       delayLoopHP.type = "highpass";
-      delayLoopHP.frequency.value = 180;
+      delayLoopHP.frequency.value = dl.loopHp;
       delayLoopHP.Q.value = 0.707;
       const delayLoopLP = ctx.createBiquadFilter();
       delayLoopLP.type = "lowpass";
-      delayLoopLP.frequency.value = 2800;
+      delayLoopLP.frequency.value = dl.loopLp;
       delayLoopLP.Q.value = 0.707;
       const delaySat = ctx.createWaveShaper();
-      delaySat.curve = createTapeCurve();
+      delaySat.curve = createTapeCurve(dl.sat);
       delaySat.oversample = "none";
 
       const wetGain = ctx.createGain();
@@ -410,6 +423,8 @@ export function useEffects({
       recordDestRef.current = recordDest;
 
       nodesRef.current = {
+        preFilter,
+        midEmphasis,
         preGain,
         drive: driveNode,
         cabHP,
@@ -420,6 +435,9 @@ export function useEffects({
         delay: delayNode,
         lfoGain,
         feedback: feedbackGain,
+        delayLoopHP,
+        delayLoopLP,
+        delaySat,
         wet: wetGain,
         flangerDelay,
         flangerDepth,
@@ -461,25 +479,35 @@ export function useEffects({
   }, [drive, echo, tone, reverb, flanger, presetIdx]);
 
   useEffect(() => {
-    const { drive: driveNode, preGain } = nodesRef.current;
+    const { drive: driveNode, preGain, preFilter, midEmphasis } = nodesRef.current;
+    const dp = DRIVES[presetIdx ?? 0] ?? DRIVES[0];
     if (driveNode) {
-      driveNode.curve = createDistortionCurve(drive);
-      driveNode.oversample = drive >= 0.6 ? "2x" : "none";
+      driveNode.curve = createDistortionCurve(drive, dp.shape);
+      driveNode.oversample = driveOversample(drive, dp.shape);
     }
-    if (preGain && ctxRef.current)
-      preGain.gain.setTargetAtTime(mapDrivePreGain(drive), ctxRef.current.currentTime, 0.05);
-  }, [drive]);
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    preGain?.gain.setTargetAtTime(mapDrivePreGain(drive), t, 0.05);
+    preFilter?.frequency.setTargetAtTime(dp.preHp, t, 0.05);
+    midEmphasis?.frequency.setTargetAtTime(dp.midHz, t, 0.05);
+    midEmphasis?.gain.setTargetAtTime(dp.midGain, t, 0.05);
+  }, [drive, presetIdx]);
 
   useEffect(() => {
     const ctx = ctxRef.current;
     if (!ctx) return;
-    const { delay, lfoGain, feedback, wet } = nodesRef.current;
+    const { delay, lfoGain, feedback, delayLoopHP, delayLoopLP, delaySat, wet } = nodesRef.current;
+    const dl = DELAYS[presetIdx ?? 0] ?? DELAYS[0];
     const t = ctx.currentTime;
-    delay?.delayTime.setTargetAtTime(mapDelayTime(echo), t, 0.05);
+    delay?.delayTime.setTargetAtTime(dl.timeMin + echo * (dl.timeMax - dl.timeMin), t, 0.05);
     lfoGain?.gain.setTargetAtTime(0.003 * echo, t, 0.05);
-    feedback?.gain.setTargetAtTime(mapFeedback(echo), t, 0.05);
+    feedback?.gain.setTargetAtTime(dl.fbMin + echo * (dl.fbMax - dl.fbMin), t, 0.05);
+    delayLoopHP?.frequency.setTargetAtTime(dl.loopHp, t, 0.05);
+    delayLoopLP?.frequency.setTargetAtTime(dl.loopLp, t, 0.05);
+    if (delaySat) delaySat.curve = createTapeCurve(dl.sat);
     wet?.gain.setTargetAtTime(echo * 0.5, t, 0.05);
-  }, [echo]);
+  }, [echo, presetIdx]);
 
   useEffect(() => {
     const ctx = ctxRef.current;

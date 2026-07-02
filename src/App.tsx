@@ -402,7 +402,7 @@ export default function App() {
                     onChange={(v) => handleKnobChange("reverb", v)}
                   />
                   <Fader
-                    label="FLANGER"
+                    label="MOD"
                     value={flanger}
                     accent={themeColor}
                     onChange={(v) => handleKnobChange("flanger", v)}
@@ -625,7 +625,7 @@ export default function App() {
             onChange={(v) => handleKnobChange("reverb", v)}
           />
           <Fader
-            label="FLANGER"
+            label="MOD"
             value={flanger}
             accent={themeColor}
             onChange={(v) => handleKnobChange("flanger", v)}
