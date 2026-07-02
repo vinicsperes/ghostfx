@@ -51,12 +51,12 @@ export default function App() {
   useEffect(() => {
     presetIdxRef.current = presetIdx;
   }, [presetIdx]);
-  const [drive, setDrive] = useState(0.55);
-  const [echo, setEcho] = useState(0.48);
-  const [tone, setTone] = useState(0.5);
-  const [reverb, setReverb] = useState(0.58);
-  const [mod, setMod] = useState(0.45);
-  const [masterVolume, setMasterVolume] = useState(0.76);
+  const [drive, setDrive] = useState<number>(PRESETS[0].drive);
+  const [echo, setEcho] = useState<number>(PRESETS[0].echo);
+  const [tone, setTone] = useState<number>(PRESETS[0].tone);
+  const [reverb, setReverb] = useState<number>(PRESETS[0].reverb);
+  const [mod, setMod] = useState<number>(PRESETS[0].mod);
+  const [masterVolume, setMasterVolume] = useState<number>(PRESETS[0].master);
 
   const applyPreset = useCallback((preset: (typeof PRESETS)[number]) => {
     setDrive(preset.drive);
