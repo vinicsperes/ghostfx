@@ -133,20 +133,22 @@ void main(){
 }`;
 
 export const FEVER_FS = `
+#ifdef GL_OES_standard_derivatives
 #extension GL_OES_standard_derivatives : enable
+#endif
 precision mediump float;
 uniform float u_t; uniform vec2 u_res; uniform float u_blend;
 void main(){
   vec2 uv=gl_FragCoord.xy/u_res;
   vec2 p=(uv-0.5)*vec2(u_res.x/u_res.y,1.0);
   vec2 q=abs(p);
-  vec2 w=vec2(sin(q.y*4.0+u_t*.05)+sin(q.x*6.3-u_t*.04),
-              sin(q.x*5.1-u_t*.05)+sin(q.y*3.7+u_t*.06));
+  vec2 w=vec2(sin(q.y*4.0+u_t*.35)+sin(q.x*6.3-u_t*.28),
+              sin(q.x*5.1-u_t*.30)+sin(q.y*3.7+u_t*.40));
   vec2 g=q+0.13*w;
-  float curl=sin(g.y*14.0+w.x*1.6)*2.2;
+  float curl=sin(g.y*14.0+w.x*1.6-u_t*.9)*2.2;
   float strands=abs(sin(g.x*80.0+curl));
-  float phase=sin(g.y*24.0+sin(g.x*9.0)*1.8-u_t*.1);
-  float breaks=smoothstep(-.55,.35,phase);
+  float phase=sin(g.y*14.0+sin(g.x*9.0)*1.8-u_t*2.2);
+  float breaks=smoothstep(-.75,.15,phase);
   float c=strands*breaks;
   float thresh=mix(1.0,0.45,u_blend);
   vec4 col;
@@ -157,7 +159,7 @@ void main(){
 #endif
   if(c>thresh-aa){
     float edge=smoothstep(thresh-aa,thresh+aa+.05,c);
-    float hueMix=.5+.5*sin(g.x*6.0+g.y*3.5+w.y*.8);
+    float hueMix=.5+.5*sin(g.x*6.0+g.y*3.5+w.y*.8-u_t*.6);
     float grad=smoothstep(-.6,1.0,phase);
     vec3 roxo=vec3(122.,38.,215.)/255.;
     vec3 magenta=vec3(240.,42.,150.)/255.;
