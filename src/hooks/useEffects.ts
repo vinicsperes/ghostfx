@@ -139,6 +139,7 @@ export function useEffects({
 
   const irBuffersRef = useRef<AudioBuffer[]>([]);
   const activeConvRef = useRef<"A" | "B">("A");
+  const convUnloadRef = useRef<number | null>(null);
 
   const recordDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -208,12 +209,18 @@ export function useEffects({
     try {
       const ctx = new AudioContext({ latencyHint: "interactive" });
       ctxRef.current = ctx;
+      ctx.onstatechange = () => {
+        if (ctx.state === "suspended" && !feedbackLatchRef.current) ctx.resume();
+      };
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
         video: false,
       });
       streamRef.current = stream;
+      stream.getAudioTracks().forEach((tr) => {
+        tr.onended = () => setError("microphone track ended");
+      });
 
       const src = ctx.createMediaStreamSource(stream);
 
@@ -515,6 +522,14 @@ export function useEffects({
       reverbWetB.gain.setTargetAtTime(0, t, 0.06);
       activeConvRef.current = "A";
     }
+    convUnloadRef.current = window.setTimeout(() => {
+      const inactive =
+        activeConvRef.current === "A" ? nodesRef.current.convolverB : nodesRef.current.convolverA;
+      if (inactive) inactive.buffer = null;
+    }, 900);
+    return () => {
+      if (convUnloadRef.current) clearTimeout(convUnloadRef.current);
+    };
   }, [presetIdx]);
 
   useEffect(() => {

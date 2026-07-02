@@ -62,7 +62,8 @@ export function createReverbIR(
   tone: number,
   width: number,
 ): [Float32Array<ArrayBuffer>, Float32Array<ArrayBuffer>] {
-  const len = Math.floor(sampleRate * decay);
+  const len = Math.floor(sampleRate * decay * 0.8);
+  const fadeStart = Math.floor(len * 0.92);
   const left = new Float32Array(len);
   const right = new Float32Array(len);
 
@@ -75,7 +76,8 @@ export function createReverbIR(
   let lpR = 0;
   for (let i = 0; i < len; i++) {
     const t = i / sampleRate;
-    const env = Math.exp(-t / tau) * Math.min(1, t / 0.006);
+    const fade = i > fadeStart ? 1 - (i - fadeStart) / (len - fadeStart) : 1;
+    const env = Math.exp(-t / tau) * Math.min(1, t / 0.006) * fade;
     const s = Math.random() * 2 - 1;
     const nl = Math.random() * 2 - 1;
     const nr = Math.random() * 2 - 1;
