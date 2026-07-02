@@ -2,10 +2,9 @@ import { useProgress } from "@react-three/drei";
 import { useEffect, useState } from "react";
 import GhostMark from "./GhostMark";
 import LoadingWave from "./LoadingWave";
-import { shifted } from "./data/accent";
 
-const ACCENT = shifted("#20f040");
-const LED = shifted("#41ff77");
+const ACCENT = "#20f040";
+const LED = "#41ff77";
 const MIN_BOOT_MS = 1100;
 
 export default function LoadingScreen({ onComplete }: { onComplete?: () => void }) {
