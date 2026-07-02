@@ -75,17 +75,14 @@ export function Knob3D({
   const transRef = useRef({ active: false, from: 0, to: 0, progress: 0 });
   const transTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const initialValueRef = useRef(value);
   useEffect(() => {
     const g = knobGroupRef.current;
-    if (g) g.rotation.y = (3 / 4) * Math.PI - initialValueRef.current * (3 / 2) * Math.PI;
+    if (g) g.rotation.y = (3 / 4) * Math.PI;
   }, []);
 
   useEffect(() => {
     if (bootTrigger > animRef.current.seenTrigger) {
       animRef.current.seenTrigger = bootTrigger;
-      const g = knobGroupRef.current;
-      if (g) g.rotation.y = 0;
       const t = setTimeout(() => {
         animRef.current.targetValue = value;
         animRef.current.progress = 0;
@@ -100,7 +97,7 @@ export function Knob3D({
     if (transTimeoutRef.current) clearTimeout(transTimeoutRef.current);
     transTimeoutRef.current = setTimeout(() => {
       const g = knobGroupRef.current;
-      if (!g || animRef.current.progress >= 0) return;
+      if (!g || animRef.current.progress >= 0 || animRef.current.seenTrigger === 0) return;
       const from = g.rotation.y;
       if (Math.abs(from - targetAngle) < 0.01) return;
       transRef.current = { active: true, from, to: targetAngle, progress: 0 };
@@ -113,6 +110,10 @@ export function Knob3D({
   useFrame((_, delta) => {
     const g = knobGroupRef.current;
     if (!g) return;
+    if (dragRef.current) {
+      g.rotation.y = (3 / 4) * Math.PI - value * (3 / 2) * Math.PI;
+      return;
+    }
     if (animRef.current.progress >= 0) {
       animRef.current.progress = Math.min(1, animRef.current.progress + delta / 1.1);
       const p = easeOutBack(animRef.current.progress);
@@ -145,11 +146,13 @@ export function Knob3D({
       }}
       onWheel={(e: ThreeEvent<WheelEvent>) => {
         e.stopPropagation();
+        if (animRef.current.seenTrigger === 0) animRef.current.seenTrigger = 1;
         const step = e.deltaY < 0 ? 0.04 : -0.04;
         onChange(Math.max(0, Math.min(1, value + step)));
       }}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
+        if (animRef.current.seenTrigger === 0) animRef.current.seenTrigger = 1;
         const now = performance.now();
         if (now - lastClickRef.current < 280) {
           onChange(0.5);
