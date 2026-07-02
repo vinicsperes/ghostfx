@@ -265,8 +265,8 @@ export function PCBBoard({ w, l }: { w: number; l: number }) {
       </Text>
       <GhostSilk x={0.6} z={1.0} y={silkY} size={0.1} />
 
-      <ElCap x={c100[0]} z={c100[1]} h={0.3} r={0.085} color="#1a3a6a" />
-      <ElCap x={c47[0]} z={c47[1]} h={0.29} r={0.067} color="#1a1a1a" />
+      <ElCap x={c100[0]} z={c100[1]} h={0.3} r={0.085} color="#1a3a6a" label="100uF 25V" />
+      <ElCap x={c47[0]} z={c47[1]} h={0.29} r={0.067} color="#1a1a1a" label="47uF" />
       <Transistor x={reg[0]} z={reg[1]} rot={Math.PI} />
       <Diode x={d3[0]} z={d3[1]} rot={Math.PI / 2} kind="power" />
 
@@ -282,9 +282,9 @@ export function PCBBoard({ w, l }: { w: number; l: number }) {
       <THResistor x={raX[3]} z={raZ} b1="#101010" b2="#e0a010" b3="#a0a010" />
 
       <ICDip x={ic2[0]} z={ic2[1]} pins={16} rot={Math.PI / 2} color="#1c1c1c" label="ECTO-399" />
-      <ElCap x={ecD[0][0]} z={ecD[0][1]} h={0.2} r={0.054} color="#2a4a1a" />
-      <ElCap x={ecD[1][0]} z={ecD[1][1]} h={0.2} r={0.054} color="#1a3a6a" />
-      <ElCap x={ecD[2][0]} z={ecD[2][1]} h={0.2} r={0.054} color="#1a1a1a" />
+      <ElCap x={ecD[0][0]} z={ecD[0][1]} h={0.2} r={0.054} color="#2a4a1a" label="10uF" />
+      <ElCap x={ecD[1][0]} z={ecD[1][1]} h={0.2} r={0.054} color="#1a3a6a" label="10uF" />
+      <ElCap x={ecD[2][0]} z={ecD[2][1]} h={0.2} r={0.054} color="#1a1a1a" label="22uF" />
       <DiscCap x={disc2[0]} z={disc2[1]} color="#c8a050" />
       <DiscCap x={disc3[0]} z={disc3[1]} color="#b8c070" />
       <THResistor x={rbX[0]} z={rbZ} b1="#e0a010" b2="#101010" b3="#c02010" />
@@ -294,7 +294,7 @@ export function PCBBoard({ w, l }: { w: number; l: number }) {
 
       <BeltonBrick x={brick[0]} z={brick[1]} />
       <Transistor x={q2[0]} z={q2[1]} rot={Math.PI / 2} />
-      <ElCap x={ecOut[0]} z={ecOut[1]} h={0.2} r={0.054} color="#1a3a6a" />
+      <ElCap x={ecOut[0]} z={ecOut[1]} h={0.2} r={0.054} color="#1a3a6a" label="10uF" />
       <THResistor x={rOut[0]} z={rOut[1]} />
     </group>
   );

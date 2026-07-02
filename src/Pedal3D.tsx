@@ -11,6 +11,7 @@ export default function Pedal3D({
   ledColor,
   isPlaying,
   onTap,
+  onStomp,
   knobDrive,
   knobEcho,
   knobTone,
@@ -27,6 +28,7 @@ export default function Pedal3D({
   ledColor: string;
   isPlaying: boolean;
   onTap: () => void;
+  onStomp: () => void;
   knobDrive: number;
   knobEcho: number;
   knobTone: number;
@@ -60,7 +62,7 @@ export default function Pedal3D({
   }, []);
   const prevPlaying = useRef(false);
   useEffect(() => {
-    if (isPlaying && !prevPlaying.current) setBootTrigger((t) => t + 1);
+    if (isPlaying && !prevPlaying.current) setBootTrigger((t) => (t === 0 ? 1 : t));
     prevPlaying.current = isPlaying;
   }, [isPlaying]);
 
@@ -136,6 +138,7 @@ export default function Pedal3D({
             ledColor={ledColor}
             ledActive={ledActive}
             onTap={onTap}
+            onStomp={onStomp}
             knobDrive={knobDrive}
             knobEcho={knobEcho}
             knobTone={knobTone}

@@ -1,4 +1,4 @@
-import { Text } from "@react-three/drei";
+import { RoundedBox, Text } from "@react-three/drei";
 
 export function Battery9V() {
   const cx = -0.2,
@@ -6,25 +6,48 @@ export function Battery9V() {
     cz = -0.6;
   return (
     <group position={[cx, cy, cz]}>
-      <mesh castShadow>
-        <boxGeometry args={[0.98, 0.34, 0.5]} />
-        <meshStandardMaterial color="#15151a" roughness={0.5} metalness={0.25} />
-      </mesh>
+      <RoundedBox args={[0.98, 0.34, 0.5]} radius={0.035} smoothness={4} castShadow>
+        <meshStandardMaterial color="#15151a" roughness={0.42} metalness={0.3} />
+      </RoundedBox>
       <mesh position={[0.24, 0, 0]}>
         <boxGeometry args={[0.28, 0.342, 0.502]} />
         <meshStandardMaterial color="#c9a23c" roughness={0.45} metalness={0.35} />
       </mesh>
       <Text
-        position={[0.0, 0.172, 0]}
+        position={[-0.16, 0.174, -0.07]}
         rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.1}
+        fontSize={0.082}
         color="#e8e6da"
         anchorX="center"
         anchorY="middle"
-        letterSpacing={0.1}
+        letterSpacing={0.08}
         renderOrder={6}
       >
-        9V
+        GHOSTVOLT
+      </Text>
+      <Text
+        position={[-0.16, 0.174, 0.1]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        fontSize={0.048}
+        color="#9a97a8"
+        anchorX="center"
+        anchorY="middle"
+        letterSpacing={0.22}
+        renderOrder={6}
+      >
+        9V ALKALINE
+      </Text>
+      <Text
+        position={[0.24, 0.174, 0]}
+        rotation={[-Math.PI / 2, 0, Math.PI / 2]}
+        fontSize={0.06}
+        color="#2b2418"
+        anchorX="center"
+        anchorY="middle"
+        letterSpacing={0.14}
+        renderOrder={6}
+      >
+        NO-LEAK
       </Text>
       <mesh position={[0.495, 0.02, 0]} castShadow>
         <boxGeometry args={[0.03, 0.26, 0.44]} />
