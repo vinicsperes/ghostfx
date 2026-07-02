@@ -152,6 +152,7 @@ export function useEffects({
     midEmphasis: BiquadFilterNode | null;
     preGain: GainNode | null;
     drive: WaveShaperNode | null;
+    driveTrim: GainNode | null;
     cabHP: BiquadFilterNode | null;
     cabBody: BiquadFilterNode | null;
     cabPres: BiquadFilterNode | null;
@@ -184,6 +185,7 @@ export function useEffects({
     midEmphasis: null,
     preGain: null,
     drive: null,
+    driveTrim: null,
     cabHP: null,
     cabBody: null,
     cabPres: null,
@@ -257,6 +259,9 @@ export function useEffects({
       driveNode.curve = createDistortionCurve(drive, dp.shape);
       driveNode.oversample = driveOversample(drive, dp.shape);
 
+      const driveTrim = ctx.createGain();
+      driveTrim.gain.value = dp.trim;
+
       const cab = CABS[presetIdx ?? 0] ?? CABS[0];
       const cabHP = ctx.createBiquadFilter();
       cabHP.type = "highpass";
@@ -279,7 +284,7 @@ export function useEffects({
 
       const toneFilter = ctx.createBiquadFilter();
       toneFilter.type = "lowpass";
-      toneFilter.frequency.value = 500 * Math.pow(16, tone);
+      toneFilter.frequency.value = 600 * Math.pow(20, tone);
 
       const dl = DELAYS[presetIdx ?? 0] ?? DELAYS[0];
 
@@ -380,7 +385,8 @@ export function useEffects({
       preFilter.connect(midEmphasis);
       midEmphasis.connect(preGain);
       preGain.connect(driveNode);
-      driveNode.connect(cabHP);
+      driveNode.connect(driveTrim);
+      driveTrim.connect(cabHP);
       cabHP.connect(cabBody);
       cabBody.connect(cabPres);
       cabPres.connect(cabLP);
@@ -429,6 +435,7 @@ export function useEffects({
         midEmphasis,
         preGain,
         drive: driveNode,
+        driveTrim,
         cabHP,
         cabBody,
         cabPres,
@@ -483,7 +490,7 @@ export function useEffects({
   }, [drive, echo, tone, reverb, mod, presetIdx]);
 
   useEffect(() => {
-    const { drive: driveNode, preGain, preFilter, midEmphasis } = nodesRef.current;
+    const { drive: driveNode, driveTrim, preGain, preFilter, midEmphasis } = nodesRef.current;
     const dp = DRIVES[presetIdx ?? 0] ?? DRIVES[0];
     if (driveNode) {
       driveNode.curve = createDistortionCurve(drive, dp.shape);
@@ -493,6 +500,7 @@ export function useEffects({
     if (!ctx) return;
     const t = ctx.currentTime;
     preGain?.gain.setTargetAtTime(mapDrivePreGain(drive), t, 0.05);
+    driveTrim?.gain.setTargetAtTime(dp.trim, t, 0.05);
     preFilter?.frequency.setTargetAtTime(dp.preHp, t, 0.05);
     midEmphasis?.frequency.setTargetAtTime(dp.midHz, t, 0.05);
     midEmphasis?.gain.setTargetAtTime(dp.midGain, t, 0.05);
@@ -517,7 +525,7 @@ export function useEffects({
     const ctx = ctxRef.current;
     if (!ctx) return;
     const { toneFilter } = nodesRef.current;
-    toneFilter?.frequency.setTargetAtTime(500 * Math.pow(16, tone), ctx.currentTime, 0.05);
+    toneFilter?.frequency.setTargetAtTime(600 * Math.pow(20, tone), ctx.currentTime, 0.05);
   }, [tone]);
 
   useEffect(() => {

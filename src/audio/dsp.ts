@@ -1,4 +1,4 @@
-export type DriveShape = "screamer" | "fuzz" | "clean" | "rectifier" | "smooth";
+export type DriveShape = "screamer" | "fuzz" | "clean" | "rectifier" | "smooth" | "octafuzz";
 
 function shapeScreamer(x: number, a: number): number {
   const k = Math.pow(a, 2.2) * 9;
@@ -37,12 +37,22 @@ function shapeSmooth(x: number, a: number): number {
   return y * makeup;
 }
 
+function shapeOctafuzz(x: number, a: number): number {
+  const k = 6 + 26 * a;
+  const oct = Math.tanh(k * (Math.abs(x) - 0.02));
+  const dry = Math.tanh(k * 0.6 * x);
+  const mix = 0.5 + 0.3 * a;
+  const makeup = 1 / (2.1 + a * 0.5);
+  return (dry * (1 - mix) + oct * mix) * makeup;
+}
+
 const DRIVE_SHAPES: Record<DriveShape, (x: number, a: number) => number> = {
   screamer: shapeScreamer,
   fuzz: shapeFuzz,
   clean: shapeClean,
   rectifier: shapeRectifier,
   smooth: shapeSmooth,
+  octafuzz: shapeOctafuzz,
 };
 
 export function createDistortionCurve(
@@ -61,6 +71,7 @@ export function createDistortionCurve(
 
 export function driveOversample(amount: number, shape: DriveShape = "screamer"): OverSampleType {
   if (shape === "clean") return "none";
+  if (shape === "octafuzz") return amount >= 0.3 ? "2x" : "none";
   if (shape === "fuzz" || shape === "rectifier") return amount >= 0.4 ? "2x" : "none";
   return amount >= 0.6 ? "2x" : "none";
 }
@@ -69,24 +80,22 @@ export function mapDrivePreGain(value: number): number {
   return 1 + Math.pow(value, 1.5) * 1.8;
 }
 
-export function mapDelayTime(value: number): number {
-  return 0.15 + value * 0.45;
-}
-
-export function mapFeedback(value: number): number {
-  return 0.2 + value * 0.45;
-}
-
-export function mapModDepth(value: number): number {
-  return 0.0004 + value * 0.0018;
-}
-
-export function mapModFb(value: number): number {
-  return value * 0.22;
-}
-
-export function mapModMix(value: number): number {
-  return value * 0.4;
+export function synthDriveTrim(amount: number, shape: DriveShape = "screamer"): number {
+  const fn = DRIVE_SHAPES[shape];
+  const amp = 0.45 * mapDrivePreGain(amount);
+  const S = 256;
+  const ys = new Float64Array(S);
+  let mean = 0;
+  for (let i = 0; i < S; i++) {
+    const x = Math.max(-1, Math.min(1, ((2 * i) / S - 1) * amp));
+    ys[i] = fn(x, amount);
+    mean += ys[i];
+  }
+  mean /= S;
+  let sum = 0;
+  for (const y of ys) sum += (y - mean) * (y - mean);
+  const rms = Math.sqrt(sum / S);
+  return 0.14 / Math.max(rms, 0.02);
 }
 
 export function createLimiterCurve(threshold = 0.82): Float32Array<ArrayBuffer> {
