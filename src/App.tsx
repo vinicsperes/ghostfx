@@ -55,7 +55,7 @@ export default function App() {
   const [echo, setEcho] = useState(0.48);
   const [tone, setTone] = useState(0.5);
   const [reverb, setReverb] = useState(0.58);
-  const [flanger, setFlanger] = useState(0.45);
+  const [mod, setMod] = useState(0.45);
   const [masterVolume, setMasterVolume] = useState(0.76);
 
   const applyPreset = useCallback((preset: (typeof PRESETS)[number]) => {
@@ -63,7 +63,7 @@ export default function App() {
     setEcho(preset.echo);
     setTone(preset.tone);
     setReverb(preset.reverb);
-    setFlanger(preset.flanger);
+    setMod(preset.mod);
     setMasterVolume(preset.master);
   }, []);
 
@@ -77,7 +77,7 @@ export default function App() {
     [applyPreset],
   );
 
-  const fx = useEffects({ drive, echo, tone, reverb, flanger, masterVolume, presetIdx });
+  const fx = useEffects({ drive, echo, tone, reverb, mod, masterVolume, presetIdx });
   const { toggleRecording } = fx;
   useEffect(() => {
     if (!fx.micBlocked) setMicDismissed(false);
@@ -96,7 +96,7 @@ export default function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [warningDone, toggleRecording]);
-  const synth = useSynth({ drive, echo, tone, reverb, flanger, masterVolume });
+  const synth = useSynth({ drive, echo, tone, reverb, mod, masterVolume });
   const { playNote, stopNote } = synth;
 
   useEffect(() => {
@@ -156,12 +156,12 @@ export default function App() {
   }, [themeTarget]);
 
   const handleKnobChange = useCallback(
-    (knob: "drive" | "echo" | "tone" | "reverb" | "flanger" | "master", value: number) => {
+    (knob: "drive" | "echo" | "tone" | "reverb" | "mod" | "master", value: number) => {
       if (knob === "drive") setDrive(value);
       else if (knob === "echo") setEcho(value);
       else if (knob === "tone") setTone(value);
       else if (knob === "reverb") setReverb(value);
-      else if (knob === "flanger") setFlanger(value);
+      else if (knob === "mod") setMod(value);
       else setMasterVolume(value);
     },
     [],
@@ -403,9 +403,9 @@ export default function App() {
                   />
                   <Fader
                     label="MOD"
-                    value={flanger}
+                    value={mod}
                     accent={themeColor}
-                    onChange={(v) => handleKnobChange("flanger", v)}
+                    onChange={(v) => handleKnobChange("mod", v)}
                   />
                   <Fader
                     label="VOLUME"
@@ -452,7 +452,7 @@ export default function App() {
           knobEcho={echo}
           knobTone={tone}
           knobReverb={reverb}
-          knobFlanger={flanger}
+          knobMod={mod}
           knobMaster={masterVolume}
           onKnobChange={handleKnobChange}
           palette={{
@@ -562,7 +562,7 @@ export default function App() {
           >
             Browser-based guitar FX — drive, echo,
             <br />
-            tone, flanger &amp; reverb. Zero install.
+            tone, modulation &amp; reverb. Zero install.
           </p>
         </div>
 
@@ -626,9 +626,9 @@ export default function App() {
           />
           <Fader
             label="MOD"
-            value={flanger}
+            value={mod}
             accent={themeColor}
-            onChange={(v) => handleKnobChange("flanger", v)}
+            onChange={(v) => handleKnobChange("mod", v)}
           />
           <Fader
             label="VOLUME"

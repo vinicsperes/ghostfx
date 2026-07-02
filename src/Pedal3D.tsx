@@ -15,7 +15,7 @@ export default function Pedal3D({
   knobEcho,
   knobTone,
   knobReverb,
-  knobFlanger,
+  knobMod,
   knobMaster,
   onKnobChange,
   palette,
@@ -31,10 +31,10 @@ export default function Pedal3D({
   knobEcho: number;
   knobTone: number;
   knobReverb: number;
-  knobFlanger: number;
+  knobMod: number;
   knobMaster: number;
   onKnobChange: (
-    knob: "drive" | "echo" | "tone" | "reverb" | "flanger" | "master",
+    knob: "drive" | "echo" | "tone" | "reverb" | "mod" | "master",
     value: number,
   ) => void;
   palette: { pedal: string; ink: string; accent: string; cream: string; metal: string };
@@ -140,7 +140,7 @@ export default function Pedal3D({
             knobEcho={knobEcho}
             knobTone={knobTone}
             knobReverb={knobReverb}
-            knobFlanger={knobFlanger}
+            knobMod={knobMod}
             knobMaster={knobMaster}
             onKnobChange={onKnobChange}
             setControlsEnabled={setControlsEnabled}

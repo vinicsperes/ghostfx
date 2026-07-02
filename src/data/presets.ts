@@ -1,13 +1,13 @@
-export const PRESETS = [
-  { name: "GHOST", drive: 0.35, echo: 0.58, tone: 0.55, reverb: 0.78, flanger: 0.3, master: 0.85 },
-  { name: "DOOM", drive: 0.72, echo: 0.1, tone: 0.36, reverb: 0.3, flanger: 0.12, master: 0.85 },
-  { name: "FROST", drive: 0.0, echo: 0.2, tone: 0.8, reverb: 0.45, flanger: 0.75, master: 0.95 },
-  { name: "HEAVY", drive: 0.92, echo: 0.04, tone: 0.48, reverb: 0.06, flanger: 0.0, master: 0.8 },
-  { name: "HAZE", drive: 0.3, echo: 0.42, tone: 0.52, reverb: 0.82, flanger: 0.6, master: 0.72 },
-] as const;
-
 import { shifted } from "./accent";
 import type { DriveShape } from "../audio/dsp";
+
+export const PRESETS = [
+  { name: "GHOST", drive: 0.35, echo: 0.58, tone: 0.55, reverb: 0.78, mod: 0.3, master: 0.85 },
+  { name: "DOOM", drive: 0.72, echo: 0.1, tone: 0.36, reverb: 0.3, mod: 0.12, master: 0.85 },
+  { name: "FROST", drive: 0.0, echo: 0.2, tone: 0.8, reverb: 0.45, mod: 0.75, master: 0.95 },
+  { name: "HEAVY", drive: 0.92, echo: 0.04, tone: 0.48, reverb: 0.06, mod: 0.0, master: 0.8 },
+  { name: "HAZE", drive: 0.3, echo: 0.42, tone: 0.52, reverb: 0.82, mod: 0.6, master: 0.72 },
+] as const;
 
 export const PALETTE = {
   bg: "#030308",
@@ -59,6 +59,56 @@ export const DELAYS: DelayProfile[] = [
   { timeMin: 0.12, timeMax: 0.3, fbMin: 0.15, fbMax: 0.5, loopHp: 200, loopLp: 5500, sat: 1.1 },
   { timeMin: 0.1, timeMax: 0.35, fbMin: 0.1, fbMax: 0.4, loopHp: 220, loopLp: 3000, sat: 1.2 },
   { timeMin: 0.35, timeMax: 0.75, fbMin: 0.35, fbMax: 0.8, loopHp: 160, loopLp: 1800, sat: 1.7 },
+];
+
+export type ModProfile = {
+  rate: number;
+  base: number;
+  depthMin: number;
+  depthMax: number;
+  fbMax: number;
+  mixMax: number;
+  damp: number;
+};
+
+export const MODS: ModProfile[] = [
+  {
+    rate: 0.25,
+    base: 0.0025,
+    depthMin: 0.0003,
+    depthMax: 0.0015,
+    fbMax: 0.25,
+    mixMax: 0.35,
+    damp: 2800,
+  },
+  {
+    rate: 0.12,
+    base: 0.003,
+    depthMin: 0.0002,
+    depthMax: 0.001,
+    fbMax: 0.15,
+    mixMax: 0.3,
+    damp: 2200,
+  },
+  {
+    rate: 0.55,
+    base: 0.006,
+    depthMin: 0.0008,
+    depthMax: 0.0028,
+    fbMax: 0,
+    mixMax: 0.5,
+    damp: 6000,
+  },
+  {
+    rate: 0.8,
+    base: 0.002,
+    depthMin: 0.0002,
+    depthMax: 0.0012,
+    fbMax: 0.3,
+    mixMax: 0.3,
+    damp: 3500,
+  },
+  { rate: 0.9, base: 0.007, depthMin: 0.001, depthMax: 0.0035, fbMax: 0, mixMax: 0.55, damp: 4000 },
 ];
 
 export type CabProfile = {

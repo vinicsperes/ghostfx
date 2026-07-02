@@ -74,7 +74,7 @@ export function PedalBody({
   knobEcho,
   knobTone,
   knobReverb,
-  knobFlanger,
+  knobMod,
   knobMaster,
   onKnobChange,
   setControlsEnabled,
@@ -95,10 +95,10 @@ export function PedalBody({
   knobEcho: number;
   knobTone: number;
   knobReverb: number;
-  knobFlanger: number;
+  knobMod: number;
   knobMaster: number;
   onKnobChange: (
-    knob: "drive" | "echo" | "tone" | "reverb" | "flanger" | "master",
+    knob: "drive" | "echo" | "tone" | "reverb" | "mod" | "master",
     value: number,
   ) => void;
   setControlsEnabled: (enabled: boolean) => void;
@@ -128,7 +128,7 @@ export function PedalBody({
     echo: [0.0, H / 2, -1.05] as [number, number, number],
     reverb: [0.62, H / 2, -1.05] as [number, number, number],
     tone: [-0.62, H / 2, -0.52] as [number, number, number],
-    flanger: [0.0, H / 2, -0.52] as [number, number, number],
+    mod: [0.0, H / 2, -0.52] as [number, number, number],
     master: [0.62, H / 2, -0.52] as [number, number, number],
   };
 
@@ -254,7 +254,7 @@ export function PedalBody({
         REVERB
       </LabelText>
       <LabelText
-        position={[kp.flanger[0], H / 2 + 0.005, kp.flanger[2] + 0.22]}
+        position={[kp.mod[0], H / 2 + 0.005, kp.mod[2] + 0.22]}
         rotation={[-Math.PI / 2, 0, 0]}
         fontSize={0.062}
         color={silkColor}
@@ -333,9 +333,9 @@ export function PedalBody({
         showArc={v?.showArc}
       />
       <Knob3D
-        position={kp.flanger}
-        value={knobFlanger}
-        onChange={(val) => onKnobChange("flanger", val)}
+        position={kp.mod}
+        value={knobMod}
+        onChange={(val) => onKnobChange("mod", val)}
         ink={inkColor}
         accent={knobAccent}
         label="Mod"
@@ -382,7 +382,7 @@ export function PedalBody({
             <PotBody x={kp.echo[0]} z={kp.echo[2]} topY={topY} />
             <PotBody x={kp.reverb[0]} z={kp.reverb[2]} topY={topY} />
             <PotBody x={kp.tone[0]} z={kp.tone[2]} topY={topY} />
-            <PotBody x={kp.flanger[0]} z={kp.flanger[2]} topY={topY} />
+            <PotBody x={kp.mod[0]} z={kp.mod[2]} topY={topY} />
             <PotBody x={kp.master[0]} z={kp.master[2]} topY={topY} />
             <SwitchBody x={0} z={FSZ} topY={topY} />
             <Battery9V />
@@ -428,8 +428,8 @@ export function PedalBody({
               color="#e8e8e8"
             />
             <Wire
-              start={[kp.flanger[0], POT_LUG_Y, kp.flanger[2] + POT_LUG_Z]}
-              mid={[kp.flanger[0], 0.03, kp.flanger[2] + POT_LUG_Z]}
+              start={[kp.mod[0], POT_LUG_Y, kp.mod[2] + POT_LUG_Z]}
+              mid={[kp.mod[0], 0.03, kp.mod[2] + POT_LUG_Z]}
               end={[0.02, PAD_Y, -0.6]}
               color="#3a6ad0"
             />

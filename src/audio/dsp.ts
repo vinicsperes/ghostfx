@@ -77,15 +77,15 @@ export function mapFeedback(value: number): number {
   return 0.2 + value * 0.45;
 }
 
-export function mapFlangerDepth(value: number): number {
+export function mapModDepth(value: number): number {
   return 0.0004 + value * 0.0018;
 }
 
-export function mapFlangerFb(value: number): number {
+export function mapModFb(value: number): number {
   return value * 0.22;
 }
 
-export function mapFlangerMix(value: number): number {
+export function mapModMix(value: number): number {
   return value * 0.4;
 }
 

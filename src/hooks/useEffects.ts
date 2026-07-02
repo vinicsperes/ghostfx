@@ -3,14 +3,11 @@ import {
   createDistortionCurve,
   driveOversample,
   mapDrivePreGain,
-  mapFlangerDepth,
-  mapFlangerFb,
-  mapFlangerMix,
   createLimiterCurve,
   createTapeCurve,
   createReverbIR,
 } from "../audio/dsp";
-import { CABS, DELAYS, DRIVES, REVERBS } from "../data/presets";
+import { CABS, DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
 
 export type EffectsState = "idle" | "bypass" | "active";
 
@@ -111,7 +108,7 @@ export function useEffects({
   echo,
   tone,
   reverb,
-  flanger,
+  mod,
   masterVolume = 0.8,
   presetIdx = 0,
 }: {
@@ -119,7 +116,7 @@ export function useEffects({
   echo: number;
   tone: number;
   reverb: number;
-  flanger: number;
+  mod: number;
   masterVolume?: number;
   presetIdx?: number | null;
 }): EffectsApi {
@@ -167,10 +164,12 @@ export function useEffects({
     delayLoopLP: BiquadFilterNode | null;
     delaySat: WaveShaperNode | null;
     wet: GainNode | null;
-    flangerDelay: DelayNode | null;
-    flangerDepth: GainNode | null;
-    flangerFb: GainNode | null;
-    flangerWet: GainNode | null;
+    modDelay: DelayNode | null;
+    modLfo: OscillatorNode | null;
+    modDepth: GainNode | null;
+    modDamp: BiquadFilterNode | null;
+    modFb: GainNode | null;
+    modWet: GainNode | null;
     reverbPre: DelayNode | null;
     convolverA: ConvolverNode | null;
     convolverB: ConvolverNode | null;
@@ -197,10 +196,12 @@ export function useEffects({
     delayLoopLP: null,
     delaySat: null,
     wet: null,
-    flangerDelay: null,
-    flangerDepth: null,
-    flangerFb: null,
-    flangerWet: null,
+    modDelay: null,
+    modLfo: null,
+    modDepth: null,
+    modDamp: null,
+    modFb: null,
+    modWet: null,
     reverbPre: null,
     convolverA: null,
     convolverB: null,
@@ -312,23 +313,24 @@ export function useEffects({
       const wetGain = ctx.createGain();
       wetGain.gain.value = echo * 0.5;
 
-      const flangerDelay = ctx.createDelay(0.05);
-      flangerDelay.delayTime.value = 0.0025;
-      const flangerLfo = ctx.createOscillator();
-      flangerLfo.type = "sine";
-      flangerLfo.frequency.value = 0.4;
-      const flangerDepth = ctx.createGain();
-      flangerDepth.gain.value = mapFlangerDepth(flanger);
-      flangerLfo.connect(flangerDepth);
-      flangerDepth.connect(flangerDelay.delayTime);
-      flangerLfo.start();
-      const flangerDamp = ctx.createBiquadFilter();
-      flangerDamp.type = "lowpass";
-      flangerDamp.frequency.value = 2800;
-      const flangerFb = ctx.createGain();
-      flangerFb.gain.value = mapFlangerFb(flanger);
-      const flangerWet = ctx.createGain();
-      flangerWet.gain.value = mapFlangerMix(flanger);
+      const mp = MODS[presetIdx ?? 0] ?? MODS[0];
+      const modDelay = ctx.createDelay(0.05);
+      modDelay.delayTime.value = mp.base;
+      const modLfo = ctx.createOscillator();
+      modLfo.type = "sine";
+      modLfo.frequency.value = mp.rate;
+      const modDepth = ctx.createGain();
+      modDepth.gain.value = mp.depthMin + mod * (mp.depthMax - mp.depthMin);
+      modLfo.connect(modDepth);
+      modDepth.connect(modDelay.delayTime);
+      modLfo.start();
+      const modDamp = ctx.createBiquadFilter();
+      modDamp.type = "lowpass";
+      modDamp.frequency.value = mp.damp;
+      const modFb = ctx.createGain();
+      modFb.gain.value = mod * mp.fbMax;
+      const modWet = ctx.createGain();
+      modWet.gain.value = mod * mp.mixMax;
 
       const reverbIdx = presetIdx ?? 0;
       irBuffersRef.current = REVERBS.map((r) => {
@@ -395,12 +397,12 @@ export function useEffects({
       delaySat.connect(wetGain);
       wetGain.connect(effectsGain);
 
-      toneFilter.connect(flangerDelay);
-      flangerDelay.connect(flangerDamp);
-      flangerDamp.connect(flangerFb);
-      flangerFb.connect(flangerDelay);
-      flangerDamp.connect(flangerWet);
-      flangerWet.connect(effectsGain);
+      toneFilter.connect(modDelay);
+      modDelay.connect(modDamp);
+      modDamp.connect(modFb);
+      modFb.connect(modDelay);
+      modDamp.connect(modWet);
+      modWet.connect(effectsGain);
 
       toneFilter.connect(reverbPre);
       reverbPre.connect(convolverA);
@@ -439,10 +441,12 @@ export function useEffects({
         delayLoopLP,
         delaySat,
         wet: wetGain,
-        flangerDelay,
-        flangerDepth,
-        flangerFb,
-        flangerWet,
+        modDelay,
+        modLfo,
+        modDepth,
+        modDamp,
+        modFb,
+        modWet,
         reverbPre,
         convolverA,
         convolverB,
@@ -476,7 +480,7 @@ export function useEffects({
         setError(e instanceof Error ? e.message : "could not access microphone");
       }
     }
-  }, [drive, echo, tone, reverb, flanger, presetIdx]);
+  }, [drive, echo, tone, reverb, mod, presetIdx]);
 
   useEffect(() => {
     const { drive: driveNode, preGain, preFilter, midEmphasis } = nodesRef.current;
@@ -570,12 +574,16 @@ export function useEffects({
   useEffect(() => {
     const ctx = ctxRef.current;
     if (!ctx) return;
-    const { flangerDepth, flangerFb, flangerWet } = nodesRef.current;
+    const { modLfo, modDelay, modDepth, modDamp, modFb, modWet } = nodesRef.current;
+    const mp = MODS[presetIdx ?? 0] ?? MODS[0];
     const t = ctx.currentTime;
-    flangerDepth?.gain.setTargetAtTime(mapFlangerDepth(flanger), t, 0.05);
-    flangerFb?.gain.setTargetAtTime(mapFlangerFb(flanger), t, 0.05);
-    flangerWet?.gain.setTargetAtTime(mapFlangerMix(flanger), t, 0.05);
-  }, [flanger]);
+    modLfo?.frequency.setTargetAtTime(mp.rate, t, 0.1);
+    modDelay?.delayTime.setTargetAtTime(mp.base, t, 0.1);
+    modDamp?.frequency.setTargetAtTime(mp.damp, t, 0.05);
+    modDepth?.gain.setTargetAtTime(mp.depthMin + mod * (mp.depthMax - mp.depthMin), t, 0.05);
+    modFb?.gain.setTargetAtTime(mod * mp.fbMax, t, 0.05);
+    modWet?.gain.setTargetAtTime(mod * mp.mixMax, t, 0.05);
+  }, [mod, presetIdx]);
 
   useEffect(() => {
     if (feedbackLatchRef.current) return;
