@@ -4,7 +4,7 @@
 
 <br/><br/>
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-2ea44f)](LICENSE)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-2ea44f)](LICENSE)
 ![React 19](https://img.shields.io/badge/React_19-1b1f24?logo=react&logoColor=61dafb)
 ![TypeScript](https://img.shields.io/badge/TypeScript-1b1f24?logo=typescript&logoColor=3178c6)
 ![Three.js](https://img.shields.io/badge/Three.js-1b1f24?logo=threedotjs&logoColor=white)
@@ -108,4 +108,4 @@ Build for production with `npm run build`, then preview it with `npm run preview
 
 ## License
 
-[MIT](LICENSE)
+[GPL-3.0](LICENSE). Use it, learn from it, fork it; keep it open.
