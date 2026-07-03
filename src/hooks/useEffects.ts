@@ -218,6 +218,12 @@ export function useEffects({
   const init = useCallback(async () => {
     if (ctxRef.current) return;
 
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("microphone needs a secure connection (https)");
+      setMicBlocked(true);
+      return;
+    }
+
     try {
       const ctx = new AudioContext({ latencyHint: "interactive" });
       ctxRef.current = ctx;
