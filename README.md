@@ -20,7 +20,7 @@ no native app: the entire signal chain is hand-built on the Web Audio API.
 
 <br/>
 
-<img src="assets/trailer.webp" alt="Powering on and touring the six presets" width="100%" />
+<img src="assets/trailer.webp" alt="Powering on and touring the six presets" width="90%" />
 
 <sub><b>SIX PRESETS RE-THEME THE RIG&nbsp;&nbsp;·&nbsp;&nbsp;EVERY CONTROL IS A REAL 3D PART&nbsp;&nbsp;·&nbsp;&nbsp;STOMP TO ARM</b></sub>
 
