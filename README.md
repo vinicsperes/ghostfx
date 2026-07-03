@@ -1,23 +1,26 @@
 <div align="center">
 
-<img src="assets/hero.png" alt="GHOSTFX — Signal Processor MK.I" width="100%" />
+<img src="assets/hero.png" alt="GHOSTFX Signal Processor MK.I" width="100%" />
 
 <br/><br/>
 
-**A guitar effects pedal that lives in your browser.**
-
-Plug in, stomp to arm, and shape your tone with drive, echo, tone, modulation and
-reverb — on a real-time 3D pedal whose knobs you actually turn.
-No install, no plugins, no native app: the entire signal chain is hand-built
-on the Web Audio API.
+[![License: MIT](https://img.shields.io/badge/license-MIT-2ea44f)](LICENSE)
+![React 19](https://img.shields.io/badge/React_19-1b1f24?logo=react&logoColor=61dafb)
+![TypeScript](https://img.shields.io/badge/TypeScript-1b1f24?logo=typescript&logoColor=3178c6)
+![Three.js](https://img.shields.io/badge/Three.js-1b1f24?logo=threedotjs&logoColor=white)
+![Web Audio API](https://img.shields.io/badge/Web_Audio_API-1b1f24?logo=googlechrome&logoColor=2ea44f)
 
 <br/>
 
-<p>
-<img src="assets/presets.webp" alt="Six presets re-theme the rig" width="32%" />
-<img src="assets/spin.webp" alt="Turn the knobs in 3D" width="32%" />
-<img src="assets/stomp.webp" alt="Stomp to arm" width="32%" />
-</p>
+**A guitar effects pedal that lives in your browser.**
+
+Plug in, stomp to arm, and shape your tone with drive, echo, modulation and reverb
+on a real-time 3D pedal whose knobs you actually turn. No install, no plugins,
+no native app: the entire signal chain is hand-built on the Web Audio API.
+
+<br/>
+
+<img src="assets/trailer.webp" alt="Powering on and touring the six presets" width="100%" />
 
 <sub><b>SIX PRESETS RE-THEME THE RIG&nbsp;&nbsp;·&nbsp;&nbsp;EVERY CONTROL IS A REAL 3D PART&nbsp;&nbsp;·&nbsp;&nbsp;STOMP TO ARM</b></sub>
 
@@ -25,49 +28,69 @@ on the Web Audio API.
 
 ## Six voiced presets
 
-GHOST, DOOM, FROST, HEAVY, HAZE and FEVER are not six knob positions — each one is
-a different pedal inside: its own drive circuit (creamy screamer, near-square
-fuzz, glassy clean, tight rectifier, smooth wall, octave-up fuzz), its own delay voice, its
-own chorus or flanger, cabinet and reverb. Switch presets and the whole rig
-re-themes — colour palette, backdrop, even the chassis tint.
+Each preset is a different pedal inside, not a saved knob position. Switching
+rigs swaps the drive topology, the delay voice, the modulation circuit, the
+cabinet and the reverb, then re-themes the whole interface: palette, backdrop,
+even the chassis tint.
+
+| Preset    | Character                                                                | Circuit                                                    |
+| --------- | ------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| **GHOST** | The house voice. Mid-pushed drive that cleans up with your guitar volume. | screamer drive → tape echo → slow chorus → hall reverb      |
+| **DOOM**  | Low-tuned fuzz wall. Chords collapse into sludge, single notes stay huge. | vintage fuzz → dark slap delay → cavern reverb              |
+| **FROST** | Glassy clean platform with lush chorus. Every note stays articulate.      | clean boost → chorus → crystal delay → plate reverb         |
+| **HEAVY** | Scooped high gain, tight and nearly dry. Palm mutes hit like a wall.      | rectifier drive → tight slap delay → room reverb            |
+| **HAZE**  | Shoegaze weather system. Long saturating echoes under an endless reverb.  | smooth drive → tape wash delay → wide chorus → cathedral    |
+| **FEVER** | Octave-up fuzz that rings like a circuit about to give up.                | octave fuzz → mid delay → fast wobble → dark reverb         |
 
 ## A real pedal, not a picture of one
 
-Every control is a physical 3D part: knobs turn under your pointer
-(double-click resets, scroll fine-tunes), the footswitch clicks, the camera
-orbits. Under the translucent chassis there is a full circuit board — DIP op
-amps, carbon resistors, a reverb brick — laid out after a real analog
-reference, down to the silkscreen. Stomp and the signal goes live: the LED
-eye lights up, the knobs sweep into position and your guitar is running
-through the chain.
+<img align="right" src="assets/spin.webp" width="330" alt="Orbiting the 3D pedal" />
 
-## Features
+Every control is a physical 3D part. Knobs turn under your pointer:
+double-click resets, scroll fine-tunes. The footswitch clicks, the chassis
+dips under the stomp, the camera orbits freely.
 
-- **Real-time signal chain** — drive, echo, tone, modulation, reverb and master volume, all live
-- **Plays your guitar** — live microphone input with built-in feedback protection
-- **Six voiced presets** — each with its own amp and cabinet voicing, colour palette and animated backdrop
-- **Hands-on 3D pedal** — drag the knobs and stomp the footswitch
-- **Keyboard synth & metronome** — built in, for when there's no guitar around
-- **Record & export** — capture a take and download it as MP3
+Under the translucent lid there is a full circuit board: DIP op amps, carbon
+resistors, electrolytics with real markings, a reverb brick, all laid out
+after an analog reference down to the silkscreen.
+
+The pedal also powers on like hardware. Knobs wake at zero, and the first
+stomp sweeps them into position as the LED eye lights up and your guitar goes
+live through the chain.
+
+<br clear="right"/>
+
+## Signal chain
+
+```
+guitar in → drive → tone → tape echo → modulation → cab → reverb → limiter → out
+```
+
+Every stage is voiced per preset and built node by node on the native
+Web Audio API: waveshaper drive curves with per-topology makeup gain, a
+feedback delay loop with tape saturation and damping, a modulated delay voiced
+as chorus or flanger, cabinet EQ, procedural convolution reverb and a
+zero-latency soft limiter. Live microphone input runs through a feedback
+guard that mutes the chain before a howl gets loose.
 
 ## Controls
 
-| Do this                 | To get                                              |
-| ----------------------- | --------------------------------------------------- |
-| Click the footswitch    | Arm / bypass the pedal                              |
-| Drag a knob up or down  | Turn it — double-click resets, scroll fine-tunes    |
-| Drag around the pedal   | Orbit the camera — scroll zooms                     |
-| Pick a preset           | Swap the whole rig: voicing, palette and backdrop   |
-| <kbd>Space</kbd>        | Start / stop recording                              |
-| Keyboard synth          | Play notes from your computer keyboard              |
+| Do this                | To get                                            |
+| ---------------------- | ------------------------------------------------- |
+| Click the footswitch   | Arm or bypass the pedal                           |
+| Drag a knob up or down | Turn it. Double-click resets, scroll fine-tunes   |
+| Drag around the pedal  | Orbit the camera. Scroll zooms                    |
+| Keys <kbd>1</kbd> to <kbd>6</kbd> | Switch presets                         |
+| <kbd>Space</kbd>       | Start or stop recording                           |
+
+There is also a built-in keyboard synth for when no guitar is around, and a
+recorder that captures a take and exports it as MP3.
 
 ## Stack
 
-- **UI** — React 19 and TypeScript, bundled with Vite, styled with Tailwind CSS
-- **3D** — Three.js via React Three Fiber and drei
-- **Audio** — the native Web Audio API, no audio framework. The whole effects chain
-  and DSP — drive curves, per-preset cabinet voicing, modulation, convolution
-  reverb and a zero-latency limiter — is built node by node; MP3 export uses lamejs.
+- **UI**: React 19 and TypeScript, bundled with Vite, styled with Tailwind CSS
+- **3D**: Three.js via React Three Fiber and drei
+- **Audio**: the native Web Audio API with no audio framework; MP3 export uses lamejs
 
 ## Run it locally
 
