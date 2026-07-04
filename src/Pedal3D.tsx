@@ -91,7 +91,7 @@ export default function Pedal3D({
           gl.debug.checkShaderErrors = false;
         }}
       >
-        <Environment preset="city" environmentIntensity={0.8} />
+        <Environment files="/hdri/potsdamer_platz_1k.hdr" environmentIntensity={0.8} />
 
         <ambientLight intensity={0.25} />
 

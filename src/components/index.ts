@@ -7,3 +7,4 @@ export { KeyboardDisplay } from "./KeyboardDisplay";
 export { Fader } from "./Fader";
 export { WebGLFallback } from "./WebGLFallback";
 export { PresetInfo } from "./PresetInfo";
+export { ErrorBoundary } from "./ErrorBoundary";

@@ -57,7 +57,22 @@ export default function PresetBg({
     resize();
     window.addEventListener("resize", resize);
     if (tr.current.currentIdx !== null) glState.current = buildShader(gl, tr.current.currentIdx);
-    return () => window.removeEventListener("resize", resize);
+    const onContextLost = (e: Event) => {
+      e.preventDefault();
+      glState.current = null;
+    };
+    const onContextRestored = () => {
+      gl.getExtension("OES_standard_derivatives");
+      resize();
+      if (tr.current.currentIdx !== null) glState.current = buildShader(gl, tr.current.currentIdx);
+    };
+    canvas.addEventListener("webglcontextlost", onContextLost);
+    canvas.addEventListener("webglcontextrestored", onContextRestored);
+    return () => {
+      window.removeEventListener("resize", resize);
+      canvas.removeEventListener("webglcontextlost", onContextLost);
+      canvas.removeEventListener("webglcontextrestored", onContextRestored);
+    };
   }, []);
 
   useEffect(() => {
@@ -81,7 +96,7 @@ export default function PresetBg({
         const e = p * p;
         t.blend = 1 - e;
         if (p >= 1) {
-          if (t.pendingIdx !== null && gl) {
+          if (t.pendingIdx !== null && gl && !gl.isContextLost()) {
             glState.current = buildShader(gl, t.pendingIdx, glState.current?.prog);
             setOpacityRef.current(PRESET_OPACITY[t.pendingIdx]);
           }
