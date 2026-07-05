@@ -841,21 +841,6 @@ export default function App() {
       )}
 
       {fx.feedbackBlocked && <FeedbackModal onResume={() => fx.resumeFromFeedback()} />}
-
-      <div
-        className="fixed left-2 top-2 z-[300] font-[var(--font-mono)] pointer-events-none"
-        style={{
-          padding: "6px 10px",
-          borderRadius: 6,
-          background: "rgba(0,0,0,0.7)",
-          border: `1px solid ${fx.corrLevel > 0.6 ? "#ff5a5a" : "rgba(255,255,255,0.15)"}`,
-          color: fx.corrLevel > 0.6 ? "#ff9090" : "#8fd",
-          fontSize: 11,
-          letterSpacing: "0.08em",
-        }}
-      >
-        corr {fx.corrLevel.toFixed(2)}
-      </div>
     </div>
   );
 }

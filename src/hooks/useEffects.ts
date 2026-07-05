@@ -27,7 +27,6 @@ type EffectsApi = {
   getRecordedPeaks: () => Float32Array | null;
   feedbackBlocked: boolean;
   guardActive: boolean;
-  corrLevel: number;
   resumeFromFeedback: () => void;
 };
 
@@ -136,7 +135,6 @@ export function useEffects({
   const [micBlocked, setMicBlocked] = useState(false);
   const [feedbackBlocked, setFeedbackBlocked] = useState(false);
   const [guardActive, setGuardActive] = useState(false);
-  const [corrLevel, setCorrLevel] = useState(0);
 
   const ctxRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -680,21 +678,17 @@ export function useEffects({
     const PEAK_DB_MIN = -38;
     const RMS_GATE = 0.22;
     const IPMP_CHECKS = 6;
-    const RUNAWAY_RMS = 0.4;
-    const RUNAWAY_CHECKS = 6;
     const NOTCH_GAIN = -15;
     const NOTCH_SPACING = 5;
     const NOTCH_HOLD_MS = 30000;
-    const RENOTCH_WINDOW_MS = 2000;
-    const RENOTCH_COUNT = 2;
+    const CORR_TRIP = 0.5;
+    const CORR_SUSTAIN_CHECKS = 5;
 
     let lastBin = -1;
     let persist = 0;
-    let netHot = 0;
     let sinceNotch = NOTCH_SPACING;
-    let notchTimes: number[] = [];
     let corrSmooth = 0;
-    let corrTick = 0;
+    let corrHot = 0;
 
     const rmsNow = () => {
       const analyser = analyserRef.current;
@@ -840,7 +834,11 @@ export function useEffects({
       sinceNotch++;
 
       corrSmooth = corrSmooth * 0.6 + loopCorr() * 0.4;
-      if (corrTick++ % 3 === 0) setCorrLevel(corrSmooth);
+      corrHot = corrSmooth >= CORR_TRIP ? corrHot + 1 : Math.max(0, corrHot - 1);
+      if (corrHot >= CORR_SUSTAIN_CHECKS) {
+        hardTrip();
+        return;
+      }
 
       const candidate = !!sp && sp.pnpr > PNPR_DB && sp.peakDb > PEAK_DB_MIN && rms > RMS_GATE;
       if (candidate && sp && Math.abs(sp.bin - lastBin) <= 3) persist++;
@@ -851,25 +849,9 @@ export function useEffects({
         deployNotch(sp.hz);
         persist = 0;
         sinceNotch = 0;
-        const now = Date.now();
-        notchTimes = notchTimes.filter((t) => now - t < RENOTCH_WINDOW_MS);
-        notchTimes.push(now);
-        if (notchTimes.length >= RENOTCH_COUNT) {
-          hardTrip();
-          return;
-        }
       }
 
-      const fighting = notchAtRef.current.some((at) => at !== 0);
-      if (fighting && rms >= RUNAWAY_RMS) netHot++;
-      else netHot = Math.max(0, netHot - 1);
-
-      if (netHot >= RUNAWAY_CHECKS) {
-        hardTrip();
-        return;
-      }
-
-      setGuardActive(fighting);
+      setGuardActive(notchAtRef.current.some((at) => at !== 0));
     };
 
     guardIntervalRef.current = window.setInterval(checkFeedback, 100);
@@ -1060,7 +1042,6 @@ export function useEffects({
     getRecordedPeaks,
     feedbackBlocked,
     guardActive,
-    corrLevel,
     resumeFromFeedback,
   };
 }
