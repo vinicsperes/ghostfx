@@ -26,6 +26,8 @@ type EffectsApi = {
   downloadRecording: () => void;
   getRecordedPeaks: () => Float32Array | null;
   feedbackBlocked: boolean;
+  guardActive: boolean;
+  corrLevel: number;
   resumeFromFeedback: () => void;
 };
 
@@ -84,18 +86,26 @@ function encodeWav(buf: AudioBuffer): Blob {
   return new Blob([out], { type: "audio/wav" });
 }
 
-async function encodeMp3(buf: AudioBuffer): Promise<Blob> {
-  const { Mp3Encoder } = await import("@breezystack/lamejs");
-  const ch = buf.getChannelData(0);
-  const enc = new Mp3Encoder(1, buf.sampleRate, 128);
+function floatToPcm(ch: Float32Array): Int16Array {
   const pcm = new Int16Array(ch.length);
   for (let i = 0; i < ch.length; i++) {
     const s = Math.max(-1, Math.min(1, ch[i]));
     pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
   }
+  return pcm;
+}
+
+async function encodeMp3(buf: AudioBuffer): Promise<Blob> {
+  const { Mp3Encoder } = await import("@breezystack/lamejs");
+  const numCh = Math.min(buf.numberOfChannels, 2);
+  const enc = new Mp3Encoder(numCh, buf.sampleRate, 128);
+  const left = floatToPcm(buf.getChannelData(0));
+  const right = numCh === 2 ? floatToPcm(buf.getChannelData(1)) : null;
   const parts: Uint8Array[] = [];
-  for (let i = 0; i < pcm.length; i += 1152) {
-    const mp3 = enc.encodeBuffer(pcm.subarray(i, i + 1152));
+  for (let i = 0; i < left.length; i += 1152) {
+    const mp3 = right
+      ? enc.encodeBuffer(left.subarray(i, i + 1152), right.subarray(i, i + 1152))
+      : enc.encodeBuffer(left.subarray(i, i + 1152));
     if (mp3.length > 0) parts.push(mp3);
   }
   const tail = enc.flush();
@@ -125,13 +135,23 @@ export function useEffects({
   const [error, setError] = useState<string | null>(null);
   const [micBlocked, setMicBlocked] = useState(false);
   const [feedbackBlocked, setFeedbackBlocked] = useState(false);
+  const [guardActive, setGuardActive] = useState(false);
+  const [corrLevel, setCorrLevel] = useState(0);
 
   const ctxRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const guardAnalyserRef = useRef<AnalyserNode | null>(null);
+  const micAnalyserRef = useRef<AnalyserNode | null>(null);
+  const outAnalyserRef = useRef<AnalyserNode | null>(null);
+  const micBufRef = useRef<Float32Array<ArrayBuffer> | null>(null);
+  const outBufRef = useRef<Float32Array<ArrayBuffer> | null>(null);
   const guardIntervalRef = useRef<number | null>(null);
   const feedbackLatchRef = useRef(false);
   const guardBufRef = useRef<Float32Array<ArrayBuffer> | null>(null);
+  const guardFreqRef = useRef<Float32Array<ArrayBuffer> | null>(null);
+  const notchAtRef = useRef<number[]>([0, 0, 0, 0]);
+  const armedOnceRef = useRef(false);
 
   const irBuffersRef = useRef<AudioBuffer[]>([]);
   const activeConvRef = useRef<"A" | "B">("A");
@@ -180,6 +200,8 @@ export function useEffects({
     bypass: GainNode | null;
     effects: GainNode | null;
     masterGain: GainNode | null;
+    guard: GainNode | null;
+    notches: BiquadFilterNode[];
   }>({
     preFilter: null,
     midEmphasis: null,
@@ -213,6 +235,8 @@ export function useEffects({
     bypass: null,
     effects: null,
     masterGain: null,
+    guard: null,
+    notches: [],
   });
 
   const init = useCallback(async () => {
@@ -228,11 +252,15 @@ export function useEffects({
       const ctx = new AudioContext({ latencyHint: "interactive" });
       ctxRef.current = ctx;
       ctx.onstatechange = () => {
-        if (ctx.state === "suspended" && !feedbackLatchRef.current) ctx.resume();
+        if (ctx.state === "suspended" && !feedbackLatchRef.current) ctx.resume().catch(() => {});
       };
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        },
         video: false,
       });
       streamRef.current = stream;
@@ -301,7 +329,7 @@ export function useEffects({
       const lfoGain = ctx.createGain();
       lfo.type = "sine";
       lfo.frequency.value = 0.85;
-      lfoGain.gain.value = 0.002 * echo;
+      lfoGain.gain.value = 0.003 * echo;
       lfo.connect(lfoGain);
       lfoGain.connect(delayNode.delayTime);
       lfo.start();
@@ -376,6 +404,23 @@ export function useEffects({
       const masterGain = ctx.createGain();
       masterGain.gain.value = 0;
 
+      const guardGain = ctx.createGain();
+      guardGain.gain.value = 1;
+
+      const notches = Array.from({ length: 4 }, () => {
+        const n = ctx.createBiquadFilter();
+        n.type = "peaking";
+        n.frequency.value = 1000;
+        n.Q.value = 30;
+        n.gain.value = 0;
+        return n;
+      });
+
+      const guardAnalyser = ctx.createAnalyser();
+      guardAnalyser.fftSize = 4096;
+      guardAnalyser.smoothingTimeConstant = 0.5;
+      guardAnalyserRef.current = guardAnalyser;
+
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 256;
       analyserRef.current = analyser;
@@ -428,9 +473,27 @@ export function useEffects({
       bypassGain.connect(masterGain);
       effectsGain.connect(masterGain);
 
-      masterGain.connect(analyser);
-      masterGain.connect(limiter);
+      masterGain.connect(notches[0]);
+      notches[0].connect(notches[1]);
+      notches[1].connect(notches[2]);
+      notches[2].connect(notches[3]);
+      notches[3].connect(guardGain);
+      guardGain.connect(analyser);
+      guardGain.connect(guardAnalyser);
+      guardGain.connect(limiter);
       limiter.connect(ctx.destination);
+
+      const micAnalyser = ctx.createAnalyser();
+      micAnalyser.fftSize = 4096;
+      micAnalyser.smoothingTimeConstant = 0;
+      monoSum.connect(micAnalyser);
+      micAnalyserRef.current = micAnalyser;
+
+      const outAnalyser = ctx.createAnalyser();
+      outAnalyser.fftSize = 4096;
+      outAnalyser.smoothingTimeConstant = 0;
+      limiter.connect(outAnalyser);
+      outAnalyserRef.current = outAnalyser;
 
       const recordDest = ctx.createMediaStreamDestination();
       limiter.connect(recordDest);
@@ -469,13 +532,15 @@ export function useEffects({
         bypass: bypassGain,
         effects: effectsGain,
         masterGain,
+        guard: guardGain,
+        notches,
       };
 
       setReady(true);
       setMicBlocked(false);
       setError(null);
       setState("bypass");
-      masterGain.gain.setTargetAtTime(0.8, ctx.currentTime, 0.5);
+      masterGain.gain.setTargetAtTime(masterVolume, ctx.currentTime, 0.5);
     } catch (e) {
       try {
         await ctxRef.current?.close();
@@ -493,7 +558,7 @@ export function useEffects({
         setError(e instanceof Error ? e.message : "could not access microphone");
       }
     }
-  }, [drive, echo, tone, reverb, mod, presetIdx]);
+  }, [drive, echo, tone, reverb, mod, masterVolume, presetIdx]);
 
   useEffect(() => {
     const { drive: driveNode, driveTrim, preGain, preFilter, midEmphasis } = nodesRef.current;
@@ -611,33 +676,200 @@ export function useEffects({
       if (guardIntervalRef.current) clearInterval(guardIntervalRef.current);
       return;
     }
-    let over = 0;
-    const RMS_TRIP = 0.5;
-    const TRIP_CHECKS = 6;
+    const PNPR_DB = 26;
+    const PEAK_DB_MIN = -38;
+    const RMS_GATE = 0.22;
+    const IPMP_CHECKS = 6;
+    const RUNAWAY_RMS = 0.4;
+    const RUNAWAY_CHECKS = 6;
+    const NOTCH_GAIN = -15;
+    const NOTCH_SPACING = 5;
+    const NOTCH_HOLD_MS = 30000;
+    const RENOTCH_WINDOW_MS = 2000;
+    const RENOTCH_COUNT = 2;
 
-    const checkFeedback = () => {
+    let lastBin = -1;
+    let persist = 0;
+    let netHot = 0;
+    let sinceNotch = NOTCH_SPACING;
+    let notchTimes: number[] = [];
+    let corrSmooth = 0;
+    let corrTick = 0;
+
+    const rmsNow = () => {
       const analyser = analyserRef.current;
-      const ctx = ctxRef.current;
-      if (!analyser || !ctx || feedbackLatchRef.current) return;
-      const buf = (guardBufRef.current ??= new Float32Array(analyser.fftSize));
-      analyser.getFloatTimeDomainData(buf);
+      if (!analyser) return 0;
+      const time = (guardBufRef.current ??= new Float32Array(analyser.fftSize));
+      analyser.getFloatTimeDomainData(time);
       let sum = 0;
-      for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
-      const rms = Math.sqrt(sum / buf.length);
-      over = rms > RMS_TRIP ? over + 1 : 0;
-      if (over < TRIP_CHECKS) return;
+      for (let i = 0; i < time.length; i++) sum += time[i] * time[i];
+      return Math.sqrt(sum / time.length);
+    };
 
+    const loopCorr = () => {
+      const ma = micAnalyserRef.current;
+      const oa = outAnalyserRef.current;
+      const ctx = ctxRef.current;
+      if (!ma || !oa || !ctx) return 0;
+      const N = ma.fftSize;
+      const m = (micBufRef.current ??= new Float32Array(N));
+      const o = (outBufRef.current ??= new Float32Array(N));
+      ma.getFloatTimeDomainData(m);
+      oa.getFloatTimeDomainData(o);
+      for (let i = N - 1; i > 0; i--) {
+        m[i] -= 0.97 * m[i - 1];
+        o[i] -= 0.97 * o[i - 1];
+      }
+      const W = 1024;
+      const lagMin = Math.round(0.006 * ctx.sampleRate);
+      const lagMax = Math.min(Math.round(0.06 * ctx.sampleRate), N - 1 - W);
+      const base = lagMax;
+      let em = 0;
+      for (let i = 0; i < W; i++) em += m[base + i] * m[base + i];
+      if (em < 1e-3) return 0;
+      let best = 0;
+      for (let lag = lagMin; lag <= lagMax; lag += 8) {
+        let dot = 0;
+        let eo = 0;
+        for (let i = 0; i < W; i++) {
+          const mv = m[base + i];
+          const ov = o[base + i - lag];
+          dot += mv * ov;
+          eo += ov * ov;
+        }
+        if (eo > 1e-6) {
+          const rho = Math.abs(dot) / Math.sqrt(em * eo);
+          if (rho > best) best = rho;
+        }
+      }
+      return best;
+    };
+
+    const spectrum = () => {
+      const ga = guardAnalyserRef.current;
+      const ctx = ctxRef.current;
+      if (!ga || !ctx) return null;
+      const freq = (guardFreqRef.current ??= new Float32Array(ga.frequencyBinCount));
+      ga.getFloatFrequencyData(freq);
+      let bin = -1;
+      let peakDb = -Infinity;
+      for (let i = 4; i < freq.length; i++) {
+        if (freq[i] > peakDb) {
+          peakDb = freq[i];
+          bin = i;
+        }
+      }
+      if (bin < 4 || !Number.isFinite(peakDb)) return null;
+      let nSum = 0;
+      let nCount = 0;
+      for (const side of [-1, 1]) {
+        for (let d = 6; d <= 24; d++) {
+          const j = bin + side * d;
+          if (j >= 4 && j < freq.length && Number.isFinite(freq[j])) {
+            nSum += freq[j];
+            nCount++;
+          }
+        }
+      }
+      if (!nCount) return null;
+      const pnpr = peakDb - nSum / nCount;
+      const L = freq[bin - 1];
+      const R = freq[bin + 1];
+      const den = L - 2 * peakDb + R;
+      const delta =
+        den !== 0 && Number.isFinite(L) && Number.isFinite(R)
+          ? Math.max(-0.5, Math.min(0.5, (0.5 * (L - R)) / den))
+          : 0;
+      const hz = ((bin + delta) * ctx.sampleRate) / ga.fftSize;
+      return { bin, peakDb, pnpr, hz };
+    };
+
+    const releaseStaleNotches = () => {
+      const ctx = ctxRef.current;
+      const { notches } = nodesRef.current;
+      if (!ctx) return;
+      const now = Date.now();
+      notchAtRef.current.forEach((at, i) => {
+        if (at !== 0 && now - at > NOTCH_HOLD_MS) {
+          notches[i]?.gain.setTargetAtTime(0, ctx.currentTime, 0.2);
+          notchAtRef.current[i] = 0;
+        }
+      });
+    };
+
+    const deployNotch = (hz: number) => {
+      const ctx = ctxRef.current;
+      const { notches } = nodesRef.current;
+      if (!ctx || !notches.length) return;
+      let idx = notchAtRef.current.findIndex((at) => at === 0);
+      if (idx === -1) {
+        idx = 0;
+        for (let i = 1; i < notchAtRef.current.length; i++)
+          if (notchAtRef.current[i] < notchAtRef.current[idx]) idx = i;
+      }
+      const n = notches[idx];
+      n.frequency.setValueAtTime(hz, ctx.currentTime);
+      n.gain.setTargetAtTime(NOTCH_GAIN, ctx.currentTime, 0.03);
+      notchAtRef.current[idx] = Date.now();
+    };
+
+    const hardTrip = () => {
+      const ctx = ctxRef.current;
+      if (!ctx) return;
       feedbackLatchRef.current = true;
-      const { masterGain } = nodesRef.current;
+      const { masterGain, guard } = nodesRef.current;
       masterGain?.gain.cancelScheduledValues(ctx.currentTime);
       masterGain?.gain.setValueAtTime(0, ctx.currentTime);
+      guard?.gain.cancelScheduledValues(ctx.currentTime);
+      guard?.gain.setValueAtTime(1, ctx.currentTime);
       streamRef.current?.getAudioTracks().forEach((t) => {
         t.enabled = false;
       });
       ctx.suspend();
+      setGuardActive(false);
       setState("bypass");
       setFeedbackBlocked(true);
       setError(null);
+    };
+
+    const checkFeedback = () => {
+      if (feedbackLatchRef.current || !ctxRef.current) return;
+      releaseStaleNotches();
+      const rms = rmsNow();
+      const sp = spectrum();
+      sinceNotch++;
+
+      corrSmooth = corrSmooth * 0.6 + loopCorr() * 0.4;
+      if (corrTick++ % 3 === 0) setCorrLevel(corrSmooth);
+
+      const candidate = !!sp && sp.pnpr > PNPR_DB && sp.peakDb > PEAK_DB_MIN && rms > RMS_GATE;
+      if (candidate && sp && Math.abs(sp.bin - lastBin) <= 3) persist++;
+      else persist = candidate ? 1 : 0;
+      lastBin = candidate && sp ? sp.bin : -1;
+
+      if (persist >= IPMP_CHECKS && sinceNotch >= NOTCH_SPACING && sp) {
+        deployNotch(sp.hz);
+        persist = 0;
+        sinceNotch = 0;
+        const now = Date.now();
+        notchTimes = notchTimes.filter((t) => now - t < RENOTCH_WINDOW_MS);
+        notchTimes.push(now);
+        if (notchTimes.length >= RENOTCH_COUNT) {
+          hardTrip();
+          return;
+        }
+      }
+
+      const fighting = notchAtRef.current.some((at) => at !== 0);
+      if (fighting && rms >= RUNAWAY_RMS) netHot++;
+      else netHot = Math.max(0, netHot - 1);
+
+      if (netHot >= RUNAWAY_CHECKS) {
+        hardTrip();
+        return;
+      }
+
+      setGuardActive(fighting);
     };
 
     guardIntervalRef.current = window.setInterval(checkFeedback, 100);
@@ -649,14 +881,17 @@ export function useEffects({
   const resumeFromFeedback = useCallback(() => {
     const ctx = ctxRef.current;
     feedbackLatchRef.current = false;
+    setGuardActive(false);
     setFeedbackBlocked(false);
     setError(null);
     const off = () => {
-      const { masterGain, bypass, effects } = nodesRef.current;
+      const { masterGain, bypass, effects, guard } = nodesRef.current;
       if (!ctx) return;
       const now = ctx.currentTime;
       masterGain?.gain.cancelScheduledValues(now);
       masterGain?.gain.setValueAtTime(0, now);
+      guard?.gain.cancelScheduledValues(now);
+      guard?.gain.setValueAtTime(1, now);
       bypass?.gain.setValueAtTime(1, now);
       effects?.gain.setValueAtTime(0, now);
     };
@@ -683,7 +918,8 @@ export function useEffects({
       streamRef.current?.getAudioTracks().forEach((tr) => {
         tr.enabled = true;
       });
-      masterGain?.gain.setTargetAtTime(0.8, t, 0.1);
+      masterGain?.gain.setTargetAtTime(masterVolume, t, armedOnceRef.current ? 0.1 : 0.45);
+      armedOnceRef.current = true;
       bypass?.gain.setTargetAtTime(0, t, 0.02);
       effects?.gain.setTargetAtTime(1, t, 0.02);
       setState("active");
@@ -692,7 +928,7 @@ export function useEffects({
       effects?.gain.setTargetAtTime(0, t, 0.02);
       setState("bypass");
     }
-  }, [state, init, resumeFromFeedback]);
+  }, [state, init, resumeFromFeedback, masterVolume]);
 
   useEffect(() => {
     return () => {
@@ -767,7 +1003,9 @@ export function useEffects({
         recordedPeaksRef.current = computePeaks(buf);
         setRecordedDuration(buf.duration);
         setHasRecording(true);
-      } catch {}
+      } catch {
+        setError("could not process the recording — try again");
+      }
     };
     rec.start();
     recorderRef.current = rec;
@@ -821,6 +1059,8 @@ export function useEffects({
     downloadRecording,
     getRecordedPeaks,
     feedbackBlocked,
+    guardActive,
+    corrLevel,
     resumeFromFeedback,
   };
 }

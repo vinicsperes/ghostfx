@@ -17,6 +17,7 @@ import {
   Fader,
   WebGLFallback,
   PresetInfo,
+  ErrorBoundary,
 } from "./components";
 
 const WEBGL_OK = (() => {
@@ -478,28 +479,32 @@ export default function App() {
       </div>
 
       {WEBGL_OK ? (
-        <div className="absolute inset-0 z-[2]">
-          <Pedal3D
-            ledColor={themeColor}
-            isPlaying={isActive}
-            onTap={handleTap}
-            onStomp={handleStomp}
-            knobDrive={drive}
-            knobEcho={echo}
-            knobTone={tone}
-            knobReverb={reverb}
-            knobMod={mod}
-            knobMaster={masterVolume}
-            onKnobChange={handleKnobChange}
-            palette={{
-              ...PALETTE,
-              accent: themeColor,
-              pedal: presetIdx !== null ? PRESET_META[presetIdx].chassis : PALETTE.pedal,
-            }}
-            presetIdx={presetIdx}
-            stompCount={stompCount}
-          />
-        </div>
+        <ErrorBoundary
+          fallback={<WebGLFallback isActive={isActive} onTap={handleTap} accent={themeColor} />}
+        >
+          <div className="absolute inset-0 z-[2]">
+            <Pedal3D
+              ledColor={themeColor}
+              isPlaying={isActive}
+              onTap={handleTap}
+              onStomp={handleStomp}
+              knobDrive={drive}
+              knobEcho={echo}
+              knobTone={tone}
+              knobReverb={reverb}
+              knobMod={mod}
+              knobMaster={masterVolume}
+              onKnobChange={handleKnobChange}
+              palette={{
+                ...PALETTE,
+                accent: themeColor,
+                pedal: presetIdx !== null ? PRESET_META[presetIdx].chassis : PALETTE.pedal,
+              }}
+              presetIdx={presetIdx}
+              stompCount={stompCount}
+            />
+          </div>
+        </ErrorBoundary>
       ) : (
         <WebGLFallback isActive={isActive} onTap={handleTap} accent={themeColor} />
       )}
@@ -752,7 +757,11 @@ export default function App() {
         {(() => {
           const blocked = fx.feedbackBlocked;
           const lit = blocked || isActive;
-          const tone = blocked ? "#ff5a5a" : isActive ? ledColor : "rgba(150,160,175,0.5)";
+          const tone = blocked
+            ? "#ff5a5a"
+            : isActive
+              ? ledColor
+              : "rgba(150,160,175,0.5)";
           return (
             <div
               className="flex items-center"
@@ -760,7 +769,9 @@ export default function App() {
                 gap: 8,
                 padding: "5px 11px",
                 borderRadius: 999,
-                border: `1px solid ${blocked ? "#ff5a5a45" : isActive ? ledColor + "45" : "rgba(255,255,255,0.08)"}`,
+                border: `1px solid ${
+                  blocked ? "#ff5a5a45" : isActive ? ledColor + "45" : "rgba(255,255,255,0.08)"
+                }`,
                 background: blocked
                   ? "rgba(255,90,90,0.07)"
                   : isActive
@@ -831,6 +842,21 @@ export default function App() {
       )}
 
       {fx.feedbackBlocked && <FeedbackModal onResume={() => fx.resumeFromFeedback()} />}
+
+      <div
+        className="fixed left-2 top-2 z-[300] font-[var(--font-mono)] pointer-events-none"
+        style={{
+          padding: "6px 10px",
+          borderRadius: 6,
+          background: "rgba(0,0,0,0.7)",
+          border: `1px solid ${fx.corrLevel > 0.6 ? "#ff5a5a" : "rgba(255,255,255,0.15)"}`,
+          color: fx.corrLevel > 0.6 ? "#ff9090" : "#8fd",
+          fontSize: 11,
+          letterSpacing: "0.08em",
+        }}
+      >
+        corr {fx.corrLevel.toFixed(2)}
+      </div>
     </div>
   );
 }
