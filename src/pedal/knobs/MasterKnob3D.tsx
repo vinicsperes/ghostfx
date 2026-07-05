@@ -169,14 +169,7 @@ export function MasterKnob3D({
     >
       {isDragging && <KnobTooltip label="Volume" value={value} accent={accent} showBar />}
       {!isDragging && mutedHint && (
-        <KnobTooltip
-          label="MUDO — GIRE PRA OUVIR"
-          value={value}
-          accent={accent}
-          pulse
-          showBar
-          icon="mute"
-        />
+        <KnobTooltip label="TURN UP" value={value} accent={accent} pulse showBar icon="volumeUp" />
       )}
       <group ref={masterGroupRef}>
         {knobStyle === "bigmuff" ? (

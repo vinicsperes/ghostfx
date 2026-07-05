@@ -1,17 +1,22 @@
 import { Html } from "@react-three/drei";
 
-function MuteIcon({ color }: { color: string }) {
+function VolumeUpIcon({ color }: { color: string }) {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-      <path d="M11 5 6 9H3v6h3l5 4V5Z" fill={color} />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M11 5 6 9H2v6h4l5 4V5Z" fill={color} />
       <path
-        d="M16 9.5a4.5 4.5 0 0 1 0 5"
+        d="M15.5 8.5a5 5 0 0 1 0 7"
         stroke={color}
-        strokeWidth="1.8"
+        strokeWidth="2"
         strokeLinecap="round"
-        opacity="0.55"
+        opacity="0.65"
       />
-      <path d="M18.5 4 5 17.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <path
+        d="M19 5.5a10 10 0 0 1 0 13"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -29,7 +34,7 @@ export function KnobTooltip({
   accent: string;
   pulse?: boolean;
   showBar?: boolean;
-  icon?: "mute";
+  icon?: "volumeUp";
 }) {
   const pct = Math.round(value * 100);
   return (
@@ -52,8 +57,8 @@ export function KnobTooltip({
         }}
       >
         <div className="flex items-center" style={{ gap: 6 }}>
-          {icon === "mute" && <MuteIcon color={accent} />}
-          {icon === "mute" ? label : `${label} ${pct}%`}
+          {icon === "volumeUp" && <VolumeUpIcon color={accent} />}
+          {icon === "volumeUp" ? label : `${label} ${pct}%`}
         </div>
         {showBar && (
           <div
