@@ -1,15 +1,25 @@
 export function SideJack({
   position,
   metal,
+  orient = "side",
 }: {
   position: [number, number, number];
   metal: string;
+  orient?: "side" | "up" | "front" | "back";
 }) {
   const isLeft = position[0] < 0;
   const chrome = "#d6d6da";
+  const rotation: [number, number, number] =
+    orient === "up"
+      ? [Math.PI, 0, 0]
+      : orient === "front"
+        ? [-Math.PI / 2, 0, 0]
+        : orient === "back"
+          ? [Math.PI / 2, 0, 0]
+          : [0, 0, isLeft ? -Math.PI / 2 : Math.PI / 2];
 
   return (
-    <group position={position} rotation={[0, 0, isLeft ? -Math.PI / 2 : Math.PI / 2]}>
+    <group position={position} rotation={rotation}>
       <mesh position={[0, 0.205, 0]} castShadow>
         <boxGeometry args={[0.2, 0.24, 0.17]} />
         <meshStandardMaterial color="#0a0a0a" roughness={0.62} metalness={0.12} />

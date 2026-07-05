@@ -160,12 +160,22 @@ export function PedalBody({
   };
 
   const LY = {
-    battery: explode * 0.3,
-    circuit: explode * 0.62,
-    footsw: explode * 0.95,
-    jacks: explode * 1.28,
-    knobs: explode * 1.62,
+    circuit: explode * 0.72,
+    above: explode * 1.5,
   };
+  const chassisMat = (
+    <meshPhysicalMaterial
+      color={palette.pedal}
+      roughness={0.3}
+      metalness={0.2}
+      envMapIntensity={0.5}
+      clearcoat={0.45}
+      clearcoatRoughness={0.12}
+      transparent
+      opacity={xray ? 0.12 : 0.82}
+      depthWrite={false}
+    />
+  );
 
   return (
     <group ref={rootRef}>
@@ -191,25 +201,15 @@ export function PedalBody({
           onPointerEnter={onChassisEnter}
           onPointerLeave={onChassisLeave}
         >
-          <meshPhysicalMaterial
-            color={palette.pedal}
-            roughness={0.3}
-            metalness={0.2}
-            envMapIntensity={0.5}
-            clearcoat={0.45}
-            clearcoatRoughness={0.12}
-            transparent
-            opacity={xray ? 0.12 : 0.82}
-            depthWrite={false}
-          />
+          {chassisMat}
         </RoundedBox>
       )}
 
       {!circuitOnly && (
-        <group position={[0, LY.jacks, 0]}>
-          <SideJack position={[-W / 2 - 0.04, 0.08, -0.6]} metal={palette.metal} />
-          <SideJack position={[W / 2 + 0.04, 0.08, -0.6]} metal={palette.metal} />
-        </group>
+        <>
+          <SideJack orient="front" position={[-0.5, 0.1, L / 2 + 0.02]} metal={palette.metal} />
+          <SideJack orient="front" position={[0.5, 0.1, L / 2 + 0.02]} metal={palette.metal} />
+        </>
       )}
       {!hideTag && !circuitOnly && <HangTag />}
 
@@ -229,7 +229,7 @@ export function PedalBody({
         ))}
 
       {!circuitOnly && (
-      <>
+      <group>
       <group position={[0, H / 2 + 0.02, 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
         <Svg
           src="/ghost-led-solo.svg"
@@ -346,34 +346,32 @@ export function PedalBody({
       </LabelText>
 
       <LabelText
-        position={[W / 2 + 0.002, 0.33, -0.6]}
-        rotation={[0, Math.PI / 2, 0]}
-        fontSize={0.062}
+        position={[-0.5, 0.32, L / 2 + 0.002]}
+        rotation={[0, 0, 0]}
+        fontSize={0.052}
         color={silkColor}
         outlineColor={silkColor}
         outlineWidth="1%"
         anchorX="center"
-        letterSpacing={0.14}
       >
         OUT
       </LabelText>
       <LabelText
-        position={[-W / 2 - 0.002, 0.33, -0.6]}
-        rotation={[0, -Math.PI / 2, 0]}
-        fontSize={0.062}
+        position={[0.5, 0.32, L / 2 + 0.002]}
+        rotation={[0, 0, 0]}
+        fontSize={0.052}
         color={silkColor}
         outlineColor={silkColor}
         outlineWidth="1%"
         anchorX="center"
-        letterSpacing={0.14}
       >
         IN
       </LabelText>
-      </>
+      </group>
       )}
 
       {!circuitOnly && (
-      <group position={[0, LY.knobs, 0]}>
+      <group position={[0, LY.above, 0]}>
       <Knob3D
         position={kp.drive}
         value={knobDrive}
@@ -460,7 +458,7 @@ export function PedalBody({
       )}
 
       {!circuitOnly && (
-        <group position={[0, LY.footsw, 0]}>
+        <group position={[0, LY.above, 0]}>
           <Footswitch3D
             position={[0, H / 2 + 0.01, FSZ]}
             pressed={pressed}
@@ -489,9 +487,7 @@ export function PedalBody({
             <PotBody x={kp.mod[0]} z={kp.mod[2]} topY={topY} />
             <PotBody x={kp.master[0]} z={kp.master[2]} topY={topY} />
             <SwitchBody x={0} z={FSZ} topY={topY} />
-            <group position={[0, LY.battery - LY.circuit, 0]}>
-              <Battery9V />
-            </group>
+            <Battery9V />
 
             <Wire
               start={[0.32, -0.26, -0.7]}
