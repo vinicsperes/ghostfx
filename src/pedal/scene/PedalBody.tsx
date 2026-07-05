@@ -426,6 +426,7 @@ export function PedalBody({
         knobTheme={knobTheme}
         knobStyle="default"
         showArc={v?.showArc}
+        mutedHint={ledActive && knobMaster < 0.02}
       />
 
       <Footswitch3D
@@ -436,6 +437,7 @@ export function PedalBody({
         onCancel={onCancel}
         metal={palette.metal}
         accent={palette.accent}
+        active={ledActive}
       />
 
       {(() => {

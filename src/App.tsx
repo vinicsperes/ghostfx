@@ -68,7 +68,7 @@ export default function App() {
   const [tone, setTone] = useState<number>(PRESETS[0].tone);
   const [reverb, setReverb] = useState<number>(PRESETS[0].reverb);
   const [mod, setMod] = useState<number>(PRESETS[0].mod);
-  const [masterVolume, setMasterVolume] = useState<number>(PRESETS[0].master);
+  const [masterVolume, setMasterVolume] = useState<number>(0);
 
   const applyPreset = useCallback((preset: (typeof PRESETS)[number]) => {
     setDrive(preset.drive);
@@ -76,7 +76,6 @@ export default function App() {
     setTone(preset.tone);
     setReverb(preset.reverb);
     setMod(preset.mod);
-    setMasterVolume(preset.master);
   }, []);
 
   const handlePresetSelect = useCallback(

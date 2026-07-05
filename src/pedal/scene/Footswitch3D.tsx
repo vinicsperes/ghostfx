@@ -10,6 +10,7 @@ export function Footswitch3D({
   onCancel,
   metal,
   accent = "#ffffff",
+  active = false,
 }: {
   position: [number, number, number];
   pressed: boolean;
@@ -18,6 +19,7 @@ export function Footswitch3D({
   onCancel: () => void;
   metal: string;
   accent?: string;
+  active?: boolean;
 }) {
   const plungerRef = useRef<THREE.Group>(null);
   const bezelMat = useRef<THREE.MeshStandardMaterial>(null);
@@ -40,7 +42,16 @@ export function Footswitch3D({
     if (pressed && !prevPressed.current) flashRef.current = 1;
     prevPressed.current = pressed;
     flashRef.current = Math.max(0, flashRef.current - dt * 4);
-    if (bezelMat.current) bezelMat.current.emissiveIntensity = 0.12 + flashRef.current * 0.9;
+    if (bezelMat.current) {
+      const base = active ? 0.6 : 0.1;
+      const target = base + flashRef.current * 0.7;
+      bezelMat.current.emissiveIntensity = THREE.MathUtils.damp(
+        bezelMat.current.emissiveIntensity,
+        target,
+        7,
+        dt,
+      );
+    }
   });
 
   return (
