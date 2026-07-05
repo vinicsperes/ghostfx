@@ -24,6 +24,10 @@ export default function Pedal3D({
   stompCount = 0,
   view,
   xray = false,
+  explode = 0,
+  studio = false,
+  circuitOnly = false,
+  hideTag = false,
 }: {
   ledColor: string;
   isPlaying: boolean;
@@ -44,6 +48,10 @@ export default function Pedal3D({
   stompCount?: number;
   view?: [number, number, number];
   xray?: boolean;
+  explode?: number;
+  studio?: boolean;
+  circuitOnly?: boolean;
+  hideTag?: boolean;
 }) {
   const ledActive = isPlaying;
   const [controlsEnabled, setControlsEnabled] = useState(true);
@@ -109,7 +117,7 @@ export default function Pedal3D({
 
         <ResponsiveCamera />
         <OrbitControls
-          enabled={controlsEnabled && !view}
+          enabled={controlsEnabled && (studio || !view)}
           enableDamping
           dampingFactor={0.05}
           minDistance={2.1}
@@ -135,6 +143,9 @@ export default function Pedal3D({
           <PedalScene
             palette={palette}
             xray={xray}
+            explode={explode}
+            circuitOnly={circuitOnly}
+            hideTag={hideTag}
             ledColor={ledColor}
             ledActive={ledActive}
             onTap={onTap}

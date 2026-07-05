@@ -77,6 +77,9 @@ const PRESET_VISUALS: PresetVisual[] = [
 export function PedalBody({
   palette,
   xray = false,
+  explode = 0,
+  circuitOnly = false,
+  hideTag = false,
   ledColor,
   ledActive,
   knobDrive,
@@ -98,6 +101,9 @@ export function PedalBody({
 }: {
   palette: { pedal: string; ink: string; accent: string; cream: string; metal: string };
   xray?: boolean;
+  explode?: number;
+  circuitOnly?: boolean;
+  hideTag?: boolean;
   ledColor: string;
   ledActive: boolean;
   knobDrive: number;
@@ -153,9 +159,19 @@ export function PedalBody({
     master: [0.62, H / 2, -0.52] as [number, number, number],
   };
 
+  const LY = {
+    battery: explode * 0.3,
+    circuit: explode * 0.62,
+    footsw: explode * 0.95,
+    jacks: explode * 1.28,
+    knobs: explode * 1.62,
+  };
+
   return (
     <group ref={rootRef}>
-      <Internals width={W} length={L} height={H} />
+      <group position={[0, LY.circuit, 0]}>
+        <Internals width={W} length={L} height={H} />
+      </group>
 
       <pointLight
         ref={glowRef}
@@ -166,45 +182,54 @@ export function PedalBody({
         decay={2}
       />
 
-      <RoundedBox
-        position={[0, 0, 0]}
-        args={[W, H, L]}
-        radius={0.08}
-        smoothness={8}
-        onPointerEnter={onChassisEnter}
-        onPointerLeave={onChassisLeave}
-      >
-        <meshPhysicalMaterial
-          color={palette.pedal}
-          roughness={0.3}
-          metalness={0.2}
-          envMapIntensity={0.5}
-          clearcoat={0.45}
-          clearcoatRoughness={0.12}
-          transparent
-          opacity={xray ? 0.12 : 0.82}
-          depthWrite={false}
-        />
-      </RoundedBox>
+      {!circuitOnly && (
+        <RoundedBox
+          position={[0, 0, 0]}
+          args={[W, H, L]}
+          radius={0.08}
+          smoothness={8}
+          onPointerEnter={onChassisEnter}
+          onPointerLeave={onChassisLeave}
+        >
+          <meshPhysicalMaterial
+            color={palette.pedal}
+            roughness={0.3}
+            metalness={0.2}
+            envMapIntensity={0.5}
+            clearcoat={0.45}
+            clearcoatRoughness={0.12}
+            transparent
+            opacity={xray ? 0.12 : 0.82}
+            depthWrite={false}
+          />
+        </RoundedBox>
+      )}
 
-      <SideJack position={[-W / 2 - 0.04, 0.08, -0.6]} metal={palette.metal} />
-      <SideJack position={[W / 2 + 0.04, 0.08, -0.6]} metal={palette.metal} />
-      <HangTag />
+      {!circuitOnly && (
+        <group position={[0, LY.jacks, 0]}>
+          <SideJack position={[-W / 2 - 0.04, 0.08, -0.6]} metal={palette.metal} />
+          <SideJack position={[W / 2 + 0.04, 0.08, -0.6]} metal={palette.metal} />
+        </group>
+      )}
+      {!hideTag && !circuitOnly && <HangTag />}
 
-      {(
-        [
-          [-0.8, -1.25],
-          [0.8, -1.25],
-          [0.8, 1.25],
-          [-0.8, 1.25],
-        ] as [number, number][]
-      ).map(([fx, fz], i) => (
-        <mesh key={`foot${i}`} position={[fx, -H / 2 - 0.02, fz]} castShadow>
-          <cylinderGeometry args={[0.085, 0.095, 0.04, 20]} />
-          <meshStandardMaterial color="#0e0e10" roughness={0.9} metalness={0} />
-        </mesh>
-      ))}
+      {!circuitOnly &&
+        (
+          [
+            [-0.8, -1.25],
+            [0.8, -1.25],
+            [0.8, 1.25],
+            [-0.8, 1.25],
+          ] as [number, number][]
+        ).map(([fx, fz], i) => (
+          <mesh key={`foot${i}`} position={[fx, -H / 2 - 0.02, fz]} castShadow>
+            <cylinderGeometry args={[0.085, 0.095, 0.04, 20]} />
+            <meshStandardMaterial color="#0e0e10" roughness={0.9} metalness={0} />
+          </mesh>
+        ))}
 
+      {!circuitOnly && (
+      <>
       <group position={[0, H / 2 + 0.02, 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
         <Svg
           src="/ghost-led-solo.svg"
@@ -344,7 +369,11 @@ export function PedalBody({
       >
         IN
       </LabelText>
+      </>
+      )}
 
+      {!circuitOnly && (
+      <group position={[0, LY.knobs, 0]}>
       <Knob3D
         position={kp.drive}
         value={knobDrive}
@@ -427,16 +456,22 @@ export function PedalBody({
         knobStyle="default"
         showArc={v?.showArc}
       />
+      </group>
+      )}
 
-      <Footswitch3D
-        position={[0, H / 2 + 0.01, FSZ]}
-        pressed={pressed}
-        onPress={onPress}
-        onRelease={onRelease}
-        onCancel={onCancel}
-        metal={palette.metal}
-        accent={palette.accent}
-      />
+      {!circuitOnly && (
+        <group position={[0, LY.footsw, 0]}>
+          <Footswitch3D
+            position={[0, H / 2 + 0.01, FSZ]}
+            pressed={pressed}
+            onPress={onPress}
+            onRelease={onRelease}
+            onCancel={onCancel}
+            metal={palette.metal}
+            accent={palette.accent}
+          />
+        </group>
+      )}
 
       {(() => {
         const topY = H / 2;
@@ -446,7 +481,7 @@ export function PedalBody({
         const LED_Y = topY - 0.06;
         const PAD_Y = -0.026;
         return (
-          <group>
+          <group position={[0, LY.circuit, 0]}>
             <PotBody x={kp.drive[0]} z={kp.drive[2]} topY={topY} />
             <PotBody x={kp.echo[0]} z={kp.echo[2]} topY={topY} />
             <PotBody x={kp.reverb[0]} z={kp.reverb[2]} topY={topY} />
@@ -454,7 +489,9 @@ export function PedalBody({
             <PotBody x={kp.mod[0]} z={kp.mod[2]} topY={topY} />
             <PotBody x={kp.master[0]} z={kp.master[2]} topY={topY} />
             <SwitchBody x={0} z={FSZ} topY={topY} />
-            <Battery9V />
+            <group position={[0, LY.battery - LY.circuit, 0]}>
+              <Battery9V />
+            </group>
 
             <Wire
               start={[0.32, -0.26, -0.7]}

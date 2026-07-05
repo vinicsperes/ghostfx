@@ -4,6 +4,9 @@ import { PedalBody } from "./PedalBody";
 export function PedalScene({
   palette,
   xray = false,
+  explode = 0,
+  circuitOnly = false,
+  hideTag = false,
   ledColor,
   ledActive,
   onTap,
@@ -23,6 +26,9 @@ export function PedalScene({
 }: {
   palette: { pedal: string; ink: string; accent: string; cream: string; metal: string };
   xray?: boolean;
+  explode?: number;
+  circuitOnly?: boolean;
+  hideTag?: boolean;
   ledColor: string;
   ledActive: boolean;
   onTap: () => void;
@@ -49,6 +55,9 @@ export function PedalScene({
     <PedalBody
       palette={palette}
       xray={xray}
+      explode={explode}
+      circuitOnly={circuitOnly}
+      hideTag={hideTag}
       presetIdx={presetIdx}
       ledColor={ledColor}
       ledActive={ledActive}
