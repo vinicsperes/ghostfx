@@ -207,8 +207,8 @@ export function PedalBody({
 
       {!circuitOnly && (
         <>
-          <SideJack orient="front" position={[-0.5, 0.1, L / 2 + 0.02]} metal={palette.metal} />
-          <SideJack orient="front" position={[0.5, 0.1, L / 2 + 0.02]} metal={palette.metal} />
+          <SideJack orient="back" position={[-0.5, 0.1, -L / 2 - 0.02]} metal={palette.metal} />
+          <SideJack orient="back" position={[0.5, 0.1, -L / 2 - 0.02]} metal={palette.metal} />
         </>
       )}
       {!hideTag && !circuitOnly && <HangTag />}
@@ -346,8 +346,8 @@ export function PedalBody({
       </LabelText>
 
       <LabelText
-        position={[-0.5, 0.32, L / 2 + 0.002]}
-        rotation={[0, 0, 0]}
+        position={[-0.5, 0.3, -L / 2 - 0.002]}
+        rotation={[0, Math.PI, 0]}
         fontSize={0.052}
         color={silkColor}
         outlineColor={silkColor}
@@ -357,8 +357,8 @@ export function PedalBody({
         OUT
       </LabelText>
       <LabelText
-        position={[0.5, 0.32, L / 2 + 0.002]}
-        rotation={[0, 0, 0]}
+        position={[0.5, 0.3, -L / 2 - 0.002]}
+        rotation={[0, Math.PI, 0]}
         fontSize={0.052}
         color={silkColor}
         outlineColor={silkColor}
@@ -548,28 +548,30 @@ export function PedalBody({
               color="#3a6ad0"
             />
             <Wire
-              start={[0.705, 0.13, -0.6]}
+              start={[0.5, 0.15, -1.42]}
               mids={[
-                [0.8, -0.01, -0.45],
-                [0.8, -0.02, 0.3],
-                [0.8, -0.02, 0.8],
-                [0.46, -0.01, 1.02],
-                [0.16, -0.01, 1.08],
+                [0.8, -0.01, -1.05],
+                [0.8, -0.02, -0.2],
+                [0.8, -0.02, 0.4],
+                [0.8, -0.02, 0.72],
+                [0.42, -0.01, 1.02],
               ]}
               end={[0.08, SW_LUG_Y, FSZ - 0.08]}
               color="#e8e8e8"
               r={0.009}
             />
             <Wire
-              start={[0.705, 0.03, -0.6]}
-              end={[0.74, PAD_Y, -0.4]}
+              start={[0.42, 0.06, -1.42]}
+              end={[0.7, PAD_Y, -1.12]}
               color="#181818"
-              sag={0.05}
+              sag={0.03}
               r={0.009}
             />
             <CableClip x={0.8} z={-0.2} />
             <CableClip x={0.8} z={0.4} />
             <CableClip x={0.8} z={0.72} />
+            <CableClip x={-0.8} z={-0.35} />
+            <CableClip x={-0.8} z={0.1} />
             <Wire
               start={[0.08, SW_LUG_Y, FSZ + 0.08]}
               end={[-0.08, SW_LUG_Y, FSZ + 0.08]}
@@ -597,16 +599,20 @@ export function PedalBody({
             />
 
             <Wire
-              start={[-0.705, 0.13, -0.6]}
-              end={[-0.74, PAD_Y, -0.57]}
+              start={[-0.5, 0.15, -1.42]}
+              mids={[
+                [-0.8, -0.01, -1.05],
+                [-0.8, -0.02, -0.35],
+              ]}
+              end={[-0.78, PAD_Y, 0.2]}
               color="#3a8ade"
-              sag={0.04}
+              sag={0.03}
             />
             <Wire
-              start={[-0.705, 0.03, -0.6]}
-              end={[-0.74, PAD_Y, -0.4]}
+              start={[-0.42, 0.06, -1.42]}
+              end={[-0.68, PAD_Y, -1.12]}
               color="#181818"
-              sag={0.05}
+              sag={0.03}
               r={0.009}
             />
 
