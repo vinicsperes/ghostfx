@@ -187,7 +187,7 @@ export type GlState = {
 export const BLEND_OUT = 550;
 export const BLEND_IN = 750;
 
-export const INTRO_IDX = 3;
+export const INTRO_IDX = 0;
 
 export function buildShader(gl: WebGLRenderingContext, idx: number, old?: WebGLProgram): GlState {
   if (old) gl.deleteProgram(old);

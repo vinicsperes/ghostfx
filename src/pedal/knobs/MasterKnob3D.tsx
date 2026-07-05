@@ -16,6 +16,7 @@ export function MasterKnob3D({
   knobTheme = "dark",
   knobStyle = "default",
   showArc = false,
+  mutedHint = false,
 }: {
   position: [number, number, number];
   value: number;
@@ -27,6 +28,7 @@ export function MasterKnob3D({
   knobTheme?: "dark" | "cream";
   knobStyle?: "default" | "strat" | "bigmuff" | "orb";
   showArc?: boolean;
+  mutedHint?: boolean;
 }) {
   const dragRef = useRef<{ startY: number; startValue: number } | null>(null);
   const isHoveredRef = useRef(false);
@@ -165,7 +167,10 @@ export function MasterKnob3D({
         setControlsEnabled(false);
       }}
     >
-      {isDragging && <KnobTooltip label="Volume" value={value} accent={accent} />}
+      {isDragging && <KnobTooltip label="Volume" value={value} accent={accent} showBar />}
+      {!isDragging && mutedHint && (
+        <KnobTooltip label="TURN UP" value={value} accent={accent} pulse showBar icon="volumeUp" />
+      )}
       <group ref={masterGroupRef}>
         {knobStyle === "bigmuff" ? (
           <>

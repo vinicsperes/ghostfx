@@ -17,6 +17,7 @@ import {
   Fader,
   WebGLFallback,
   PresetInfo,
+  ErrorBoundary,
 } from "./components";
 
 const WEBGL_OK = (() => {
@@ -67,7 +68,7 @@ export default function App() {
   const [tone, setTone] = useState<number>(PRESETS[0].tone);
   const [reverb, setReverb] = useState<number>(PRESETS[0].reverb);
   const [mod, setMod] = useState<number>(PRESETS[0].mod);
-  const [masterVolume, setMasterVolume] = useState<number>(PRESETS[0].master);
+  const [masterVolume, setMasterVolume] = useState<number>(0);
 
   const applyPreset = useCallback((preset: (typeof PRESETS)[number]) => {
     setDrive(preset.drive);
@@ -75,7 +76,6 @@ export default function App() {
     setTone(preset.tone);
     setReverb(preset.reverb);
     setMod(preset.mod);
-    setMasterVolume(preset.master);
   }, []);
 
   const handlePresetSelect = useCallback(
@@ -478,28 +478,32 @@ export default function App() {
       </div>
 
       {WEBGL_OK ? (
-        <div className="absolute inset-0 z-[2]">
-          <Pedal3D
-            ledColor={themeColor}
-            isPlaying={isActive}
-            onTap={handleTap}
-            onStomp={handleStomp}
-            knobDrive={drive}
-            knobEcho={echo}
-            knobTone={tone}
-            knobReverb={reverb}
-            knobMod={mod}
-            knobMaster={masterVolume}
-            onKnobChange={handleKnobChange}
-            palette={{
-              ...PALETTE,
-              accent: themeColor,
-              pedal: presetIdx !== null ? PRESET_META[presetIdx].chassis : PALETTE.pedal,
-            }}
-            presetIdx={presetIdx}
-            stompCount={stompCount}
-          />
-        </div>
+        <ErrorBoundary
+          fallback={<WebGLFallback isActive={isActive} onTap={handleTap} accent={themeColor} />}
+        >
+          <div className="absolute inset-0 z-[2]">
+            <Pedal3D
+              ledColor={themeColor}
+              isPlaying={isActive}
+              onTap={handleTap}
+              onStomp={handleStomp}
+              knobDrive={drive}
+              knobEcho={echo}
+              knobTone={tone}
+              knobReverb={reverb}
+              knobMod={mod}
+              knobMaster={masterVolume}
+              onKnobChange={handleKnobChange}
+              palette={{
+                ...PALETTE,
+                accent: themeColor,
+                pedal: presetIdx !== null ? PRESET_META[presetIdx].chassis : PALETTE.pedal,
+              }}
+              presetIdx={presetIdx}
+              stompCount={stompCount}
+            />
+          </div>
+        </ErrorBoundary>
       ) : (
         <WebGLFallback isActive={isActive} onTap={handleTap} accent={themeColor} />
       )}
@@ -752,7 +756,11 @@ export default function App() {
         {(() => {
           const blocked = fx.feedbackBlocked;
           const lit = blocked || isActive;
-          const tone = blocked ? "#ff5a5a" : isActive ? ledColor : "rgba(150,160,175,0.5)";
+          const tone = blocked
+            ? "#ff5a5a"
+            : isActive
+              ? ledColor
+              : "rgba(150,160,175,0.5)";
           return (
             <div
               className="flex items-center"
@@ -760,7 +768,9 @@ export default function App() {
                 gap: 8,
                 padding: "5px 11px",
                 borderRadius: 999,
-                border: `1px solid ${blocked ? "#ff5a5a45" : isActive ? ledColor + "45" : "rgba(255,255,255,0.08)"}`,
+                border: `1px solid ${
+                  blocked ? "#ff5a5a45" : isActive ? ledColor + "45" : "rgba(255,255,255,0.08)"
+                }`,
                 background: blocked
                   ? "rgba(255,90,90,0.07)"
                   : isActive

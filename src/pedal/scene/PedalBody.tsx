@@ -453,6 +453,7 @@ export function PedalBody({
         knobTheme={knobTheme}
         knobStyle="default"
         showArc={v?.showArc}
+        mutedHint={ledActive && knobMaster < 0.02}
       />
       </group>
       )}
@@ -467,6 +468,7 @@ export function PedalBody({
             onCancel={onCancel}
             metal={palette.metal}
             accent={palette.accent}
+            active={ledActive}
           />
         </group>
       )}
