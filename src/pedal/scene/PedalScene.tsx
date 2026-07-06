@@ -6,6 +6,7 @@ export function PedalScene({
   xray = false,
   explode = 0,
   circuitOnly = false,
+  split = false,
   hideTag = false,
   ledColor,
   ledActive,
@@ -28,6 +29,7 @@ export function PedalScene({
   xray?: boolean;
   explode?: number;
   circuitOnly?: boolean;
+  split?: boolean;
   hideTag?: boolean;
   ledColor: string;
   ledActive: boolean;
@@ -57,6 +59,7 @@ export function PedalScene({
       xray={xray}
       explode={explode}
       circuitOnly={circuitOnly}
+      split={split}
       hideTag={hideTag}
       presetIdx={presetIdx}
       ledColor={ledColor}

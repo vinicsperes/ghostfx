@@ -27,6 +27,7 @@ export default function Pedal3D({
   explode = 0,
   studio = false,
   circuitOnly = false,
+  split = false,
   hideTag = false,
 }: {
   ledColor: string;
@@ -51,6 +52,7 @@ export default function Pedal3D({
   explode?: number;
   studio?: boolean;
   circuitOnly?: boolean;
+  split?: boolean;
   hideTag?: boolean;
 }) {
   const ledActive = isPlaying;
@@ -97,6 +99,7 @@ export default function Pedal3D({
         onCreated={({ camera, gl }) => {
           camera.lookAt(0, 0, 0);
           gl.debug.checkShaderErrors = false;
+          gl.localClippingEnabled = true;
         }}
       >
         <Environment files="/hdri/potsdamer_platz_1k.hdr" environmentIntensity={0.8} />
@@ -122,6 +125,7 @@ export default function Pedal3D({
           dampingFactor={0.05}
           minDistance={2.1}
           maxDistance={10}
+          enableZoom={!studio}
           enablePan={false}
           minPolarAngle={Math.PI / 6}
           maxPolarAngle={Math.PI / 2.2}
@@ -145,6 +149,7 @@ export default function Pedal3D({
             xray={xray}
             explode={explode}
             circuitOnly={circuitOnly}
+            split={split}
             hideTag={hideTag}
             ledColor={ledColor}
             ledActive={ledActive}
