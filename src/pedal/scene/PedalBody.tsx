@@ -92,6 +92,7 @@ export function PedalBody({
   circuitOnly = false,
   hideTag = false,
   split = false,
+  spin = null,
   ledColor,
   ledActive,
   knobDrive,
@@ -117,6 +118,7 @@ export function PedalBody({
   circuitOnly?: boolean;
   hideTag?: boolean;
   split?: boolean;
+  spin?: number | null;
   ledColor: string;
   ledActive: boolean;
   knobDrive: number;
@@ -155,7 +157,8 @@ export function PedalBody({
       const bob = explode > 0.01 ? Math.sin(state.clock.elapsedTime * 0.8) * 0.06 * explode : 0;
       g.position.y = MathUtils.damp(g.position.y, (pressed ? -0.011 : 0) + bob, 9, delta);
       g.rotation.x = MathUtils.damp(g.rotation.x, pressed ? 0.009 : 0, 9, delta);
-      g.rotation.y += delta * 0.22 * explode;
+      if (spin != null) g.rotation.y = spin;
+      else g.rotation.y += delta * 0.22 * explode;
       clipBottom.constant = g.position.y;
       clipTop.constant = -(explode * 0.95 + g.position.y);
     }
@@ -207,6 +210,7 @@ export function PedalBody({
     above: explode * 1.15,
   };
   const baseOp = xray ? 0.12 : 0.82;
+  const splitOp = xray ? 0.12 : baseOp - 0.26 * Math.min(1, explode / 0.25);
   const chassisMat = (opacity: number, clip?: Plane[], side: Side = FrontSide) => (
     <meshPhysicalMaterial
       color={palette.pedal}
@@ -243,11 +247,11 @@ export function PedalBody({
         (split ? (
           <>
             <RoundedBox position={[0, 0, 0]} args={[W, H, L]} radius={0.08} smoothness={8}>
-              {chassisMat(baseOp, [clipBottom], DoubleSide)}
+              {chassisMat(splitOp, [clipBottom], DoubleSide)}
             </RoundedBox>
             <group position={[0, LY.top, 0]}>
               <RoundedBox position={[0, 0, 0]} args={[W, H, L]} radius={0.08} smoothness={8}>
-                {chassisMat(baseOp, [clipTop], DoubleSide)}
+                {chassisMat(splitOp, [clipTop], DoubleSide)}
               </RoundedBox>
             </group>
           </>
@@ -264,15 +268,15 @@ export function PedalBody({
           </RoundedBox>
         ))}
 
-      {!circuitOnly && split && explode > 0.04 && (
+      {!circuitOnly && split && (
         <>
-          <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <extrudeGeometry args={[rimShape, { depth: 0.07, bevelEnabled: false }]} />
-            <meshStandardMaterial color={palette.pedal} roughness={0.78} metalness={0.15} />
+          <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 1, explode]}>
+            <extrudeGeometry args={[rimShape, { depth: 0.05, bevelEnabled: false }]} />
+            <meshStandardMaterial color={palette.pedal} roughness={0.95} metalness={0} />
           </mesh>
-          <mesh position={[0, LY.top, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <extrudeGeometry args={[rimShape, { depth: 0.07, bevelEnabled: false }]} />
-            <meshStandardMaterial color={palette.pedal} roughness={0.78} metalness={0.15} />
+          <mesh position={[0, LY.top, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1, 1, explode]}>
+            <extrudeGeometry args={[rimShape, { depth: 0.05, bevelEnabled: false }]} />
+            <meshStandardMaterial color={palette.pedal} roughness={0.95} metalness={0} />
           </mesh>
         </>
       )}
@@ -283,7 +287,11 @@ export function PedalBody({
           <SideJack orient="back" position={[0.5, 0.1, -L / 2 - 0.02]} metal={palette.metal} />
         </group>
       )}
-      {!hideTag && !circuitOnly && <HangTag />}
+      {!hideTag && !circuitOnly && (
+        <group position={[0, LY.top, 0]}>
+          <HangTag />
+        </group>
+      )}
 
       {!circuitOnly &&
         (

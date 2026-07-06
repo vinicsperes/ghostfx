@@ -28,6 +28,7 @@ export default function Pedal3D({
   studio = false,
   circuitOnly = false,
   split = false,
+  spin = null,
   hideTag = false,
 }: {
   ledColor: string;
@@ -53,6 +54,7 @@ export default function Pedal3D({
   studio?: boolean;
   circuitOnly?: boolean;
   split?: boolean;
+  spin?: number | null;
   hideTag?: boolean;
 }) {
   const ledActive = isPlaying;
@@ -150,6 +152,7 @@ export default function Pedal3D({
             explode={explode}
             circuitOnly={circuitOnly}
             split={split}
+            spin={spin}
             hideTag={hideTag}
             ledColor={ledColor}
             ledActive={ledActive}

@@ -45,6 +45,10 @@ function lerpHex(a: string, b: string, t: number): string {
 
 const WARNING_ACK_KEY = "ghostfx.warningAck";
 
+const EXPLODE_MS = 2400;
+const smoothstep = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+
 export default function App() {
   const [warningDone, setWarningDone] = useState(() => {
     try {
@@ -158,6 +162,31 @@ export default function App() {
   const handleStomp = useCallback(() => {
     setStompCount((c) => c + 1);
   }, []);
+
+  const [pulseExplode, setPulseExplode] = useState(0);
+  const [pulseSpin, setPulseSpin] = useState<number | null>(null);
+  const [pulsing, setPulsing] = useState(false);
+  const pulseRaf = useRef(0);
+  const runExplode = useCallback(() => {
+    if (pulsing) return;
+    setPulsing(true);
+    const start = performance.now();
+    const step = () => {
+      const t = Math.min(1, (performance.now() - start) / EXPLODE_MS);
+      const e = t < 0.3 ? smoothstep(t / 0.3) : t < 0.7 ? 1 : 1 - smoothstep((t - 0.7) / 0.3);
+      setPulseExplode(e);
+      setPulseSpin(easeInOut(t) * Math.PI * 2);
+      if (t < 1) {
+        pulseRaf.current = requestAnimationFrame(step);
+      } else {
+        setPulseExplode(0);
+        setPulseSpin(null);
+        setPulsing(false);
+      }
+    };
+    pulseRaf.current = requestAnimationFrame(step);
+  }, [pulsing]);
+  useEffect(() => () => cancelAnimationFrame(pulseRaf.current), []);
 
   const isActive = fx.state === "active";
   const themeTarget = presetIdx !== null ? PRESET_META[presetIdx].color : PALETTE.accent;
@@ -501,6 +530,9 @@ export default function App() {
               }}
               presetIdx={presetIdx}
               stompCount={stompCount}
+              explode={pulseExplode}
+              split={pulsing}
+              spin={pulseSpin}
             />
           </div>
         </ErrorBoundary>
@@ -538,6 +570,32 @@ export default function App() {
             >
               GHOST<span style={{ color: themeColor }}>FX</span>
             </span>
+            <button
+              type="button"
+              onClick={runExplode}
+              disabled={pulsing}
+              aria-label="Explodir o pedal"
+              title="Explodir"
+              className="ml-auto flex items-center justify-center shrink-0"
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 999,
+                border: "1px solid rgba(231,228,220,0.14)",
+                background: "rgba(231,228,220,0.05)",
+                color: themeColor,
+                cursor: pulsing ? "default" : "pointer",
+                opacity: pulsing ? 0.45 : 1,
+                transition: "opacity 200ms",
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M12 2l2.2 4.9L19 4.6l-1.4 4.8 4.9 1.4-4.4 2.4 3 4.2-4.9-1.1-.3 5-3.9-3.2-3.9 3.2-.3-5-4.9 1.1 3-4.2L1.5 10.8l4.9-1.4L5 4.6l4.8 2.3z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
           </div>
           <div className="flex items-center gap-2">
             <div
