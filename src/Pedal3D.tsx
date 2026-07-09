@@ -30,6 +30,7 @@ export default function Pedal3D({
   split = false,
   spin = null,
   hideTag = false,
+  onExplode,
 }: {
   ledColor: string;
   isPlaying: boolean;
@@ -56,6 +57,7 @@ export default function Pedal3D({
   split?: boolean;
   spin?: number | null;
   hideTag?: boolean;
+  onExplode?: () => void;
 }) {
   const ledActive = isPlaying;
   const [controlsEnabled, setControlsEnabled] = useState(true);
@@ -170,6 +172,7 @@ export default function Pedal3D({
             presetIdx={presetIdx}
             onChassisEnter={onChassisEnter}
             onChassisLeave={onChassisLeave}
+            onExplode={onExplode}
           />
         </group>
       </Canvas>

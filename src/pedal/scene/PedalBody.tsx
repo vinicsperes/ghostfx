@@ -1,7 +1,8 @@
 import { useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { RoundedBox, Svg } from "@react-three/drei";
 import {
+  CanvasTexture,
   DoubleSide,
   FrontSide,
   MathUtils,
@@ -10,6 +11,7 @@ import {
   Shape,
   Vector3,
   type Group,
+  type MeshBasicMaterial,
   type PointLight,
   type Side,
 } from "three";
@@ -111,6 +113,7 @@ export function PedalBody({
   onPress,
   onRelease,
   onCancel,
+  onExplode,
 }: {
   palette: { pedal: string; ink: string; accent: string; cream: string; metal: string };
   xray?: boolean;
@@ -140,6 +143,7 @@ export function PedalBody({
   onPress: () => void;
   onRelease: () => void;
   onCancel: () => void;
+  onExplode?: () => void;
 }) {
   const v = presetIdx !== null ? PRESET_VISUALS[presetIdx] : null;
   const inkColor = v?.ink ?? palette.ink;
@@ -149,6 +153,22 @@ export function PedalBody({
 
   const rootRef = useRef<Group>(null);
   const glowRef = useRef<PointLight>(null);
+  const logoHoverRef = useRef(false);
+  const logoGlowMat = useRef<MeshBasicMaterial>(null);
+  const logoGlowTex = useMemo(() => {
+    const s = 128;
+    const c = document.createElement("canvas");
+    c.width = s;
+    c.height = s;
+    const ctx = c.getContext("2d")!;
+    const grad = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+    grad.addColorStop(0, "rgba(255,255,255,1)");
+    grad.addColorStop(0.45, "rgba(255,255,255,0.35)");
+    grad.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, s, s);
+    return new CanvasTexture(c);
+  }, []);
   const clipBottom = useMemo(() => new Plane(new Vector3(0, -1, 0), 0), []);
   const clipTop = useMemo(() => new Plane(new Vector3(0, 1, 0), 0), []);
   useFrame((state, delta) => {
@@ -164,6 +184,8 @@ export function PedalBody({
     }
     const gl = glowRef.current;
     if (gl) gl.intensity = MathUtils.damp(gl.intensity, ledActive ? 0.55 : 0, 5, delta);
+    const lm = logoGlowMat.current;
+    if (lm) lm.opacity = MathUtils.damp(lm.opacity, logoHoverRef.current ? 0.55 : 0, 9, delta);
   });
 
   const W = 2.1;
@@ -310,7 +332,35 @@ export function PedalBody({
 
       {!circuitOnly && (
       <group position={[0, LY.top, 0]}>
-      <group position={[0, H / 2 + 0.02, 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
+      <group
+        position={[0, H / 2 + 0.02, 0.22]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        onPointerOver={(e: ThreeEvent<PointerEvent>) => {
+          e.stopPropagation();
+          logoHoverRef.current = true;
+          document.body.style.cursor = "pointer";
+        }}
+        onPointerOut={() => {
+          logoHoverRef.current = false;
+          document.body.style.cursor = "";
+        }}
+        onClick={(e: ThreeEvent<MouseEvent>) => {
+          e.stopPropagation();
+          onExplode?.();
+        }}
+      >
+        <mesh position={[GHOST_ICON.lp[0], GHOST_ICON.lp[1] - 0.06, -0.004]} raycast={() => null}>
+          <planeGeometry args={[0.8, 0.8]} />
+          <meshBasicMaterial
+            ref={logoGlowMat}
+            map={logoGlowTex}
+            color={ledColor}
+            transparent
+            opacity={0}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
         <Svg
           src="/ghost-led-solo.svg"
           scale={GHOST_ICON.scale}

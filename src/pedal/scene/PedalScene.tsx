@@ -25,6 +25,7 @@ export function PedalScene({
   presetIdx = null,
   onChassisEnter,
   onChassisLeave,
+  onExplode,
 }: {
   palette: { pedal: string; ink: string; accent: string; cream: string; metal: string };
   xray?: boolean;
@@ -52,6 +53,7 @@ export function PedalScene({
   presetIdx?: number | null;
   onChassisEnter: () => void;
   onChassisLeave: () => void;
+  onExplode?: () => void;
 }) {
   const [pressed, setPressed] = useState(false);
 
@@ -78,6 +80,7 @@ export function PedalScene({
       bootTrigger={bootTrigger}
       onChassisEnter={onChassisEnter}
       onChassisLeave={onChassisLeave}
+      onExplode={onExplode}
       pressed={pressed}
       onPress={() => {
         setPressed(true);

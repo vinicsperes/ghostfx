@@ -533,6 +533,7 @@ export default function App() {
               explode={pulseExplode}
               split={pulsing}
               spin={pulseSpin}
+              onExplode={runExplode}
             />
           </div>
         </ErrorBoundary>
@@ -570,32 +571,6 @@ export default function App() {
             >
               GHOST<span style={{ color: themeColor }}>FX</span>
             </span>
-            <button
-              type="button"
-              onClick={runExplode}
-              disabled={pulsing}
-              aria-label="Explodir o pedal"
-              title="Explodir"
-              className="ml-auto flex items-center justify-center shrink-0"
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 999,
-                border: "1px solid rgba(231,228,220,0.14)",
-                background: "rgba(231,228,220,0.05)",
-                color: themeColor,
-                cursor: pulsing ? "default" : "pointer",
-                opacity: pulsing ? 0.45 : 1,
-                transition: "opacity 200ms",
-              }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M12 2l2.2 4.9L19 4.6l-1.4 4.8 4.9 1.4-4.4 2.4 3 4.2-4.9-1.1-.3 5-3.9-3.2-3.9 3.2-.3-5-4.9 1.1 3-4.2L1.5 10.8l4.9-1.4L5 4.6l4.8 2.3z"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
           </div>
           <div className="flex items-center gap-2">
             <div
