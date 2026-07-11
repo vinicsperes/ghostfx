@@ -681,14 +681,17 @@ export function useEffects({
     const NOTCH_GAIN = -15;
     const NOTCH_SPACING = 5;
     const NOTCH_HOLD_MS = 30000;
-    const CORR_TRIP = 0.5;
-    const CORR_SUSTAIN_CHECKS = 5;
+    const CORR_TRIP = 0.65;
+    const CORR_SUSTAIN_CHECKS = 12;
+    const RMS_HIST_LEN = 8;
+    const RMS_DECAY_TOL = 0.92;
 
     let lastBin = -1;
     let persist = 0;
     let sinceNotch = NOTCH_SPACING;
     let corrSmooth = 0;
     let corrHot = 0;
+    const rmsHist: number[] = [];
 
     const rmsNow = () => {
       const analyser = analyserRef.current;
@@ -833,14 +836,20 @@ export function useEffects({
       const sp = spectrum();
       sinceNotch++;
 
+      rmsHist.push(rms);
+      if (rmsHist.length > RMS_HIST_LEN) rmsHist.shift();
+      const sustained = rmsHist.length === RMS_HIST_LEN && rms >= rmsHist[0] * RMS_DECAY_TOL;
+      const howlSig = !!sp && sp.pnpr > PNPR_DB && sp.peakDb > PEAK_DB_MIN;
+
       corrSmooth = corrSmooth * 0.6 + loopCorr() * 0.4;
-      corrHot = corrSmooth >= CORR_TRIP ? corrHot + 1 : Math.max(0, corrHot - 1);
+      const looping = corrSmooth >= CORR_TRIP && rms > RMS_GATE && howlSig && sustained;
+      corrHot = looping ? corrHot + 1 : Math.max(0, corrHot - 1);
       if (corrHot >= CORR_SUSTAIN_CHECKS) {
         hardTrip();
         return;
       }
 
-      const candidate = !!sp && sp.pnpr > PNPR_DB && sp.peakDb > PEAK_DB_MIN && rms > RMS_GATE;
+      const candidate = howlSig && rms > RMS_GATE;
       if (candidate && sp && Math.abs(sp.bin - lastBin) <= 3) persist++;
       else persist = candidate ? 1 : 0;
       lastBin = candidate && sp ? sp.bin : -1;
