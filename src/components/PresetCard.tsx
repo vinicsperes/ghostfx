@@ -21,8 +21,8 @@ export function PresetCard({
       style={{
         flex: fitScroll ? "1 0 auto" : "1 1 0",
         minWidth: 108,
-        height: 54,
-        borderRadius: 14,
+        height: fitScroll ? 38 : 54,
+        borderRadius: fitScroll ? 11 : 14,
         cursor: "pointer",
         color: isActive ? color : "rgba(184,204,192,0.6)",
         border: `2px solid ${isActive ? color : "rgba(231,228,220,0.13)"}`,
@@ -68,7 +68,7 @@ export function PresetCard({
       <span
         style={{
           fontFamily: "'Bungee', sans-serif",
-          fontSize: 15,
+          fontSize: fitScroll ? 13 : 15,
           letterSpacing: "0.16em",
           lineHeight: 1.05,
           color: "inherit",
@@ -77,19 +77,21 @@ export function PresetCard({
       >
         {name}
       </span>
-      <span
-        className="font-[var(--font-mono)]"
-        style={{
-          fontSize: 9,
-          letterSpacing: "0.3em",
-          textTransform: "uppercase",
-          marginTop: 5,
-          paddingLeft: "0.3em",
-          color: isActive ? `${color}cc` : "rgba(120,140,128,0.5)",
-        }}
-      >
-        {tag}
-      </span>
+      {!fitScroll && (
+        <span
+          className="font-[var(--font-mono)]"
+          style={{
+            fontSize: 9,
+            letterSpacing: "0.3em",
+            textTransform: "uppercase",
+            marginTop: 5,
+            paddingLeft: "0.3em",
+            color: isActive ? `${color}cc` : "rgba(120,140,128,0.5)",
+          }}
+        >
+          {tag}
+        </span>
+      )}
       <span
         style={{
           position: "absolute",

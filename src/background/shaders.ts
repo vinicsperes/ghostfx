@@ -62,7 +62,9 @@ uniform float u_t; uniform vec2 u_res; uniform float u_blend;
 float tri(float x){return abs(fract(x)-.5)*2.;}
 void main(){
   vec2 uv=gl_FragCoord.xy/u_res;
-  float cx=uv.x-.5,cy=.5-uv.y;
+  float a=u_res.x/u_res.y;
+  float kx=a<1.0?a:1.0;
+  float cx=(uv.x-.5)*kx,cy=.5-uv.y;
   float w1=sin(cx*1.6+cy*1.1+u_t*.11)*.62;
   float w2=sin(cy*1.9-cx*1.3-u_t*.09)*.52;
   float v=tri((cx+cy+w1)*5.5+u_t*.23)*2.5
@@ -84,7 +86,9 @@ precision mediump float;
 uniform float u_t; uniform vec2 u_res; uniform float u_blend;
 void main(){
   vec2 uv=gl_FragCoord.xy/u_res;
-  float nx=uv.x,ny=1.-uv.y,cx=nx-.5,cy=ny-.5;
+  float a=u_res.x/u_res.y;
+  float kx=a<1.0?a:1.0;
+  float nx=.5+(uv.x-.5)*kx,ny=1.-uv.y,cx=nx-.5,cy=ny-.5;
   float r=sqrt(cx*cx+cy*cy);
   float v=sin(nx*8.+u_t*.50)*1.1
          +sin(ny*6.-u_t*.40)*1.1

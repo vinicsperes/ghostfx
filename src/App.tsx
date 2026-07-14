@@ -60,7 +60,7 @@ export default function App() {
   const [micDismissed, setMicDismissed] = useState(false);
   const [keyboardMode, setKeyboardMode] = useState(false);
   const [sheetTab, setSheetTab] = useState<"signal" | "keyboard" | "rec">("signal");
-  const [sheetExpanded, setSheetExpanded] = useState(true);
+  const [sheetExpanded, setSheetExpanded] = useState(false);
   const [stompCount, setStompCount] = useState(0);
   const [presetIdx, setPresetIdx] = useState<number | null>(0);
   const presetIdxRef = useRef<number | null>(0);
