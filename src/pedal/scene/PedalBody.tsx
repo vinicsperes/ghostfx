@@ -3,6 +3,7 @@ import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { RoundedBox, Svg } from "@react-three/drei";
 import {
   CanvasTexture,
+  Color,
   DoubleSide,
   FrontSide,
   MathUtils,
@@ -11,6 +12,7 @@ import {
   Shape,
   Vector3,
   type Group,
+  type Mesh,
   type MeshBasicMaterial,
   type PointLight,
   type Side,
@@ -169,6 +171,10 @@ export function PedalBody({
     ctx.fillRect(0, 0, s, s);
     return new CanvasTexture(c);
   }, []);
+  const logoGlowMesh = useRef<Mesh>(null);
+  const ghostSvgRef = useRef<Group>(null);
+  const logoHoverT = useRef(0);
+  const logoTint = useMemo(() => ({ blend: new Color(), hue: new Color() }), []);
   const clipBottom = useMemo(() => new Plane(new Vector3(0, -1, 0), 0), []);
   const clipTop = useMemo(() => new Plane(new Vector3(0, 1, 0), 0), []);
   useFrame((state, delta) => {
@@ -184,8 +190,28 @@ export function PedalBody({
     }
     const gl = glowRef.current;
     if (gl) gl.intensity = MathUtils.damp(gl.intensity, ledActive ? 0.55 : 0, 5, delta);
+
+    const t = state.clock.elapsedTime;
+    const ht = MathUtils.damp(logoHoverT.current, logoHoverRef.current ? 1 : 0, 6, delta);
+    logoHoverT.current = ht;
+    logoTint.blend.set(inkColor);
+    if (ht > 0.001) logoTint.blend.lerp(logoTint.hue.set(ledColor), ht);
+    const gsvg = ghostSvgRef.current;
+    if (gsvg) {
+      gsvg.traverse((o) => {
+        const mesh = o as Mesh;
+        if (!mesh.isMesh) return;
+        const mat = mesh.material as MeshBasicMaterial;
+        if (mat?.color) mat.color.copy(logoTint.blend);
+      });
+    }
     const lm = logoGlowMat.current;
-    if (lm) lm.opacity = MathUtils.damp(lm.opacity, logoHoverRef.current ? 0.55 : 0, 9, delta);
+    if (lm) {
+      lm.opacity = ht * (0.42 + 0.12 * Math.sin(t * 2.6));
+      lm.color.copy(logoTint.blend);
+    }
+    const gm = logoGlowMesh.current;
+    if (gm) gm.scale.setScalar(1 + ht * (0.08 + 0.05 * Math.sin(t * 2.6)));
   });
 
   const W = 2.1;
@@ -331,271 +357,283 @@ export function PedalBody({
         ))}
 
       {!circuitOnly && (
-      <group position={[0, LY.top, 0]}>
-      <group
-        position={[0, H / 2 + 0.02, 0.22]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        onPointerOver={(e: ThreeEvent<PointerEvent>) => {
-          e.stopPropagation();
-          logoHoverRef.current = true;
-          document.body.style.cursor = "pointer";
-        }}
-        onPointerOut={() => {
-          logoHoverRef.current = false;
-          document.body.style.cursor = "";
-        }}
-        onClick={(e: ThreeEvent<MouseEvent>) => {
-          e.stopPropagation();
-          onExplode?.();
-        }}
-      >
-        <mesh position={[GHOST_ICON.lp[0], GHOST_ICON.lp[1] - 0.06, -0.004]} raycast={() => null}>
-          <planeGeometry args={[0.8, 0.8]} />
-          <meshBasicMaterial
-            ref={logoGlowMat}
-            map={logoGlowTex}
-            color={ledColor}
-            transparent
-            opacity={0}
-            depthWrite={false}
-            toneMapped={false}
-          />
-        </mesh>
-        <Svg
-          src="/ghost-led-solo.svg"
-          scale={GHOST_ICON.scale}
-          position={[GHOST_ICON.ip[0], GHOST_ICON.ip[1], 0]}
-          fillMaterial={{
-            color: inkColor,
-            transparent: false,
-            opacity: 1,
-            depthWrite: true,
-            side: FrontSide,
-          }}
-          strokeMaterial={{
-            color: inkColor,
-            transparent: false,
-            opacity: 1,
-            depthWrite: true,
-            side: FrontSide,
-          }}
-        />
-        <group position={[GHOST_ICON.lp[0], GHOST_ICON.lp[1], 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <mesh position={[0, 0.012, 0]}>
-            <sphereGeometry args={[0.05, 28, 22]} />
-            <meshBasicMaterial color={ledActive ? ledColor : "#15171a"} />
-          </mesh>
-          {ledActive && (
-            <mesh position={[0, 0.012, 0]}>
-              <sphereGeometry args={[0.085, 22, 18]} />
-              <meshBasicMaterial color={ledColor} transparent opacity={0.35} />
+        <group position={[0, LY.top, 0]}>
+          <group
+            position={[0, H / 2 + 0.02, 0.22]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            onPointerOver={(e: ThreeEvent<PointerEvent>) => {
+              e.stopPropagation();
+              logoHoverRef.current = true;
+              document.body.style.cursor = "pointer";
+            }}
+            onPointerOut={() => {
+              logoHoverRef.current = false;
+              document.body.style.cursor = "";
+            }}
+            onClick={(e: ThreeEvent<MouseEvent>) => {
+              e.stopPropagation();
+              onExplode?.();
+            }}
+          >
+            <mesh
+              ref={logoGlowMesh}
+              position={[GHOST_ICON.lp[0], GHOST_ICON.lp[1] - 0.06, -0.004]}
+              raycast={() => null}
+            >
+              <planeGeometry args={[0.8, 0.8]} />
+              <meshBasicMaterial
+                ref={logoGlowMat}
+                map={logoGlowTex}
+                transparent
+                opacity={0}
+                depthWrite={false}
+                toneMapped={false}
+              />
             </mesh>
-          )}
+            <mesh position={[GHOST_ICON.lp[0], GHOST_ICON.lp[1] - 0.06, 0.002]}>
+              <planeGeometry args={[0.6, 0.64]} />
+              <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+            </mesh>
+            <group ref={ghostSvgRef}>
+              <Svg
+                src="/ghost-led-solo.svg"
+                scale={GHOST_ICON.scale}
+                position={[GHOST_ICON.ip[0], GHOST_ICON.ip[1], 0]}
+                fillMaterial={{
+                  color: inkColor,
+                  transparent: false,
+                  opacity: 1,
+                  depthWrite: true,
+                  side: FrontSide,
+                }}
+                strokeMaterial={{
+                  color: inkColor,
+                  transparent: false,
+                  opacity: 1,
+                  depthWrite: true,
+                  side: FrontSide,
+                }}
+              />
+            </group>
+            <group
+              position={[GHOST_ICON.lp[0], GHOST_ICON.lp[1], 0]}
+              rotation={[Math.PI / 2, 0, 0]}
+            >
+              <mesh position={[0, 0.012, 0]}>
+                <sphereGeometry args={[0.05, 28, 22]} />
+                <meshBasicMaterial color={ledActive ? ledColor : "#15171a"} />
+              </mesh>
+              {ledActive && (
+                <mesh position={[0, 0.012, 0]}>
+                  <sphereGeometry args={[0.085, 22, 18]} />
+                  <meshBasicMaterial color={ledColor} transparent opacity={0.35} />
+                </mesh>
+              )}
+            </group>
+          </group>
+
+          <LabelText
+            font="/fonts/saira-800.woff"
+            position={[0, H / 2 + 0.02, 0.55]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            fontSize={0.17}
+            color={inkColor}
+            outlineColor={inkColor}
+            outlineWidth="2%"
+            anchorX="center"
+            letterSpacing={-0.035}
+          >
+            GHOSTFX
+          </LabelText>
+
+          <LabelText
+            position={[kp.drive[0], H / 2 + 0.005, kp.drive[2] + 0.22]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            fontSize={0.062}
+            color={silkColor}
+            outlineColor={silkColor}
+            outlineWidth="1%"
+            anchorX="center"
+          >
+            DRIVE
+          </LabelText>
+          <LabelText
+            position={[kp.echo[0], H / 2 + 0.005, kp.echo[2] + 0.22]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            fontSize={0.062}
+            color={silkColor}
+            outlineColor={silkColor}
+            outlineWidth="1%"
+            anchorX="center"
+          >
+            ECHO
+          </LabelText>
+          <LabelText
+            position={[kp.tone[0], H / 2 + 0.005, kp.tone[2] + 0.22]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            fontSize={0.062}
+            color={silkColor}
+            outlineColor={silkColor}
+            outlineWidth="1%"
+            anchorX="center"
+          >
+            TONE
+          </LabelText>
+          <LabelText
+            position={[kp.reverb[0], H / 2 + 0.005, kp.reverb[2] + 0.22]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            fontSize={0.062}
+            color={silkColor}
+            outlineColor={silkColor}
+            outlineWidth="1%"
+            anchorX="center"
+          >
+            REVERB
+          </LabelText>
+          <LabelText
+            position={[kp.mod[0], H / 2 + 0.005, kp.mod[2] + 0.22]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            fontSize={0.062}
+            color={silkColor}
+            outlineColor={silkColor}
+            outlineWidth="1%"
+            anchorX="center"
+          >
+            MOD
+          </LabelText>
+          <LabelText
+            position={[kp.master[0], H / 2 + 0.005, kp.master[2] + 0.22]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            fontSize={0.062}
+            color={silkColor}
+            outlineColor={silkColor}
+            outlineWidth="1%"
+            anchorX="center"
+          >
+            VOLUME
+          </LabelText>
+
+          <LabelText
+            position={[-0.5, 0.3, -L / 2 - 0.002]}
+            rotation={[0, Math.PI, 0]}
+            fontSize={0.052}
+            color={silkColor}
+            outlineColor={silkColor}
+            outlineWidth="1%"
+            anchorX="center"
+          >
+            OUT
+          </LabelText>
+          <LabelText
+            position={[0.5, 0.3, -L / 2 - 0.002]}
+            rotation={[0, Math.PI, 0]}
+            fontSize={0.052}
+            color={silkColor}
+            outlineColor={silkColor}
+            outlineWidth="1%"
+            anchorX="center"
+          >
+            IN
+          </LabelText>
+          {[kp.drive, kp.echo, kp.reverb, kp.tone, kp.mod, kp.master].map((p, i) => (
+            <mesh key={`hole${i}`} position={[p[0], H / 2 + 0.002, p[2]]}>
+              <cylinderGeometry args={[0.15, 0.15, 0.02, 28]} />
+              <meshStandardMaterial color="#050505" roughness={0.85} metalness={0.1} />
+            </mesh>
+          ))}
+          <mesh position={[0, H / 2 + 0.002, FSZ]}>
+            <cylinderGeometry args={[0.19, 0.19, 0.02, 28]} />
+            <meshStandardMaterial color="#050505" roughness={0.85} metalness={0.1} />
+          </mesh>
         </group>
-      </group>
-
-      <LabelText
-        font="/fonts/saira-800.woff"
-        position={[0, H / 2 + 0.02, 0.55]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.17}
-        color={inkColor}
-        outlineColor={inkColor}
-        outlineWidth="2%"
-        anchorX="center"
-        letterSpacing={-0.035}
-      >
-        GHOSTFX
-      </LabelText>
-
-      <LabelText
-        position={[kp.drive[0], H / 2 + 0.005, kp.drive[2] + 0.22]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.062}
-        color={silkColor}
-        outlineColor={silkColor}
-        outlineWidth="1%"
-        anchorX="center"
-      >
-        DRIVE
-      </LabelText>
-      <LabelText
-        position={[kp.echo[0], H / 2 + 0.005, kp.echo[2] + 0.22]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.062}
-        color={silkColor}
-        outlineColor={silkColor}
-        outlineWidth="1%"
-        anchorX="center"
-      >
-        ECHO
-      </LabelText>
-      <LabelText
-        position={[kp.tone[0], H / 2 + 0.005, kp.tone[2] + 0.22]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.062}
-        color={silkColor}
-        outlineColor={silkColor}
-        outlineWidth="1%"
-        anchorX="center"
-      >
-        TONE
-      </LabelText>
-      <LabelText
-        position={[kp.reverb[0], H / 2 + 0.005, kp.reverb[2] + 0.22]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.062}
-        color={silkColor}
-        outlineColor={silkColor}
-        outlineWidth="1%"
-        anchorX="center"
-      >
-        REVERB
-      </LabelText>
-      <LabelText
-        position={[kp.mod[0], H / 2 + 0.005, kp.mod[2] + 0.22]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.062}
-        color={silkColor}
-        outlineColor={silkColor}
-        outlineWidth="1%"
-        anchorX="center"
-      >
-        MOD
-      </LabelText>
-      <LabelText
-        position={[kp.master[0], H / 2 + 0.005, kp.master[2] + 0.22]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.062}
-        color={silkColor}
-        outlineColor={silkColor}
-        outlineWidth="1%"
-        anchorX="center"
-      >
-        VOLUME
-      </LabelText>
-
-      <LabelText
-        position={[-0.5, 0.3, -L / 2 - 0.002]}
-        rotation={[0, Math.PI, 0]}
-        fontSize={0.052}
-        color={silkColor}
-        outlineColor={silkColor}
-        outlineWidth="1%"
-        anchorX="center"
-      >
-        OUT
-      </LabelText>
-      <LabelText
-        position={[0.5, 0.3, -L / 2 - 0.002]}
-        rotation={[0, Math.PI, 0]}
-        fontSize={0.052}
-        color={silkColor}
-        outlineColor={silkColor}
-        outlineWidth="1%"
-        anchorX="center"
-      >
-        IN
-      </LabelText>
-      {[kp.drive, kp.echo, kp.reverb, kp.tone, kp.mod, kp.master].map((p, i) => (
-        <mesh key={`hole${i}`} position={[p[0], H / 2 + 0.002, p[2]]}>
-          <cylinderGeometry args={[0.15, 0.15, 0.02, 28]} />
-          <meshStandardMaterial color="#050505" roughness={0.85} metalness={0.1} />
-        </mesh>
-      ))}
-      <mesh position={[0, H / 2 + 0.002, FSZ]}>
-        <cylinderGeometry args={[0.19, 0.19, 0.02, 28]} />
-        <meshStandardMaterial color="#050505" roughness={0.85} metalness={0.1} />
-      </mesh>
-      </group>
       )}
 
       {!circuitOnly && (
-      <group position={[0, LY.above, 0]}>
-      <Knob3D
-        position={kp.drive}
-        value={knobDrive}
-        onChange={(val) => onKnobChange("drive", val)}
-        ink={inkColor}
-        accent={knobAccent}
-        label="Drive"
-        setControlsEnabled={setControlsEnabled}
-        bootTrigger={bootTrigger}
-        delay={0.0}
-        knobTheme={knobTheme}
-        knobStyle="default"
-        showArc={v?.showArc}
-      />
-      <Knob3D
-        position={kp.echo}
-        value={knobEcho}
-        onChange={(val) => onKnobChange("echo", val)}
-        ink={inkColor}
-        accent={knobAccent}
-        label="Echo"
-        setControlsEnabled={setControlsEnabled}
-        bootTrigger={bootTrigger}
-        delay={0.08}
-        knobTheme={knobTheme}
-        knobStyle="default"
-        showArc={v?.showArc}
-      />
-      <Knob3D
-        position={kp.tone}
-        value={knobTone}
-        onChange={(val) => onKnobChange("tone", val)}
-        ink={inkColor}
-        accent={knobAccent}
-        label="Tone"
-        setControlsEnabled={setControlsEnabled}
-        bootTrigger={bootTrigger}
-        delay={0.16}
-        knobTheme={knobTheme}
-        knobStyle="default"
-        showArc={v?.showArc}
-      />
-      <Knob3D
-        position={kp.reverb}
-        value={knobReverb}
-        onChange={(val) => onKnobChange("reverb", val)}
-        ink={inkColor}
-        accent={knobAccent}
-        label="Reverb"
-        setControlsEnabled={setControlsEnabled}
-        bootTrigger={bootTrigger}
-        delay={0.24}
-        knobTheme={knobTheme}
-        knobStyle="default"
-        showArc={v?.showArc}
-      />
-      <Knob3D
-        position={kp.mod}
-        value={knobMod}
-        onChange={(val) => onKnobChange("mod", val)}
-        ink={inkColor}
-        accent={knobAccent}
-        label="Mod"
-        setControlsEnabled={setControlsEnabled}
-        bootTrigger={bootTrigger}
-        delay={0.32}
-        knobTheme={knobTheme}
-        knobStyle="default"
-        showArc={v?.showArc}
-      />
-      <MasterKnob3D
-        position={kp.master}
-        value={knobMaster}
-        onChange={(val) => onKnobChange("master", val)}
-        accent={knobAccent}
-        setControlsEnabled={setControlsEnabled}
-        bootTrigger={bootTrigger}
-        delay={0.4}
-        knobTheme={knobTheme}
-        knobStyle="default"
-        showArc={v?.showArc}
-        mutedHint={ledActive && knobMaster < 0.02}
-      />
-      </group>
+        <group position={[0, LY.above, 0]}>
+          <Knob3D
+            position={kp.drive}
+            value={knobDrive}
+            onChange={(val) => onKnobChange("drive", val)}
+            ink={inkColor}
+            accent={knobAccent}
+            label="Drive"
+            setControlsEnabled={setControlsEnabled}
+            bootTrigger={bootTrigger}
+            delay={0.0}
+            knobTheme={knobTheme}
+            knobStyle="default"
+            showArc={v?.showArc}
+          />
+          <Knob3D
+            position={kp.echo}
+            value={knobEcho}
+            onChange={(val) => onKnobChange("echo", val)}
+            ink={inkColor}
+            accent={knobAccent}
+            label="Echo"
+            setControlsEnabled={setControlsEnabled}
+            bootTrigger={bootTrigger}
+            delay={0.08}
+            knobTheme={knobTheme}
+            knobStyle="default"
+            showArc={v?.showArc}
+          />
+          <Knob3D
+            position={kp.tone}
+            value={knobTone}
+            onChange={(val) => onKnobChange("tone", val)}
+            ink={inkColor}
+            accent={knobAccent}
+            label="Tone"
+            setControlsEnabled={setControlsEnabled}
+            bootTrigger={bootTrigger}
+            delay={0.16}
+            knobTheme={knobTheme}
+            knobStyle="default"
+            showArc={v?.showArc}
+          />
+          <Knob3D
+            position={kp.reverb}
+            value={knobReverb}
+            onChange={(val) => onKnobChange("reverb", val)}
+            ink={inkColor}
+            accent={knobAccent}
+            label="Reverb"
+            setControlsEnabled={setControlsEnabled}
+            bootTrigger={bootTrigger}
+            delay={0.24}
+            knobTheme={knobTheme}
+            knobStyle="default"
+            showArc={v?.showArc}
+          />
+          <Knob3D
+            position={kp.mod}
+            value={knobMod}
+            onChange={(val) => onKnobChange("mod", val)}
+            ink={inkColor}
+            accent={knobAccent}
+            label="Mod"
+            setControlsEnabled={setControlsEnabled}
+            bootTrigger={bootTrigger}
+            delay={0.32}
+            knobTheme={knobTheme}
+            knobStyle="default"
+            showArc={v?.showArc}
+          />
+          <MasterKnob3D
+            position={kp.master}
+            value={knobMaster}
+            onChange={(val) => onKnobChange("master", val)}
+            accent={knobAccent}
+            setControlsEnabled={setControlsEnabled}
+            bootTrigger={bootTrigger}
+            delay={0.4}
+            knobTheme={knobTheme}
+            knobStyle="default"
+            showArc={v?.showArc}
+            mutedHint={ledActive && knobMaster < 0.02}
+          />
+        </group>
       )}
 
       {!circuitOnly && (
