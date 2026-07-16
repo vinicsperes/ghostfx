@@ -3,7 +3,7 @@ import { useEffects } from "./hooks/useEffects";
 import { useSynth, NOTE_KEYS } from "./hooks/useSynth";
 import Pedal3D from "./Pedal3D";
 import LoadingScreen from "./LoadingScreen";
-import WarningModal from "./WarningModal";
+import OnboardingModal from "./OnboardingModal";
 import GhostMark from "./GhostMark";
 import PresetBg from "./background/PresetBg";
 import { PRESETS, PALETTE, PRESET_META, PRESET_TAGS } from "./data/presets";
@@ -43,7 +43,7 @@ function lerpHex(a: string, b: string, t: number): string {
   );
 }
 
-const WARNING_ACK_KEY = "ghostfx.warningAck";
+const WARNING_ACK_KEY = "ghostfx.onboardAck";
 
 const EXPLODE_MS = 2400;
 const smoothstep = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
@@ -230,7 +230,7 @@ export default function App() {
     <div className="h-screen w-full overflow-hidden relative" style={{ background: PALETTE.bg }}>
       {WEBGL_OK && <LoadingScreen />}
       {!warningDone && (
-        <WarningModal
+        <OnboardingModal
           onDismiss={() => {
             try {
               localStorage.setItem(WARNING_ACK_KEY, "1");
@@ -636,7 +636,7 @@ export default function App() {
             className="font-[var(--font-mono)] leading-relaxed"
             style={{ fontSize: 11, color: "#aaaac4", marginTop: 14 }}
           >
-            Browser-based guitar FX — drive, echo,
+            Browser-based guitar FX: drive, echo,
             <br />
             tone, modulation &amp; reverb. Zero install.
           </p>
@@ -789,11 +789,7 @@ export default function App() {
         {(() => {
           const blocked = fx.feedbackBlocked;
           const lit = blocked || isActive;
-          const tone = blocked
-            ? "#ff5a5a"
-            : isActive
-              ? ledColor
-              : "rgba(150,160,175,0.5)";
+          const tone = blocked ? "#ff5a5a" : isActive ? ledColor : "rgba(150,160,175,0.5)";
           return (
             <div
               className="flex items-center"

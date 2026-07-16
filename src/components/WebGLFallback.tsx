@@ -43,7 +43,7 @@ export function WebGLFallback({
             marginTop: 10,
           }}
         >
-          Your browser or GPU doesn't support WebGL, so the pedal can't be rendered — but the signal
+          Your browser or GPU doesn't support WebGL, so the pedal can't be rendered, but the signal
           chain still works. Use the sliders and the button below.
         </p>
         <button

@@ -60,6 +60,53 @@ body {
   pointer-events: none;
 }
 
+@keyframes onboard-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes onboard-step-in {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes onboard-signal {
+  0% {
+    top: -14%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    top: 104%;
+    opacity: 0;
+  }
+}
+
+.onboard-card {
+  animation: onboard-card-in 560ms cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+
+.onboard-step {
+  animation: onboard-step-in 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @keyframes pulse-dot {
   0%,
   100% {
