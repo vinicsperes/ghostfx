@@ -150,9 +150,19 @@ export function HangTag() {
       ctx.letterSpacing = "0px";
 
       if (sigImg.complete && sigImg.naturalWidth > 0) {
-        const sw = 356;
-        const sh = (sw * 299) / 688;
-        ctx.drawImage(sigImg, 256 - sw / 2, 418, sw, sh);
+        const maxW = 420;
+        const maxH = 188;
+        const slotTop = 362;
+        const aspect = sigImg.naturalWidth / sigImg.naturalHeight;
+        let sw = maxW;
+        let sh = maxW / aspect;
+        if (sh > maxH) {
+          sh = maxH;
+          sw = maxH * aspect;
+        }
+        const sx = 256 - sw / 2;
+        const sy = slotTop + (maxH - sh) / 2;
+        ctx.drawImage(sigImg, sx, sy, sw, sh);
       }
 
       drawEyelet(ctx);
