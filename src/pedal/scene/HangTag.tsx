@@ -270,38 +270,46 @@ export function HangTag() {
   const clickTimer = useRef(0);
   useEffect(() => () => window.clearTimeout(clickTimer.current), []);
   const openSite = () => {
-    const w = window.open("https://vinicsperes.com", "_blank", "noopener");
-    if (!w) window.location.href = "https://vinicsperes.com";
+    const a = document.createElement("a");
+    a.href = "https://vinicsperes.com";
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.click();
   };
 
   return (
-    <group
-      onPointerEnter={(e) => {
-        e.stopPropagation();
-        setHovered(true);
-        document.body.style.cursor = "pointer";
-        twirl.current.target = Math.PI;
-      }}
-      onPointerLeave={() => {
-        setHovered(false);
-        document.body.style.cursor = "";
-        twirl.current.target = 0;
-      }}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (clickTimer.current) return;
-        const s = twirl.current;
-        s.target = Math.PI;
-        if (Math.abs(s.angle - Math.PI) < 0.6) {
-          openSite();
-        } else {
-          clickTimer.current = window.setTimeout(() => {
-            clickTimer.current = 0;
+    <group>
+      <mesh
+        position={[0.123, 0.02, 1.76]}
+        onPointerEnter={(e) => {
+          e.stopPropagation();
+          setHovered(true);
+          document.body.style.cursor = "pointer";
+          twirl.current.target = Math.PI;
+        }}
+        onPointerLeave={() => {
+          setHovered(false);
+          document.body.style.cursor = "";
+          twirl.current.target = 0;
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (clickTimer.current) return;
+          const s = twirl.current;
+          s.target = Math.PI;
+          if (Math.abs(s.angle - Math.PI) < 0.6) {
             openSite();
-          }, 1100);
-        }
-      }}
-    >
+          } else {
+            clickTimer.current = window.setTimeout(() => {
+              clickTimer.current = 0;
+              openSite();
+            }, 1100);
+          }
+        }}
+      >
+        <boxGeometry args={[0.6, 0.78, 0.35]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
       <mesh ref={stringRef} geometry={stringGeo}>
         <meshStandardMaterial color="#bfb397" roughness={0.9} metalness={0} />
       </mesh>
