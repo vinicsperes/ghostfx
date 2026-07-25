@@ -6,7 +6,7 @@ export const PRESETS = [
   { name: "FROST", drive: 0.25, echo: 0.35, tone: 0.8, reverb: 0.4, mod: 0.65, master: 0.95 },
   { name: "HEAVY", drive: 0.88, echo: 0.08, tone: 0.6, reverb: 0.15, mod: 0.0, master: 0.8 },
   { name: "HAZE", drive: 0.55, echo: 0.62, tone: 0.5, reverb: 0.85, mod: 0.7, master: 0.7 },
-  { name: "FEVER", drive: 0.6, echo: 0.35, tone: 0.55, reverb: 0.5, mod: 0.55, master: 0.8 },
+  { name: "FEVER", drive: 0.68, echo: 0.35, tone: 0.55, reverb: 0.38, mod: 0.32, master: 0.8 },
 ] as const;
 
 export const PALETTE = {
@@ -64,8 +64,8 @@ export const PRESET_INFO = [
   },
   {
     blurb:
-      "Octave-up fuzz that rings like a circuit about to give up. High notes scream the upper octave; chords smear into ring-mod delirium.",
-    circuit: "octave fuzz → mid delay → fast wobble → dark reverb",
+      "Bright, tight fuzz into a clean open platform. The low end is cut before the clipping, so chords stay readable instead of collapsing, and a hard upper mid bump puts the sparkle back. Sustains forever without turning to mud.",
+    circuit: "tight fuzz → bright delay → wobble → open plate",
   },
 ] as const;
 
@@ -83,7 +83,7 @@ export const DRIVES: DriveProfile[] = [
   { shape: "clean", preHp: 120, midHz: 2200, midGain: 2.5, trim: 3.8 },
   { shape: "rectifier", preHp: 125, midHz: 700, midGain: 3.5, trim: 0.32 },
   { shape: "smooth", preHp: 100, midHz: 550, midGain: 2, trim: 0.95 },
-  { shape: "octafuzz", preHp: 110, midHz: 1200, midGain: 2, trim: 0.95 },
+  { shape: "starved", preHp: 180, midHz: 1200, midGain: 3, trim: 0.28 },
 ];
 
 export type DelayProfile = {
@@ -102,7 +102,7 @@ export const DELAYS: DelayProfile[] = [
   { timeMin: 0.12, timeMax: 0.3, fbMin: 0.15, fbMax: 0.5, loopHp: 200, loopLp: 5500, sat: 1.1 },
   { timeMin: 0.1, timeMax: 0.35, fbMin: 0.1, fbMax: 0.4, loopHp: 220, loopLp: 3000, sat: 1.2 },
   { timeMin: 0.35, timeMax: 0.75, fbMin: 0.35, fbMax: 0.8, loopHp: 160, loopLp: 1800, sat: 1.7 },
-  { timeMin: 0.18, timeMax: 0.42, fbMin: 0.2, fbMax: 0.6, loopHp: 200, loopLp: 2400, sat: 1.5 },
+  { timeMin: 0.22, timeMax: 0.5, fbMin: 0.2, fbMax: 0.6, loopHp: 220, loopLp: 2600, sat: 1.4 },
 ];
 
 export type ModProfile = {
@@ -154,13 +154,13 @@ export const MODS: ModProfile[] = [
   },
   { rate: 0.9, base: 0.007, depthMin: 0.001, depthMax: 0.0035, fbMax: 0, mixMax: 0.55, damp: 4000 },
   {
-    rate: 1.3,
+    rate: 1.8,
     base: 0.004,
-    depthMin: 0.0008,
+    depthMin: 0.0006,
     depthMax: 0.003,
     fbMax: 0.15,
     mixMax: 0.45,
-    damp: 3200,
+    damp: 3400,
   },
 ];
 
@@ -179,7 +179,7 @@ export const CABS: CabProfile[] = [
   { lowCut: 95, bodyHz: 100, bodyGain: 0.0, presHz: 3200, presGain: 3.0, topCut: 8500 },
   { lowCut: 85, bodyHz: 170, bodyGain: 4.5, presHz: 2600, presGain: 4.0, topCut: 5400 },
   { lowCut: 100, bodyHz: 110, bodyGain: 2.0, presHz: 1800, presGain: 1.5, topCut: 4600 },
-  { lowCut: 100, bodyHz: 150, bodyGain: 2.0, presHz: 2200, presGain: 3.0, topCut: 5000 },
+  { lowCut: 105, bodyHz: 200, bodyGain: 1.5, presHz: 2800, presGain: 4.5, topCut: 5000 },
 ];
 
 export type ReverbProfile = {
@@ -195,5 +195,5 @@ export const REVERBS: ReverbProfile[] = [
   { decay: 2.4, predelay: 0.012, tone: 8000, width: 1.0 },
   { decay: 1.4, predelay: 0.012, tone: 4000, width: 0.65 },
   { decay: 3.8, predelay: 0.04, tone: 3600, width: 1.0 },
-  { decay: 2.8, predelay: 0.02, tone: 3000, width: 0.95 },
+  { decay: 2.6, predelay: 0.018, tone: 4500, width: 1.0 },
 ];

@@ -1,4 +1,4 @@
-export type DriveShape = "screamer" | "fuzz" | "clean" | "rectifier" | "smooth" | "octafuzz";
+export type DriveShape = "screamer" | "fuzz" | "clean" | "rectifier" | "smooth" | "starved";
 
 function shapeScreamer(x: number, a: number): number {
   const k = Math.pow(a, 2.2) * 9;
@@ -42,13 +42,9 @@ function shapeSmooth(x: number, a: number): number {
   return y * makeup;
 }
 
-function shapeOctafuzz(x: number, a: number): number {
-  const k = 6 + 26 * a;
-  const oct = Math.tanh(k * (Math.abs(x) - 0.02));
-  const dry = Math.tanh(k * 0.6 * x);
-  const mix = 0.5 + 0.3 * a;
-  const makeup = 1 / (2.1 + a * 0.5);
-  return (dry * (1 - mix) + oct * mix) * makeup;
+function shapeStarved(x: number, a: number): number {
+  const b = 0.5 * a;
+  return (softClip((2 + 22 * a) * x + b, 2.5) - softClip(b, 2.5)) * 0.45;
 }
 
 const DRIVE_SHAPES: Record<DriveShape, (x: number, a: number) => number> = {
@@ -57,7 +53,7 @@ const DRIVE_SHAPES: Record<DriveShape, (x: number, a: number) => number> = {
   clean: shapeClean,
   rectifier: shapeRectifier,
   smooth: shapeSmooth,
-  octafuzz: shapeOctafuzz,
+  starved: shapeStarved,
 };
 
 export function createDistortionCurve(
@@ -76,7 +72,7 @@ export function createDistortionCurve(
 
 export function driveOversample(amount: number, shape: DriveShape = "screamer"): OverSampleType {
   if (shape === "clean") return "none";
-  if (shape === "octafuzz") return amount >= 0.3 ? "2x" : "none";
+  if (shape === "starved") return amount >= 0.25 ? "2x" : "none";
   if (shape === "fuzz" || shape === "rectifier") return amount >= 0.4 ? "2x" : "none";
   return amount >= 0.6 ? "2x" : "none";
 }
