@@ -4,7 +4,7 @@ export const PRESETS = [
   { name: "GHOST", drive: 0.35, echo: 0.58, tone: 0.62, reverb: 0.78, mod: 0.3, master: 0.85 },
   { name: "DOOM", drive: 0.75, echo: 0.25, tone: 0.42, reverb: 0.35, mod: 0.1, master: 0.82 },
   { name: "FROST", drive: 0.25, echo: 0.35, tone: 0.8, reverb: 0.4, mod: 0.65, master: 0.95 },
-  { name: "HEAVY", drive: 0.92, echo: 0.06, tone: 0.58, reverb: 0.08, mod: 0.0, master: 0.8 },
+  { name: "HEAVY", drive: 0.88, echo: 0.08, tone: 0.6, reverb: 0.15, mod: 0.0, master: 0.8 },
   { name: "HAZE", drive: 0.55, echo: 0.62, tone: 0.5, reverb: 0.85, mod: 0.7, master: 0.7 },
   { name: "FEVER", drive: 0.6, echo: 0.35, tone: 0.55, reverb: 0.5, mod: 0.55, master: 0.8 },
 ] as const;
@@ -54,8 +54,8 @@ export const PRESET_INFO = [
   },
   {
     blurb:
-      "Scooped rectifier high-gain, tight and nearly dry. Percussive palm mutes, saturated leads — the amp-on-eleven preset.",
-    circuit: "rectifier drive → tight slap delay → small room",
+      "Thick Seattle sludge. Midrange forward gain with a dark, woolly top and a fat low mid punch, saturated but still reading your pick attack. Chords ring out heavy instead of collapsing.",
+    circuit: "mid-pushed high gain → tight slap → dark room",
   },
   {
     blurb:
@@ -81,7 +81,7 @@ export const DRIVES: DriveProfile[] = [
   { shape: "screamer", preHp: 140, midHz: 700, midGain: 2, trim: 2.7 },
   { shape: "fuzz", preHp: 80, midHz: 450, midGain: 3, trim: 0.25 },
   { shape: "clean", preHp: 120, midHz: 2200, midGain: 2.5, trim: 3.8 },
-  { shape: "rectifier", preHp: 165, midHz: 850, midGain: -1, trim: 0.33 },
+  { shape: "rectifier", preHp: 125, midHz: 700, midGain: 3.5, trim: 0.32 },
   { shape: "smooth", preHp: 100, midHz: 550, midGain: 2, trim: 0.95 },
   { shape: "octafuzz", preHp: 110, midHz: 1200, midGain: 2, trim: 0.95 },
 ];
@@ -177,7 +177,7 @@ export const CABS: CabProfile[] = [
   { lowCut: 90, bodyHz: 110, bodyGain: 1.5, presHz: 2600, presGain: 3.0, topCut: 5500 },
   { lowCut: 80, bodyHz: 120, bodyGain: 3.0, presHz: 1500, presGain: 2.5, topCut: 4800 },
   { lowCut: 95, bodyHz: 100, bodyGain: 0.0, presHz: 3200, presGain: 3.0, topCut: 8500 },
-  { lowCut: 115, bodyHz: 130, bodyGain: 2.0, presHz: 3400, presGain: 4.5, topCut: 5200 },
+  { lowCut: 85, bodyHz: 170, bodyGain: 4.5, presHz: 2600, presGain: 4.0, topCut: 5400 },
   { lowCut: 100, bodyHz: 110, bodyGain: 2.0, presHz: 1800, presGain: 1.5, topCut: 4600 },
   { lowCut: 100, bodyHz: 150, bodyGain: 2.0, presHz: 2200, presGain: 3.0, topCut: 5000 },
 ];
@@ -193,7 +193,7 @@ export const REVERBS: ReverbProfile[] = [
   { decay: 3.4, predelay: 0.03, tone: 4200, width: 0.9 },
   { decay: 4.2, predelay: 0.05, tone: 2400, width: 0.85 },
   { decay: 2.4, predelay: 0.012, tone: 8000, width: 1.0 },
-  { decay: 0.9, predelay: 0.008, tone: 5000, width: 0.5 },
+  { decay: 1.4, predelay: 0.012, tone: 4000, width: 0.65 },
   { decay: 3.8, predelay: 0.04, tone: 3600, width: 1.0 },
   { decay: 2.8, predelay: 0.02, tone: 3000, width: 0.95 },
 ];

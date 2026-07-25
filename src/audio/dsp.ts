@@ -23,11 +23,16 @@ function shapeClean(x: number, a: number): number {
   return y / ((1 + even) * (1 + a * 0.1));
 }
 
+function softClip(u: number, p: number): number {
+  return u / Math.pow(1 + Math.pow(Math.abs(u), p), 1 / p);
+}
+
 function shapeRectifier(x: number, a: number): number {
-  const th = 1 / (1 + a * 32);
-  const makeup = 0.9 / Math.pow(th, 0.75);
-  const u = x / th;
-  return ((th * u) / Math.pow(1 + Math.pow(Math.abs(u), 8), 1 / 8)) * makeup;
+  const b1 = 0.5 * a;
+  const b2 = 1.0 * a;
+  const s1 = softClip((1 + 20 * a) * x + b1, 2.2) - softClip(b1, 2.2);
+  const s2 = softClip((1 + 3 * a) * s1 + b2, 2.2) - softClip(b2, 2.2);
+  return s2 * 0.4;
 }
 
 function shapeSmooth(x: number, a: number): number {
