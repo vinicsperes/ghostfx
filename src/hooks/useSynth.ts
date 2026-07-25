@@ -105,6 +105,11 @@ export function useSynth({
     const driveTrim = ctx.createGain();
     driveTrim.gain.value = synthDriveTrim(p.drive, dp.shape);
 
+    const dcBlock = ctx.createBiquadFilter();
+    dcBlock.type = "highpass";
+    dcBlock.frequency.value = 30;
+    dcBlock.Q.value = 0.707;
+
     const toneFilter = ctx.createBiquadFilter();
     toneFilter.type = "lowpass";
     toneFilter.frequency.value = 600 * Math.pow(20, p.tone);
@@ -168,7 +173,8 @@ export function useSynth({
     midEmphasis.connect(preGain);
     preGain.connect(driveNode);
     driveNode.connect(driveTrim);
-    driveTrim.connect(toneFilter);
+    driveTrim.connect(dcBlock);
+    dcBlock.connect(toneFilter);
     toneFilter.connect(master);
     toneFilter.connect(delayNode);
     delayNode.connect(feedbackGain);
