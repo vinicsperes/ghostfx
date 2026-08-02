@@ -2,6 +2,10 @@ import { useRef } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 
+const MAX_FRAME = 0.033;
+const SUB_STEP = 1 / 240;
+const TRAVEL = -0.05;
+
 export function Footswitch3D({
   position,
   pressed,
@@ -33,12 +37,17 @@ export function Footswitch3D({
   useFrame((_, delta) => {
     const g = plungerRef.current;
     if (!g) return;
-    const dt = Math.min(delta, 0.033);
-    const target = pressed ? -0.05 : 0;
+    const dt = Math.min(delta, MAX_FRAME);
+    const target = pressed ? TRAVEL : 0;
     const k = pressed ? 900 : 320;
     const c = pressed ? 60 : 16;
-    vRef.current += (-k * (yRef.current - target) - c * vRef.current) * dt;
-    yRef.current += vRef.current * dt;
+    const steps = Math.ceil(dt / SUB_STEP);
+    const h = dt / steps;
+    for (let i = 0; i < steps; i++) {
+      vRef.current += (-k * (yRef.current - target) - c * vRef.current) * h;
+      yRef.current += vRef.current * h;
+    }
+    yRef.current = THREE.MathUtils.clamp(yRef.current, TRAVEL * 1.5, 0.02);
     g.position.y = 0.18 + yRef.current;
 
     if (pressed && !prevPressed.current) flashRef.current = 1;
