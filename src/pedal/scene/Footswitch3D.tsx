@@ -1,10 +1,20 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { Html } from "@react-three/drei";
+import { HintSurface } from "../knobs/HintSurface";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 
 const MAX_FRAME = 0.033;
 const SUB_STEP = 1 / 240;
 const TRAVEL = -0.05;
+const HOVER_DIP = TRAVEL * 0.18;
+const HOVER_IN = 20;
+const HOVER_OUT = 9;
+const ON_GLOW = 0.9;
+const HOVER_GLOW_OFF = 0.38;
+const HOVER_GLOW_ON = 0.22;
+const FLASH_GLOW = 0.7;
+const CAN_HOVER = typeof window !== "undefined" && !!window.matchMedia?.("(hover: hover)").matches;
 
 export function Footswitch3D({
   position,
@@ -31,14 +41,25 @@ export function Footswitch3D({
   const vRef = useRef(0);
   const flashRef = useRef(0);
   const hoverRef = useRef(0);
+  const litRef = useRef(active ? 1 : 0);
   const isHoveredRef = useRef(false);
   const prevPressed = useRef(false);
+  const [hovered, setHovered] = useState(false);
 
   useFrame((_, delta) => {
     const g = plungerRef.current;
     if (!g) return;
     const dt = Math.min(delta, MAX_FRAME);
-    const target = pressed ? TRAVEL : 0;
+
+    hoverRef.current = THREE.MathUtils.damp(
+      hoverRef.current,
+      isHoveredRef.current ? 1 : 0,
+      isHoveredRef.current ? HOVER_IN : HOVER_OUT,
+      dt,
+    );
+    litRef.current = THREE.MathUtils.damp(litRef.current, active ? 1 : 0, 10, dt);
+
+    const target = pressed ? TRAVEL : hoverRef.current * HOVER_DIP;
     const k = pressed ? 900 : 320;
     const c = pressed ? 60 : 16;
     const steps = Math.ceil(dt / SUB_STEP);
@@ -53,16 +74,11 @@ export function Footswitch3D({
     if (pressed && !prevPressed.current) flashRef.current = 1;
     prevPressed.current = pressed;
     flashRef.current = Math.max(0, flashRef.current - dt * 4);
-    hoverRef.current = THREE.MathUtils.damp(hoverRef.current, isHoveredRef.current ? 1 : 0, 12, dt);
     if (bezelMat.current) {
-      const base = active ? 0.55 : 0;
-      const target = base + hoverRef.current * 1.5 + flashRef.current * 0.7;
-      bezelMat.current.emissiveIntensity = THREE.MathUtils.damp(
-        bezelMat.current.emissiveIntensity,
-        target,
-        9,
-        dt,
-      );
+      const lit = litRef.current;
+      const hoverGlow = THREE.MathUtils.lerp(HOVER_GLOW_OFF, HOVER_GLOW_ON, lit);
+      bezelMat.current.emissiveIntensity =
+        lit * ON_GLOW + hoverRef.current * hoverGlow + flashRef.current * FLASH_GLOW;
     }
   });
 
@@ -73,10 +89,12 @@ export function Footswitch3D({
       onPointerOver={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
         isHoveredRef.current = true;
+        if (CAN_HOVER) setHovered(true);
         document.body.style.cursor = "pointer";
       }}
       onPointerOut={() => {
         isHoveredRef.current = false;
+        setHovered(false);
         document.body.style.cursor = "";
       }}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
@@ -90,6 +108,30 @@ export function Footswitch3D({
       }}
       onPointerCancel={() => onCancel()}
     >
+      {hovered && (
+        <Html
+          position={[0, 0.78, 0]}
+          center
+          distanceFactor={5.4}
+          zIndexRange={[50, 0]}
+          pointerEvents="none"
+        >
+          <HintSurface>
+            <div
+              style={{
+                fontSize: 11.5,
+                fontWeight: 700,
+                lineHeight: 1,
+                letterSpacing: "0.14em",
+                color: accent,
+              }}
+            >
+              {active ? "STOMP TO BYPASS" : "STOMP TO ARM"}
+            </div>
+          </HintSurface>
+        </Html>
+      )}
+
       <mesh position={[0, 0, 0]} receiveShadow>
         <cylinderGeometry args={[0.22, 0.22, 0.02, 32]} />
         <meshStandardMaterial
