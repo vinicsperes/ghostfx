@@ -246,7 +246,6 @@ export function RecorderControls({
           style={{
             position: "relative",
             flex: 1,
-            maxWidth: 460,
             height: scopeHeight,
             borderRadius: 6,
             overflow: "hidden",

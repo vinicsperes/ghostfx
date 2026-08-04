@@ -48,11 +48,11 @@ export function TunerButton({
       aria-label="Open tuner"
       className="flex flex-col items-center justify-center transition-all active:scale-95"
       style={{
-        width: 92,
-        height: 74,
-        gap: 6,
+        width: 74,
+        height: 92,
+        gap: 8,
         borderRadius: 8,
-        border: `1px solid ${accent}30`,
+        border: "1px solid rgba(231,228,220,0.1)",
         background: "rgba(255,255,255,0.02)",
         color: accent,
         cursor: "pointer",
@@ -61,7 +61,7 @@ export function TunerButton({
       <ForkIcon color={accent} />
       <span
         className="font-[var(--font-mono)]"
-        style={{ fontSize: 9, letterSpacing: "0.16em", color: "rgba(231,228,220,0.55)" }}
+        style={{ fontSize: 8.5, letterSpacing: "0.16em", color: "rgba(231,228,220,0.5)" }}
       >
         TUNE
       </span>

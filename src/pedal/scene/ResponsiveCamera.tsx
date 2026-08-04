@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
-const STAGE_DESKTOP = { left: 360, top: 78, bottom: 92 };
+const STAGE_DESKTOP = { left: 0, top: 68, bottom: 224 };
 const STAGE_MOBILE = { left: 0, top: 88, bottom: 150 };
 
 export function ResponsiveCamera() {
