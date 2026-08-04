@@ -3,7 +3,12 @@ import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import { KnobArc } from "./KnobArc";
 import { KnobTooltip } from "./KnobTooltip";
+import { MutedHint } from "./MutedHint";
 import { easeOutBack } from "../easing";
+
+const COARSE_TRAVEL = 240;
+const FINE_TRAVEL = 900;
+const GRIP_SCALE = 0.04;
 
 export function MasterKnob3D({
   position,
@@ -30,7 +35,8 @@ export function MasterKnob3D({
   showArc?: boolean;
   mutedHint?: boolean;
 }) {
-  const dragRef = useRef<{ startY: number; startValue: number } | null>(null);
+  const dragRef = useRef<{ lastY: number; value: number } | null>(null);
+  const gripRef = useRef(0);
   const isHoveredRef = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
   const onChangeRef = useRef(onChange);
@@ -43,10 +49,12 @@ export function MasterKnob3D({
       if (dragRef.current) e.preventDefault();
     };
     const onMove = (e: PointerEvent) => {
-      if (!dragRef.current) return;
-      const dy = dragRef.current.startY - e.clientY;
-      const next = Math.max(0, Math.min(1, dragRef.current.startValue + dy / 180));
-      onChangeRef.current(next);
+      const d = dragRef.current;
+      if (!d) return;
+      const ratio = e.shiftKey ? FINE_TRAVEL : COARSE_TRAVEL;
+      d.value = Math.max(0, Math.min(1, d.value + (d.lastY - e.clientY) / ratio));
+      d.lastY = e.clientY;
+      onChangeRef.current(d.value);
     };
     const onUp = () => {
       if (dragRef.current) {
@@ -110,6 +118,8 @@ export function MasterKnob3D({
   useFrame((_, delta) => {
     const g = masterGroupRef.current;
     if (!g) return;
+    gripRef.current = THREE.MathUtils.damp(gripRef.current, dragRef.current ? 1 : 0, 14, delta);
+    g.scale.setScalar(1 + gripRef.current * GRIP_SCALE);
     if (dragRef.current) {
       g.rotation.y = (3 / 4) * Math.PI - value * (3 / 2) * Math.PI;
       return;
@@ -148,7 +158,7 @@ export function MasterKnob3D({
       onWheel={(e: ThreeEvent<WheelEvent>) => {
         e.stopPropagation();
         if (masterAnimRef.current.seenTrigger === 0) masterAnimRef.current.seenTrigger = 1;
-        const step = e.deltaY < 0 ? 0.04 : -0.04;
+        const step = (e.shiftKey ? 0.01 : 0.04) * (e.deltaY < 0 ? 1 : -1);
         onChange(Math.max(0, Math.min(1, value + step)));
       }}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
@@ -161,16 +171,14 @@ export function MasterKnob3D({
           return;
         }
         lastClickRef.current = now;
-        dragRef.current = { startY: e.clientY, startValue: value };
+        dragRef.current = { lastY: e.clientY, value };
         document.body.style.cursor = "grabbing";
         setIsDragging(true);
         setControlsEnabled(false);
       }}
     >
-      {isDragging && <KnobTooltip label="Volume" value={value} accent={accent} showBar />}
-      {!isDragging && mutedHint && (
-        <KnobTooltip label="TURN UP" value={value} accent={accent} pulse showBar icon="volumeUp" />
-      )}
+      {isDragging && <KnobTooltip label="Volume" value={value} accent={accent} />}
+      {!isDragging && mutedHint && <MutedHint accent={accent} />}
       <group ref={masterGroupRef}>
         {knobStyle === "bigmuff" ? (
           <>

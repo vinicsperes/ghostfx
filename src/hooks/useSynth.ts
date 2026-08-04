@@ -4,6 +4,7 @@ import {
   driveOversample,
   mapDrivePreGain,
   synthDriveTrim,
+  masterGainFromKnob,
 } from "../audio/dsp";
 import { DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
 
@@ -160,7 +161,7 @@ export function useSynth({
     reverbWet.gain.value = p.reverb * 0.5;
 
     const master = ctx.createGain();
-    master.gain.value = p.masterVolume * 0.55;
+    master.gain.value = masterGainFromKnob(p.masterVolume) * 0.55;
 
     const limiter = ctx.createDynamicsCompressor();
     limiter.threshold.value = -1.5;
@@ -256,7 +257,7 @@ export function useSynth({
     n.modDepth.gain.setTargetAtTime(mp.depthMin + mod * (mp.depthMax - mp.depthMin), t, 0.05);
     n.modFb.gain.setTargetAtTime(mod * mp.fbMax, t, 0.05);
     n.modWet.gain.setTargetAtTime(mod * mp.mixMax, t, 0.05);
-    n.master.gain.setTargetAtTime(masterVolume * 0.55, t, 0.05);
+    n.master.gain.setTargetAtTime(masterGainFromKnob(masterVolume) * 0.55, t, 0.05);
   }, [drive, echo, tone, reverb, mod, masterVolume, presetIdx]);
 
   const playNote = useCallback(

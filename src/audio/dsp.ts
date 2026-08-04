@@ -99,6 +99,11 @@ export function synthDriveTrim(amount: number, shape: DriveShape = "screamer"): 
   return 0.14 / Math.max(rms, 0.02);
 }
 
+export function masterGainFromKnob(value: number): number {
+  if (value <= 0) return 0;
+  return (Math.pow(10, 2 * Math.min(1, value)) - 1) / 99;
+}
+
 export function createLimiterCurve(threshold = 0.82): Float32Array<ArrayBuffer> {
   const n = 8192;
   const curve = new Float32Array(n);

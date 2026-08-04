@@ -6,6 +6,7 @@ import {
   createLimiterCurve,
   createTapeCurve,
   createReverbIR,
+  masterGainFromKnob,
 } from "../audio/dsp";
 import { CABS, DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
 
@@ -538,7 +539,7 @@ export function useEffects({
       setMicBlocked(false);
       setError(null);
       setState("bypass");
-      masterGain.gain.setTargetAtTime(masterVolume, ctx.currentTime, 0.5);
+      masterGain.gain.setTargetAtTime(masterGainFromKnob(masterVolume), ctx.currentTime, 0.5);
     } catch (e) {
       try {
         await ctxRef.current?.close();
@@ -666,7 +667,11 @@ export function useEffects({
     if (feedbackLatchRef.current) return;
     const { masterGain } = nodesRef.current;
     if (masterGain && ctxRef.current && state !== "idle")
-      masterGain.gain.setTargetAtTime(masterVolume, ctxRef.current.currentTime, 0.05);
+      masterGain.gain.setTargetAtTime(
+        masterGainFromKnob(masterVolume),
+        ctxRef.current.currentTime,
+        0.05,
+      );
   }, [masterVolume, state]);
 
   useEffect(() => {
@@ -909,7 +914,11 @@ export function useEffects({
       streamRef.current?.getAudioTracks().forEach((tr) => {
         tr.enabled = true;
       });
-      masterGain?.gain.setTargetAtTime(masterVolume, t, armedOnceRef.current ? 0.1 : 0.45);
+      masterGain?.gain.setTargetAtTime(
+        masterGainFromKnob(masterVolume),
+        t,
+        armedOnceRef.current ? 0.1 : 0.45,
+      );
       armedOnceRef.current = true;
       bypass?.gain.setTargetAtTime(0, t, 0.02);
       effects?.gain.setTargetAtTime(1, t, 0.02);
