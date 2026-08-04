@@ -138,12 +138,9 @@ export function RecorderControls({
           badgeRef.current.style.color = "rgba(188,188,210,0.8)";
         }
       } else {
-        c.globalAlpha = 0.16;
-        const nBars = Math.floor(W / STEP);
-        for (let b = 0; b < nBars; b++) {
-          bar(b * STEP + (STEP - BARW) / 2, minH, 1);
-        }
-        c.globalAlpha = 1;
+        c.shadowBlur = 0;
+        c.fillStyle = "rgba(231,228,220,0.13)";
+        c.fillRect(0, mid - Math.max(1, dpr * 0.5), W, Math.max(1, dpr));
       }
 
       if (!isRecording && !(peaks && peaks.length > 0) && badgeRef.current) {
