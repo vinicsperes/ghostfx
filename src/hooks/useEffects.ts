@@ -9,6 +9,7 @@ import {
   masterGainFromKnob,
 } from "../audio/dsp";
 import { CABS, DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
+import { useRecorder } from "./useRecorder";
 
 export type EffectsState = "idle" | "bypass" | "active";
 
@@ -18,100 +19,17 @@ type EffectsApi = {
   error: string | null;
   micBlocked: boolean;
   toggle: () => Promise<void>;
+  ctxRef: React.RefObject<AudioContext | null>;
+  ensureAudio: () => Promise<void>;
   getLevel: () => number;
   getWaveform: () => Float32Array;
-  isRecording: boolean;
-  hasRecording: boolean;
-  recordedDuration: number;
-  toggleRecording: () => Promise<void>;
-  downloadRecording: () => void;
-  getRecordedPeaks: () => Float32Array | null;
+  getMicWaveform: () => Float32Array;
+  getSampleRate: () => number;
   feedbackBlocked: boolean;
   guardActive: boolean;
   resumeFromFeedback: () => void;
+  recorder: ReturnType<typeof useRecorder>;
 };
-
-const MAX_REC_MS = 30000;
-
-function computePeaks(buf: AudioBuffer, buckets = 360): Float32Array {
-  const ch = buf.getChannelData(0);
-  const block = Math.max(1, Math.floor(ch.length / buckets));
-  const peaks = new Float32Array(buckets);
-  for (let b = 0; b < buckets; b++) {
-    let max = 0;
-    const start = b * block;
-    for (let i = 0; i < block && start + i < ch.length; i++) {
-      const a = Math.abs(ch[start + i]);
-      if (a > max) max = a;
-    }
-    peaks[b] = max;
-  }
-  return peaks;
-}
-
-function encodeWav(buf: AudioBuffer): Blob {
-  const numCh = Math.min(buf.numberOfChannels, 2);
-  const sr = buf.sampleRate;
-  const len = buf.length;
-  const blockAlign = numCh * 2;
-  const dataSize = len * blockAlign;
-  const out = new ArrayBuffer(44 + dataSize);
-  const dv = new DataView(out);
-  const str = (off: number, s: string) => {
-    for (let i = 0; i < s.length; i++) dv.setUint8(off + i, s.charCodeAt(i));
-  };
-  str(0, "RIFF");
-  dv.setUint32(4, 36 + dataSize, true);
-  str(8, "WAVE");
-  str(12, "fmt ");
-  dv.setUint32(16, 16, true);
-  dv.setUint16(20, 1, true);
-  dv.setUint16(22, numCh, true);
-  dv.setUint32(24, sr, true);
-  dv.setUint32(28, sr * blockAlign, true);
-  dv.setUint16(32, blockAlign, true);
-  dv.setUint16(34, 16, true);
-  str(36, "data");
-  dv.setUint32(40, dataSize, true);
-  const chans: Float32Array[] = [];
-  for (let c = 0; c < numCh; c++) chans.push(buf.getChannelData(c));
-  let off = 44;
-  for (let i = 0; i < len; i++) {
-    for (let c = 0; c < numCh; c++) {
-      const s = Math.max(-1, Math.min(1, chans[c][i]));
-      dv.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7fff, true);
-      off += 2;
-    }
-  }
-  return new Blob([out], { type: "audio/wav" });
-}
-
-function floatToPcm(ch: Float32Array): Int16Array {
-  const pcm = new Int16Array(ch.length);
-  for (let i = 0; i < ch.length; i++) {
-    const s = Math.max(-1, Math.min(1, ch[i]));
-    pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-  }
-  return pcm;
-}
-
-async function encodeMp3(buf: AudioBuffer): Promise<Blob> {
-  const { Mp3Encoder } = await import("@breezystack/lamejs");
-  const numCh = Math.min(buf.numberOfChannels, 2);
-  const enc = new Mp3Encoder(numCh, buf.sampleRate, 128);
-  const left = floatToPcm(buf.getChannelData(0));
-  const right = numCh === 2 ? floatToPcm(buf.getChannelData(1)) : null;
-  const parts: Uint8Array[] = [];
-  for (let i = 0; i < left.length; i += 1152) {
-    const mp3 = right
-      ? enc.encodeBuffer(left.subarray(i, i + 1152), right.subarray(i, i + 1152))
-      : enc.encodeBuffer(left.subarray(i, i + 1152));
-    if (mp3.length > 0) parts.push(mp3);
-  }
-  const tail = enc.flush();
-  if (tail.length > 0) parts.push(tail);
-  return new Blob(parts as BlobPart[], { type: "audio/mpeg" });
-}
 
 export function useEffects({
   drive,
@@ -140,6 +58,7 @@ export function useEffects({
   const ctxRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const levelAnalyserRef = useRef<AnalyserNode | null>(null);
   const guardAnalyserRef = useRef<AnalyserNode | null>(null);
   const micAnalyserRef = useRef<AnalyserNode | null>(null);
   const outAnalyserRef = useRef<AnalyserNode | null>(null);
@@ -157,14 +76,6 @@ export function useEffects({
   const convUnloadRef = useRef<number | null>(null);
 
   const recordDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const recordedBufferRef = useRef<AudioBuffer | null>(null);
-  const recordedPeaksRef = useRef<Float32Array | null>(null);
-  const recTimeoutRef = useRef<number | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [hasRecording, setHasRecording] = useState(false);
-  const [recordedDuration, setRecordedDuration] = useState(0);
 
   const nodesRef = useRef<{
     preFilter: BiquadFilterNode | null;
@@ -469,17 +380,30 @@ export function useEffects({
       reverbWetB.connect(reverbWet);
       reverbWet.connect(effectsGain);
 
-      bypassGain.connect(masterGain);
-      effectsGain.connect(masterGain);
+      const chainSum = ctx.createGain();
+      bypassGain.connect(chainSum);
+      effectsGain.connect(chainSum);
 
-      masterGain.connect(notches[0]);
+      chainSum.connect(notches[0]);
       notches[0].connect(notches[1]);
       notches[1].connect(notches[2]);
       notches[2].connect(notches[3]);
       notches[3].connect(guardGain);
-      guardGain.connect(analyser);
-      guardGain.connect(guardAnalyser);
-      guardGain.connect(limiter);
+
+      const recLimiter = ctx.createWaveShaper();
+      recLimiter.curve = createLimiterCurve();
+      recLimiter.oversample = "none";
+      guardGain.connect(recLimiter);
+
+      const levelAnalyser = ctx.createAnalyser();
+      levelAnalyser.fftSize = 256;
+      recLimiter.connect(levelAnalyser);
+      levelAnalyserRef.current = levelAnalyser;
+
+      guardGain.connect(masterGain);
+      masterGain.connect(analyser);
+      masterGain.connect(guardAnalyser);
+      masterGain.connect(limiter);
       limiter.connect(ctx.destination);
 
       const micAnalyser = ctx.createAnalyser();
@@ -495,7 +419,7 @@ export function useEffects({
       outAnalyserRef.current = outAnalyser;
 
       const recordDest = ctx.createMediaStreamDestination();
-      limiter.connect(recordDest);
+      recLimiter.connect(recordDest);
       recordDestRef.current = recordDest;
 
       nodesRef.current = {
@@ -558,6 +482,14 @@ export function useEffects({
       }
     }
   }, [drive, echo, tone, reverb, mod, masterVolume, presetIdx]);
+
+  const recorder = useRecorder({
+    ctxRef,
+    destRef: recordDestRef,
+    ensureAudio: init,
+    presetIdx,
+    masterVolume,
+  });
 
   useEffect(() => {
     const { drive: driveNode, driveTrim, preGain, preFilter, midEmphasis } = nodesRef.current;
@@ -942,7 +874,7 @@ export function useEffects({
   const emptyRef = useRef<Float32Array<ArrayBuffer> | null>(null);
 
   const getWaveform = useCallback((): Float32Array => {
-    const analyser = analyserRef.current;
+    const analyser = levelAnalyserRef.current;
     if (!analyser) return (emptyRef.current ??= new Float32Array(128));
     const buf = (scratchRef.current ??= new Float32Array(analyser.fftSize));
     analyser.getFloatTimeDomainData(buf);
@@ -950,7 +882,7 @@ export function useEffects({
   }, []);
 
   const getLevel = useCallback((): number => {
-    const analyser = analyserRef.current;
+    const analyser = levelAnalyserRef.current;
     if (!analyser) return 0;
     const buf = (scratchRef.current ??= new Float32Array(analyser.fftSize));
     analyser.getFloatTimeDomainData(buf);
@@ -962,104 +894,33 @@ export function useEffects({
     return Math.min(1, peak * 1.5);
   }, []);
 
-  const stopRecording = useCallback(() => {
-    if (recTimeoutRef.current) {
-      clearTimeout(recTimeoutRef.current);
-      recTimeoutRef.current = null;
-    }
-    const rec = recorderRef.current;
-    if (rec && rec.state !== "inactive") rec.stop();
-    setIsRecording(false);
+  const micScratchRef = useRef<Float32Array<ArrayBuffer> | null>(null);
+
+  const getMicWaveform = useCallback((): Float32Array => {
+    const analyser = micAnalyserRef.current;
+    if (!analyser) return (emptyRef.current ??= new Float32Array(128));
+    const buf = (micScratchRef.current ??= new Float32Array(analyser.fftSize));
+    analyser.getFloatTimeDomainData(buf);
+    return buf;
   }, []);
 
-  const toggleRecording = useCallback(async () => {
-    if (isRecording) {
-      stopRecording();
-      return;
-    }
-
-    if (!ctxRef.current) await init();
-    const ctx = ctxRef.current;
-    const dest = recordDestRef.current;
-    if (!ctx || !dest) return;
-    if (ctx.state === "suspended") await ctx.resume();
-
-    const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
-    const mime =
-      typeof MediaRecorder !== "undefined"
-        ? (candidates.find((t) => MediaRecorder.isTypeSupported(t)) ?? "")
-        : "";
-
-    const rec = new MediaRecorder(dest.stream, mime ? { mimeType: mime } : undefined);
-    chunksRef.current = [];
-    rec.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
-    };
-    rec.onstop = async () => {
-      const blob = new Blob(chunksRef.current, { type: mime || "audio/webm" });
-      try {
-        const buf = await ctx.decodeAudioData(await blob.arrayBuffer());
-        recordedBufferRef.current = buf;
-        recordedPeaksRef.current = computePeaks(buf);
-        setRecordedDuration(buf.duration);
-        setHasRecording(true);
-      } catch {
-        setError("could not process the recording — try again");
-      }
-    };
-    rec.start();
-    recorderRef.current = rec;
-    setIsRecording(true);
-    recTimeoutRef.current = window.setTimeout(stopRecording, MAX_REC_MS);
-  }, [isRecording, init, stopRecording]);
-
-  const downloadRecording = useCallback(async () => {
-    const buf = recordedBufferRef.current;
-    if (!buf) return;
-    let blob: Blob, ext: string;
-    try {
-      blob = await encodeMp3(buf);
-      ext = "mp3";
-    } catch {
-      blob = encodeWav(buf);
-      ext = "wav";
-    }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `ghostfx-take.${ext}`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }, []);
-
-  const getRecordedPeaks = useCallback(() => recordedPeaksRef.current, []);
-
-  useEffect(() => {
-    return () => {
-      if (recTimeoutRef.current) clearTimeout(recTimeoutRef.current);
-      const rec = recorderRef.current;
-      if (rec && rec.state !== "inactive") rec.stop();
-    };
-  }, []);
+  const getSampleRate = useCallback(() => ctxRef.current?.sampleRate ?? 0, []);
 
   return {
     state,
     ready,
-    error,
+    ctxRef,
+    ensureAudio: init,
+    getMicWaveform,
+    getSampleRate,
+    error: error ?? recorder.error,
     micBlocked,
     toggle,
     getLevel,
     getWaveform,
-    isRecording,
-    hasRecording,
-    recordedDuration,
-    toggleRecording,
-    downloadRecording,
-    getRecordedPeaks,
     feedbackBlocked,
     guardActive,
     resumeFromFeedback,
+    recorder,
   };
 }

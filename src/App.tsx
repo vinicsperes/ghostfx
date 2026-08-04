@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useEffects } from "./hooks/useEffects";
+import { useMetronome } from "./hooks/useMetronome";
+import { useTuner } from "./hooks/useTuner";
 import { useSynth, NOTE_KEYS } from "./hooks/useSynth";
 import Pedal3D from "./Pedal3D";
 import LoadingScreen from "./LoadingScreen";
@@ -9,6 +11,12 @@ import PresetBg from "./background/PresetBg";
 import { PRESETS, PALETTE, PRESET_META, PRESET_TAGS } from "./data/presets";
 import {
   RecorderControls,
+  Console,
+  MobileSheet,
+  TunerModal,
+  TunerButton,
+  PanelLabel,
+  Metronome,
   MicBlockedModal,
   FeedbackModal,
   PresetCard,
@@ -44,6 +52,12 @@ function lerpHex(a: string, b: string, t: number): string {
 }
 
 const WARNING_ACK_KEY = "ghostfx.onboardAck";
+
+const SHEET_TABS = [
+  { key: "signal", label: "Signal" },
+  { key: "keyboard", label: "Keys" },
+  { key: "rec", label: "Rec" },
+] as const;
 
 const EXPLODE_MS = 2400;
 const smoothstep = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
@@ -93,10 +107,34 @@ export default function App() {
   );
 
   const fx = useEffects({ drive, echo, tone, reverb, mod, masterVolume, presetIdx });
-  const { toggleRecording } = fx;
+  const { toggleRecording, isRecording } = fx.recorder;
   useEffect(() => {
     if (!fx.micBlocked) setMicDismissed(false);
   }, [fx.micBlocked]);
+
+  const metronome = useMetronome({ ctxRef: fx.ctxRef, ensureAudio: fx.ensureAudio });
+  const [countInEnabled, setCountInEnabled] = useState(false);
+  const [tunerOpen, setTunerOpen] = useState(false);
+  const tuning = useTuner({
+    enabled: tunerOpen,
+    getMicWaveform: fx.getMicWaveform,
+    getSampleRate: fx.getSampleRate,
+  });
+
+  const { countIn } = metronome;
+  const handleRecord = useCallback(async () => {
+    if (isRecording) {
+      await toggleRecording();
+      return;
+    }
+    if (countInEnabled) await countIn();
+    await toggleRecording();
+  }, [isRecording, countInEnabled, countIn, toggleRecording]);
+
+  const handleRecordRef = useRef(handleRecord);
+  useEffect(() => {
+    handleRecordRef.current = handleRecord;
+  }, [handleRecord]);
 
   useEffect(() => {
     if (!warningDone) return;
@@ -106,11 +144,11 @@ export default function App() {
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable))
         return;
       e.preventDefault();
-      toggleRecording();
+      void handleRecordRef.current();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [warningDone, toggleRecording]);
+  }, [warningDone]);
 
   useEffect(() => {
     if (!warningDone) return;
@@ -258,22 +296,26 @@ export default function App() {
           style={{ padding: "8px max(28px,2.2vw) 16px" }}
         >
           <div
-            className="flex-1 flex items-center px-5 py-3 pointer-events-auto"
+            className="flex-1 flex items-stretch px-5 py-3.5 pointer-events-auto"
             style={{
               background: "rgba(3,3,8,0.94)",
-              border: `1px solid ${fx.isRecording ? themeColor + "55" : "rgba(255,255,255,0.09)"}`,
+              border: `1px solid ${
+                fx.recorder.isRecording || metronome.countingIn
+                  ? themeColor + "55"
+                  : "rgba(255,255,255,0.09)"
+              }`,
               borderRadius: 14,
               transition: "border-color 200ms",
             }}
           >
-            <RecorderControls
-              isRecording={fx.isRecording}
-              hasRecording={fx.hasRecording}
-              recordedDuration={fx.recordedDuration}
-              onToggle={fx.toggleRecording}
-              onDownload={fx.downloadRecording}
+            <Console
+              recorder={fx.recorder}
+              metronome={metronome}
+              onOpenTuner={() => setTunerOpen(true)}
+              countInEnabled={countInEnabled}
+              onToggleCountIn={() => setCountInEnabled((v) => !v)}
+              onRecord={() => void handleRecord()}
               getLevelRef={getLevelRef}
-              getRecordedPeaks={fx.getRecordedPeaks}
               accent={themeColor}
             />
           </div>
@@ -308,26 +350,29 @@ export default function App() {
               GHOST<span style={{ color: themeColor }}>FX</span>
             </span>
           </div>
-          <div
-            className="flex items-center gap-2 font-[var(--font-mono)]"
-            style={{
-              fontSize: 9,
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              color: "rgba(159,196,173,0.7)",
-            }}
-          >
+          <div className="flex items-center" style={{ gap: 10 }}>
+            <TunerButton onOpen={() => setTunerOpen(true)} accent={themeColor} variant="icon" />
             <div
-              className={isActive ? "animate-pulse" : ""}
+              className="flex items-center gap-2 font-[var(--font-mono)]"
               style={{
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                background: ledColor,
-                boxShadow: `0 0 8px ${ledColor}`,
+                fontSize: 9,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "rgba(159,196,173,0.7)",
               }}
-            />
-            {isActive ? "Active" : fx.ready ? "Ready" : "Idle"}
+            >
+              <div
+                className={isActive ? "animate-pulse" : ""}
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: ledColor,
+                  boxShadow: `0 0 8px ${ledColor}`,
+                }}
+              />
+              {isActive ? "Active" : fx.ready ? "Ready" : "Idle"}
+            </div>
           </div>
         </div>
 
@@ -354,156 +399,95 @@ export default function App() {
 
         <div className="flex-1" />
 
-        <div
-          className="pointer-events-auto"
-          style={{
-            borderTopLeftRadius: 18,
-            borderTopRightRadius: 18,
-            borderTop: "1px solid rgba(231,228,220,0.16)",
-            background: "linear-gradient(180deg,#0a0e0c,#070a09)",
-            boxShadow: "0 -10px 30px rgba(0,0,0,0.5), 0 2px 0 #070a09",
-            marginBottom: -1,
-          }}
+        <MobileSheet
+          tabs={SHEET_TABS}
+          active={sheetTab}
+          onSelect={setSheetTab}
+          expanded={sheetExpanded}
+          onExpandedChange={setSheetExpanded}
+          accent={themeColor}
         >
-          <button
-            onClick={() => setSheetExpanded((v) => !v)}
-            className="w-full flex justify-center pt-2.5 pb-1"
-            aria-label={sheetExpanded ? "Collapse panel" : "Expand panel"}
-          >
-            <span
-              style={{
-                width: 38,
-                height: 4,
-                borderRadius: 2,
-                background: "rgba(231,228,220,0.22)",
-              }}
-            />
-          </button>
-
-          <div
-            className="flex px-3"
-            style={{ gap: 4, borderBottom: "1px solid rgba(231,228,220,0.08)" }}
-          >
-            {(
-              [
-                ["signal", "Signal"],
-                ["keyboard", "Keys"],
-                ["rec", "Rec"],
-              ] as const
-            ).map(([key, label]) => {
-              const on = sheetTab === key;
-              return (
-                <button
-                  key={key}
-                  onClick={() => {
-                    setSheetTab(key);
-                    setSheetExpanded(true);
-                  }}
-                  className="flex-1 flex items-center justify-center font-[var(--font-mono)] relative"
-                  style={{
-                    padding: "12px 0",
-                    fontSize: 10.5,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    color: on ? themeColor : "rgba(95,122,108,0.9)",
-                  }}
-                >
-                  {label}
-                  {on && (
-                    <span
-                      style={{
-                        position: "absolute",
-                        left: "20%",
-                        right: "20%",
-                        bottom: -1,
-                        height: 2,
-                        background: themeColor,
-                        boxShadow: `0 0 8px ${themeColor}`,
-                      }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {sheetExpanded && (
-            <div
-              style={{
-                padding: "16px 16px max(18px,env(safe-area-inset-bottom,16px))",
-                maxHeight: "46vh",
-                overflowY: "auto",
-              }}
-            >
-              {sheetTab === "signal" && (
-                <div className="flex flex-col" style={{ gap: 2 }}>
-                  <Fader
-                    label="DRIVE"
-                    value={drive}
-                    accent={themeColor}
-                    onChange={(v) => handleKnobChange("drive", v)}
-                  />
-                  <Fader
-                    label="ECHO"
-                    value={echo}
-                    accent={themeColor}
-                    onChange={(v) => handleKnobChange("echo", v)}
-                  />
-                  <Fader
-                    label="TONE"
-                    value={tone}
-                    accent={themeColor}
-                    onChange={(v) => handleKnobChange("tone", v)}
-                  />
-                  <Fader
-                    label="REVERB"
-                    value={reverb}
-                    accent={themeColor}
-                    onChange={(v) => handleKnobChange("reverb", v)}
-                  />
-                  <Fader
-                    label="MOD"
-                    value={mod}
-                    accent={themeColor}
-                    onChange={(v) => handleKnobChange("mod", v)}
-                  />
-                  <Fader
-                    label="VOLUME"
-                    value={masterVolume}
-                    accent={themeColor}
-                    onChange={(v) => handleKnobChange("master", v)}
-                    highlight
-                  />
-                  <div style={{ marginTop: 12 }}>
-                    <PresetInfo presetIdx={presetIdx} accent={themeColor} />
-                  </div>
-                </div>
-              )}
-              {sheetTab === "keyboard" && (
-                <KeyboardDisplay
-                  activeKeys={synth.activeKeys}
-                  accent={themeColor}
-                  playNote={synth.playNote}
-                  stopNote={synth.stopNote}
-                  labelMode="note"
-                />
-              )}
-              {sheetTab === "rec" && warningDone && (
-                <RecorderControls
-                  isRecording={fx.isRecording}
-                  hasRecording={fx.hasRecording}
-                  recordedDuration={fx.recordedDuration}
-                  onToggle={fx.toggleRecording}
-                  onDownload={fx.downloadRecording}
-                  getLevelRef={getLevelRef}
-                  getRecordedPeaks={fx.getRecordedPeaks}
-                  accent={themeColor}
-                  scopeHeight={62}
-                />
-              )}
+          {sheetTab === "signal" && (
+            <div className="flex flex-col" style={{ gap: 2 }}>
+              <Fader
+                label="DRIVE"
+                value={drive}
+                accent={themeColor}
+                onChange={(v) => handleKnobChange("drive", v)}
+              />
+              <Fader
+                label="ECHO"
+                value={echo}
+                accent={themeColor}
+                onChange={(v) => handleKnobChange("echo", v)}
+              />
+              <Fader
+                label="TONE"
+                value={tone}
+                accent={themeColor}
+                onChange={(v) => handleKnobChange("tone", v)}
+              />
+              <Fader
+                label="REVERB"
+                value={reverb}
+                accent={themeColor}
+                onChange={(v) => handleKnobChange("reverb", v)}
+              />
+              <Fader
+                label="MOD"
+                value={mod}
+                accent={themeColor}
+                onChange={(v) => handleKnobChange("mod", v)}
+              />
+              <Fader
+                label="VOLUME"
+                value={masterVolume}
+                accent={themeColor}
+                onChange={(v) => handleKnobChange("master", v)}
+                highlight
+              />
+              <div style={{ marginTop: 12 }}>
+                <PresetInfo presetIdx={presetIdx} accent={themeColor} />
+              </div>
             </div>
           )}
-        </div>
+          {sheetTab === "keyboard" && (
+            <KeyboardDisplay
+              activeKeys={synth.activeKeys}
+              accent={themeColor}
+              playNote={synth.playNote}
+              stopNote={synth.stopNote}
+              labelMode="note"
+            />
+          )}
+          {sheetTab === "rec" && warningDone && (
+            <div className="flex flex-col" style={{ gap: 20 }}>
+              <div className="flex flex-col" style={{ gap: 10 }}>
+                <PanelLabel accent={themeColor}>Tempo</PanelLabel>
+                <Metronome
+                  metronome={metronome}
+                  countInEnabled={countInEnabled}
+                  onToggleCountIn={() => setCountInEnabled((v) => !v)}
+                  accent={themeColor}
+                  compact
+                />
+              </div>
+              <div className="flex flex-col" style={{ gap: 10 }}>
+                <PanelLabel accent={themeColor}>
+                  {metronome.countingIn ? "Counting in" : "Recorder"}
+                </PanelLabel>
+                <RecorderControls
+                  recorder={fx.recorder}
+                  onRecord={() => void handleRecord()}
+                  getLevelRef={getLevelRef}
+                  accent={themeColor}
+                  scopeHeight={54}
+                  countingIn={metronome.countingIn}
+                />
+              </div>
+            </div>
+          )}
+        </MobileSheet>
       </div>
 
       {WEBGL_OK ? (
@@ -867,6 +851,10 @@ export default function App() {
           }}
           onDismiss={() => setMicDismissed(true)}
         />
+      )}
+
+      {tunerOpen && (
+        <TunerModal reading={tuning} accent={themeColor} onClose={() => setTunerOpen(false)} />
       )}
 
       {fx.feedbackBlocked && <FeedbackModal onResume={() => fx.resumeFromFeedback()} />}

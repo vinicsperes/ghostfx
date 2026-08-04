@@ -1,4 +1,10 @@
 export { RecorderControls } from "./RecorderControls";
+export { Console } from "./Console";
+export { MobileSheet } from "./MobileSheet";
+export { Metronome } from "./Metronome";
+export { TunerModal } from "./TunerModal";
+export { TunerButton } from "./TunerButton";
+export { PanelLabel } from "./PanelLabel";
 export { MicBlockedModal } from "./MicBlockedModal";
 export { FeedbackModal } from "./FeedbackModal";
 export { PresetCard } from "./PresetCard";
