@@ -1,4 +1,5 @@
 import { Line, Html } from "@react-three/drei";
+import { HintSurface } from "../knobs/HintSurface";
 
 export function SideHint({
   label,
@@ -31,24 +32,20 @@ export function SideHint({
         <meshBasicMaterial color={accent} />
       </mesh>
 
-      <Html position={labelPos} center distanceFactor={6}>
-        <div
-          className="pointer-events-none select-none whitespace-nowrap font-[var(--font-pixel)] animate-pulse"
-          style={{
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            padding: "5px 10px",
-            borderRadius: 3,
-            background: "rgba(0,0,0,0.88)",
-            border: `1px solid ${accent}88`,
-            color: accent,
-            backdropFilter: "blur(4px)",
-            textAlign: alignRight ? "right" : "left",
-            boxShadow: `0 0 12px ${accent}22`,
-          }}
-        >
-          {label}
-        </div>
+      <Html position={labelPos} center distanceFactor={6} pointerEvents="none">
+        <HintSurface>
+          <div
+            className="font-[var(--font-pixel)] animate-pulse"
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.18em",
+              color: accent,
+              textAlign: alignRight ? "right" : "left",
+            }}
+          >
+            {label}
+          </div>
+        </HintSurface>
       </Html>
     </group>
   );
