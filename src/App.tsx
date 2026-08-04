@@ -311,6 +311,8 @@ export default function App() {
             <Console
               recorder={fx.recorder}
               metronome={metronome}
+              levels={{ drive, echo, tone, reverb, mod, master: masterVolume }}
+              onKnobChange={handleKnobChange}
               onOpenTuner={() => setTunerOpen(true)}
               countInEnabled={countInEnabled}
               onToggleCountIn={() => setCountInEnabled((v) => !v)}
@@ -649,57 +651,6 @@ export default function App() {
             />
           </div>
         )}
-
-        <div className="flex flex-col pointer-events-auto" style={{ gap: 4 }}>
-          <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
-            <div style={{ width: 8, height: 1, background: `${themeColor}99` }} />
-            <span
-              className="font-[var(--font-mono)] uppercase tracking-[0.35em]"
-              style={{ fontSize: 9, color: `${themeColor}99` }}
-            >
-              Signal
-            </span>
-            <div style={{ flex: 1, height: 1, background: `${themeColor}30` }} />
-          </div>
-
-          <Fader
-            label="DRIVE"
-            value={drive}
-            accent={themeColor}
-            onChange={(v) => handleKnobChange("drive", v)}
-          />
-          <Fader
-            label="ECHO"
-            value={echo}
-            accent={themeColor}
-            onChange={(v) => handleKnobChange("echo", v)}
-          />
-          <Fader
-            label="TONE"
-            value={tone}
-            accent={themeColor}
-            onChange={(v) => handleKnobChange("tone", v)}
-          />
-          <Fader
-            label="REVERB"
-            value={reverb}
-            accent={themeColor}
-            onChange={(v) => handleKnobChange("reverb", v)}
-          />
-          <Fader
-            label="MOD"
-            value={mod}
-            accent={themeColor}
-            onChange={(v) => handleKnobChange("mod", v)}
-          />
-          <Fader
-            label="VOLUME"
-            value={masterVolume}
-            accent={themeColor}
-            onChange={(v) => handleKnobChange("master", v)}
-            highlight
-          />
-        </div>
 
         <div className="flex flex-col pointer-events-auto" style={{ gap: 8 }}>
           <div className="flex items-center gap-2">

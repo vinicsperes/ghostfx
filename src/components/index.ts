@@ -5,6 +5,7 @@ export { Metronome } from "./Metronome";
 export { TunerModal } from "./TunerModal";
 export { TunerButton } from "./TunerButton";
 export { PanelLabel } from "./PanelLabel";
+export { ChannelStrip } from "./ChannelStrip";
 export { MicBlockedModal } from "./MicBlockedModal";
 export { FeedbackModal } from "./FeedbackModal";
 export { PresetCard } from "./PresetCard";
