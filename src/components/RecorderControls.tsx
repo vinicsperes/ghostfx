@@ -15,7 +15,7 @@ export function RecorderControls({
   onRecord,
   getLevelRef,
   accent,
-  scopeHeight = 48,
+  scopeHeight = 56,
   countingIn = false,
 }: {
   recorder: ReturnType<typeof useRecorder>;
@@ -180,7 +180,7 @@ export function RecorderControls({
 
   const btn = "flex items-center justify-center transition-all active:scale-90 shrink-0";
   const btnBase = {
-    width: 46,
+    width: 44,
     height: scopeHeight,
     borderRadius: 6,
     background: "rgba(10,10,16,0.9)",

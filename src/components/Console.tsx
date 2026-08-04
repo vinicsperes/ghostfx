@@ -161,7 +161,7 @@ export function Console({
             </div>
           )}
           {activeTool === "tempo" && (
-            <div className="self-center">
+            <div className="w-full">
               <Metronome
                 metronome={metronome}
                 countInEnabled={countInEnabled}

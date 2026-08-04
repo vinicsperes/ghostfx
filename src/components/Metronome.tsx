@@ -49,57 +49,58 @@ export function Metronome({
     setBpm(60000 / (sum / (taps.length - 1)));
   };
 
-  const step = (delta: number) => setBpm(bpm + delta);
-
   const chip = {
-    height: compact ? 27 : 22,
-    minWidth: compact ? 27 : 22,
-    borderRadius: 4,
+    height: 30,
+    minWidth: 30,
+    borderRadius: 6,
     border: "1px solid rgba(231,228,220,0.12)",
     background: "rgba(255,255,255,0.02)",
-    color: "rgba(231,228,220,0.6)",
+    color: "rgba(231,228,220,0.62)",
     fontSize: 11,
     lineHeight: 1,
     cursor: "pointer",
   } as const;
 
-  return (
-    <div className="flex flex-col" style={{ gap: compact ? 11 : 7, width: compact ? "100%" : 186 }}>
-      <div className="flex items-center" style={{ gap: compact ? 9 : 7 }}>
-        <button
-          onClick={toggle}
-          aria-label={isRunning ? "Stop metronome" : "Start metronome"}
-          title={isRunning ? "Stop metronome" : "Start metronome"}
-          className="flex items-center justify-center shrink-0 transition-all active:scale-90"
-          style={{
-            width: compact ? 36 : 30,
-            height: compact ? 36 : 30,
-            borderRadius: 6,
-            border: `1px solid ${isRunning ? accent + "60" : "rgba(231,228,220,0.12)"}`,
-            background: isRunning ? `${accent}12` : "rgba(255,255,255,0.02)",
-            color: isRunning ? accent : "rgba(231,228,220,0.5)",
-            cursor: "pointer",
-          }}
-        >
-          {isRunning ? (
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
-              <rect x="3" y="3" width="10" height="10" rx="1.5" />
-            </svg>
-          ) : (
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M4 2.6v10.8a.7.7 0 0 0 1.07.6l8.4-5.4a.7.7 0 0 0 0-1.2l-8.4-5.4A.7.7 0 0 0 4 2.6Z" />
-            </svg>
-          )}
-        </button>
+  const transport = (
+    <button
+      onClick={toggle}
+      aria-label={isRunning ? "Stop metronome" : "Start metronome"}
+      className="flex items-center justify-center shrink-0 transition-all active:scale-90"
+      style={{
+        width: 38,
+        height: 38,
+        borderRadius: 8,
+        border: `1px solid ${isRunning ? accent + "60" : "rgba(231,228,220,0.12)"}`,
+        background: isRunning ? `${accent}12` : "rgba(255,255,255,0.02)",
+        color: isRunning ? accent : "rgba(231,228,220,0.55)",
+        cursor: "pointer",
+      }}
+    >
+      {isRunning ? (
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+          <rect x="3" y="3" width="10" height="10" rx="1.5" />
+        </svg>
+      ) : (
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M4 2.6v10.8a.7.7 0 0 0 1.07.6l8.4-5.4a.7.7 0 0 0 0-1.2l-8.4-5.4A.7.7 0 0 0 4 2.6Z" />
+        </svg>
+      )}
+    </button>
+  );
 
-        <button onClick={() => step(-1)} style={chip} aria-label="Slower">
-          −
-        </button>
+  const readout = (
+    <div className="flex items-center" style={{ gap: 7 }}>
+      <button onClick={() => setBpm(bpm - 1)} style={chip} aria-label="Slower">
+        −
+      </button>
+      <div
+        className="flex items-baseline"
+        style={{ gap: 4, minWidth: 74, justifyContent: "center" }}
+      >
         <span
-          className="font-[var(--font-mono)] text-center"
+          className="font-[var(--font-mono)]"
           style={{
-            minWidth: compact ? 58 : 46,
-            fontSize: compact ? 23 : 17,
+            fontSize: 24,
             fontWeight: 700,
             lineHeight: 1,
             fontVariantNumeric: "tabular-nums",
@@ -108,62 +109,101 @@ export function Metronome({
         >
           {bpm}
         </span>
-        <button onClick={() => step(1)} style={chip} aria-label="Faster">
-          +
-        </button>
-      </div>
-
-      <input
-        type="range"
-        min={MIN_BPM}
-        max={MAX_BPM}
-        value={bpm}
-        onChange={(e) => setBpm(Number(e.target.value))}
-        aria-label="Tempo"
-        style={{ width: 186, accentColor: accent, height: 3, cursor: "pointer" }}
-      />
-
-      <div className="flex items-center" style={{ gap: 8 }}>
-        <div className="flex items-center" style={{ gap: 4 }}>
-          {Array.from({ length: beatsPerBar }, (_, i) => (
-            <span
-              key={i}
-              ref={(el) => {
-                dotsRef.current[i] = el;
-              }}
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: "rgba(231,228,220,0.16)",
-                transition: "transform 80ms ease",
-              }}
-            />
-          ))}
-        </div>
-        <button
-          onClick={tap}
+        <span
           className="font-[var(--font-mono)]"
-          style={{ ...chip, padding: "0 7px", letterSpacing: "0.1em" }}
+          style={{ fontSize: 8.5, letterSpacing: "0.18em", color: "rgba(231,228,220,0.35)" }}
         >
-          TAP
-        </button>
-        <button
-          onClick={onToggleCountIn}
-          className="font-[var(--font-mono)]"
-          title="Count in four beats before recording"
-          style={{
-            ...chip,
-            padding: "0 7px",
-            letterSpacing: "0.1em",
-            borderColor: countInEnabled ? `${accent}60` : "rgba(231,228,220,0.12)",
-            background: countInEnabled ? `${accent}12` : "rgba(255,255,255,0.02)",
-            color: countInEnabled ? accent : "rgba(231,228,220,0.5)",
+          BPM
+        </span>
+      </div>
+      <button onClick={() => setBpm(bpm + 1)} style={chip} aria-label="Faster">
+        +
+      </button>
+    </div>
+  );
+
+  const beats = (
+    <div className="flex items-center shrink-0" style={{ gap: 5 }}>
+      {Array.from({ length: beatsPerBar }, (_, i) => (
+        <span
+          key={i}
+          ref={(el) => {
+            dotsRef.current[i] = el;
           }}
-        >
-          COUNT IN
-        </button>
+          style={{
+            width: 7,
+            height: 7,
+            borderRadius: "50%",
+            background: "rgba(231,228,220,0.16)",
+            transition: "transform 80ms ease",
+          }}
+        />
+      ))}
+    </div>
+  );
+
+  const slider = (
+    <input
+      type="range"
+      min={MIN_BPM}
+      max={MAX_BPM}
+      value={bpm}
+      onChange={(e) => setBpm(Number(e.target.value))}
+      aria-label="Tempo"
+      style={{ flex: 1, minWidth: 90, accentColor: accent, height: 3, cursor: "pointer" }}
+    />
+  );
+
+  const actions = (
+    <div className="flex items-center shrink-0" style={{ gap: 7 }}>
+      <button
+        onClick={tap}
+        className="font-[var(--font-mono)]"
+        style={{ ...chip, padding: "0 10px", letterSpacing: "0.1em" }}
+      >
+        TAP
+      </button>
+      <button
+        onClick={onToggleCountIn}
+        className="font-[var(--font-mono)]"
+        title="Count in four beats before recording"
+        style={{
+          ...chip,
+          padding: "0 10px",
+          letterSpacing: "0.1em",
+          borderColor: countInEnabled ? `${accent}60` : "rgba(231,228,220,0.12)",
+          background: countInEnabled ? `${accent}12` : "rgba(255,255,255,0.02)",
+          color: countInEnabled ? accent : "rgba(231,228,220,0.55)",
+        }}
+      >
+        COUNT IN
+      </button>
+    </div>
+  );
+
+  if (compact) {
+    return (
+      <div className="flex flex-col w-full" style={{ gap: 12 }}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center" style={{ gap: 10 }}>
+            {transport}
+            {readout}
+          </div>
+          {beats}
+        </div>
+        {slider}
+        <div className="flex items-center justify-between">{actions}</div>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center w-full" style={{ gap: 18 }}>
+      {transport}
+      {readout}
+      {slider}
+      {beats}
+      {actions}
     </div>
   );
 }
