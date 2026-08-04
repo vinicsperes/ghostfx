@@ -49,7 +49,9 @@ export default function Studio() {
             overflow: "hidden",
           }}
         >
-          <div style={{ width: "min(100vw, 177.78vh)", aspectRatio: "16 / 9", position: "relative" }}>
+          <div
+            style={{ width: "min(100vw, 177.78vh)", aspectRatio: "16 / 9", position: "relative" }}
+          >
             <Pedal3D
               studio
               hideTag
