@@ -55,7 +55,6 @@ function lerpHex(a: string, b: string, t: number): string {
 const WARNING_ACK_KEY = "ghostfx.onboardAck";
 
 const SHEET_TABS = [
-  { key: "rigs", label: "Rigs" },
   { key: "signal", label: "Signal" },
   { key: "keyboard", label: "Keys" },
   { key: "rec", label: "Rec" },
@@ -75,7 +74,7 @@ export default function App() {
   });
   const [micDismissed, setMicDismissed] = useState(false);
   const [keyboardMode, setKeyboardMode] = useState(false);
-  const [sheetTab, setSheetTab] = useState<"rigs" | "signal" | "keyboard" | "rec">("rigs");
+  const [sheetTab, setSheetTab] = useState<"signal" | "keyboard" | "rec">("signal");
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [stompCount, setStompCount] = useState(0);
   const [presetIdx, setPresetIdx] = useState<number | null>(0);
@@ -370,58 +369,24 @@ export default function App() {
 
       <div className="lg:hidden fixed inset-0 z-[25] flex flex-col pointer-events-none">
         <div
-          className="pointer-events-none flex items-start justify-between"
-          style={{ padding: "max(10px,env(safe-area-inset-top,10px)) 14px 0" }}
+          className="preset-scroll pointer-events-auto flex overflow-x-auto"
+          style={{
+            gap: 8,
+            padding: "max(10px,env(safe-area-inset-top,10px)) 12px 10px",
+            WebkitOverflowScrolling: "touch",
+            background: "linear-gradient(180deg, rgba(5,7,9,0.92) 60%, rgba(5,7,9,0) 100%)",
+          }}
         >
-          <button
-            onClick={() => setAboutOpen(true)}
-            className="pointer-events-auto flex items-center"
-            style={{ gap: 7 }}
-            aria-label="About GHOSTFX"
-          >
-            <GhostMark variant="solid" size={20} color="#e7e4dc" ledColor={themeColor} />
-            <span
-              style={{
-                fontFamily: "'Saira', sans-serif",
-                fontWeight: 800,
-                fontSize: 15,
-                letterSpacing: "-0.02em",
-                color: "#e7e4dc",
-                textShadow: "0 1px 8px rgba(0,0,0,0.9)",
-              }}
-            >
-              GHOST<span style={{ color: themeColor }}>FX</span>
-            </span>
-          </button>
-          <div className="pointer-events-auto flex items-center" style={{ gap: 8 }}>
-            <span
-              className="flex items-center font-[var(--font-mono)] uppercase"
-              style={{
-                gap: 6,
-                padding: "6px 10px",
-                borderRadius: 999,
-                fontSize: 8.5,
-                letterSpacing: "0.16em",
-                color: "rgba(231,228,220,0.6)",
-                background: "rgba(6,8,10,0.7)",
-                border: "1px solid rgba(231,228,220,0.08)",
-                backdropFilter: "blur(6px)",
-              }}
-            >
-              <span
-                className={isActive ? "animate-pulse" : ""}
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: ledColor,
-                  boxShadow: isActive ? `0 0 8px ${ledColor}` : "none",
-                }}
-              />
-              {isActive ? "Active" : fx.ready ? "Ready" : "Idle"}
-            </span>
-            <TunerButton onOpen={() => setTunerOpen(true)} accent={themeColor} variant="icon" />
-          </div>
+          {PRESETS.map((p, i) => (
+            <PresetCard
+              key={p.name}
+              name={p.name}
+              color={PRESET_META[i].color}
+              isActive={presetIdx === i}
+              onSelect={() => handlePresetSelect(i)}
+              fitScroll
+            />
+          ))}
         </div>
 
         <div className="flex-1" />
@@ -433,21 +398,31 @@ export default function App() {
           expanded={sheetExpanded}
           onExpandedChange={setSheetExpanded}
           accent={themeColor}
+          leading={
+            <button
+              onClick={() => setAboutOpen(true)}
+              className="flex items-center"
+              style={{ gap: 6 }}
+              aria-label="About GHOSTFX"
+            >
+              <GhostMark variant="solid" size={17} color="#e7e4dc" ledColor={themeColor} />
+              <span
+                style={{
+                  fontFamily: "'Saira', sans-serif",
+                  fontWeight: 800,
+                  fontSize: 12,
+                  letterSpacing: "-0.02em",
+                  color: "rgba(231,228,220,0.75)",
+                }}
+              >
+                GHOST<span style={{ color: themeColor }}>FX</span>
+              </span>
+            </button>
+          }
+          trailing={
+            <TunerButton onOpen={() => setTunerOpen(true)} accent={themeColor} variant="icon" />
+          }
         >
-          {sheetTab === "rigs" && (
-            <div className="grid grid-cols-2" style={{ gap: 8 }}>
-              {PRESETS.map((p, i) => (
-                <PresetCard
-                  key={p.name}
-                  name={p.name}
-                  color={PRESET_META[i].color}
-                  isActive={presetIdx === i}
-                  onSelect={() => handlePresetSelect(i)}
-                  fitScroll
-                />
-              ))}
-            </div>
-          )}
           {sheetTab === "signal" && (
             <div className="flex flex-col" style={{ gap: 2 }}>
               <Fader

@@ -12,6 +12,8 @@ export function MobileSheet<K extends string>({
   expanded,
   onExpandedChange,
   accent,
+  leading,
+  trailing,
   children,
 }: {
   tabs: readonly { key: K; label: string }[];
@@ -20,6 +22,8 @@ export function MobileSheet<K extends string>({
   expanded: boolean;
   onExpandedChange: (next: boolean) => void;
   accent: string;
+  leading?: ReactNode;
+  trailing?: ReactNode;
   children: ReactNode;
 }) {
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -132,36 +136,52 @@ export function MobileSheet<K extends string>({
             onExpandedChange(!expanded);
           }
         }}
-        className="w-full flex items-center justify-center"
-        style={{ height: 26, touchAction: "none", cursor: "grab" }}
+        className="w-full flex items-center"
+        style={{ height: 42, padding: "0 12px", touchAction: "none", cursor: "grab" }}
       >
-        {expanded ? (
-          <span
-            style={{
-              width: 46,
-              height: 5,
-              borderRadius: 3,
-              background: "rgba(231,228,220,0.3)",
-            }}
-          />
-        ) : (
-          <svg
-            className="animate-bounce"
-            width="17"
-            height="9"
-            viewBox="0 0 17 9"
-            fill="none"
-            aria-hidden
-          >
-            <path
-              d="M2 6.6 8.5 2.2 15 6.6"
-              stroke={accent}
-              strokeWidth="2.1"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        <div
+          className="flex items-center shrink-0"
+          style={{ width: 64 }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {leading}
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          {expanded ? (
+            <span
+              style={{
+                width: 46,
+                height: 5,
+                borderRadius: 3,
+                background: "rgba(231,228,220,0.3)",
+              }}
             />
-          </svg>
-        )}
+          ) : (
+            <svg
+              className="animate-bounce"
+              width="17"
+              height="9"
+              viewBox="0 0 17 9"
+              fill="none"
+              aria-hidden
+            >
+              <path
+                d="M2 6.6 8.5 2.2 15 6.6"
+                stroke={accent}
+                strokeWidth="2.1"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+        </div>
+        <div
+          className="flex items-center justify-end shrink-0"
+          style={{ width: 64 }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {trailing}
+        </div>
       </div>
 
       <div
