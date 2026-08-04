@@ -50,6 +50,8 @@ export function Console({
   levels,
   onKnobChange,
   onOpenTuner,
+  keyboardMode,
+  onToggleKeyboard,
   countInEnabled,
   onToggleCountIn,
   onRecord,
@@ -61,6 +63,8 @@ export function Console({
   levels: Record<KnobId, number>;
   onKnobChange: (id: KnobId, value: number) => void;
   onOpenTuner: () => void;
+  keyboardMode: boolean;
+  onToggleKeyboard: () => void;
   countInEnabled: boolean;
   onToggleCountIn: () => void;
   onRecord: () => void;
@@ -88,6 +92,52 @@ export function Console({
 
       <Section label="Tuner" accent={accent}>
         <TunerButton onOpen={onOpenTuner} accent={accent} />
+      </Section>
+
+      <Divider />
+
+      <Section label="Keys" accent={accent}>
+        <button
+          onClick={onToggleKeyboard}
+          aria-pressed={keyboardMode}
+          title="Play the built-in synth with your keyboard"
+          className="flex flex-col items-center justify-center transition-all active:scale-95"
+          style={{
+            width: 92,
+            height: 74,
+            gap: 6,
+            borderRadius: 8,
+            border: `1px solid ${keyboardMode ? accent + "60" : "rgba(231,228,220,0.12)"}`,
+            background: keyboardMode ? `${accent}12` : "rgba(255,255,255,0.02)",
+            color: keyboardMode ? accent : "rgba(231,228,220,0.5)",
+            cursor: "pointer",
+          }}
+        >
+          <svg width="26" height="19" viewBox="0 0 22 16" fill="none">
+            <rect
+              x="0.7"
+              y="0.7"
+              width="20.6"
+              height="14.6"
+              rx="1.5"
+              stroke="currentColor"
+              strokeWidth="1.3"
+            />
+            <line x1="4.5" y1="0.7" x2="4.5" y2="15.3" stroke="currentColor" strokeWidth="1" />
+            <line x1="8.8" y1="0.7" x2="8.8" y2="15.3" stroke="currentColor" strokeWidth="1" />
+            <line x1="13.2" y1="0.7" x2="13.2" y2="15.3" stroke="currentColor" strokeWidth="1" />
+            <line x1="17.5" y1="0.7" x2="17.5" y2="15.3" stroke="currentColor" strokeWidth="1" />
+            <rect x="2.7" y="0.7" width="3.6" height="9.2" rx="0.8" fill="currentColor" />
+            <rect x="11.4" y="0.7" width="3.6" height="9.2" rx="0.8" fill="currentColor" />
+            <rect x="15.7" y="0.7" width="3.6" height="9.2" rx="0.8" fill="currentColor" />
+          </svg>
+          <span
+            className="font-[var(--font-mono)]"
+            style={{ fontSize: 9, letterSpacing: "0.16em", color: "rgba(231,228,220,0.55)" }}
+          >
+            SYNTH
+          </span>
+        </button>
       </Section>
 
       <Divider />

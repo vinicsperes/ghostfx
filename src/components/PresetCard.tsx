@@ -1,15 +1,16 @@
 import type { CSSProperties } from "react";
+import { PresetCurve } from "./PresetCurve";
 
 export function PresetCard({
+  index,
   name,
-  tag,
   color,
   isActive,
   onSelect,
   fitScroll = false,
 }: {
+  index: number;
   name: string;
-  tag: string;
   color: string;
   isActive: boolean;
   onSelect: () => void;
@@ -19,39 +20,25 @@ export function PresetCard({
     <button
       onClick={onSelect}
       aria-pressed={isActive}
-      className={`preset-card relative flex flex-col items-center justify-center${
-        isActive ? " is-active" : ""
-      }`}
+      className={`preset-card relative flex items-center justify-center${isActive ? " is-active" : ""}`}
       style={
         {
           "--c": color,
           flex: fitScroll ? "1 0 auto" : "1 1 0",
-          minWidth: 108,
-          height: fitScroll ? 38 : 54,
-          borderRadius: fitScroll ? 11 : 14,
+          minWidth: fitScroll ? 96 : 104,
+          height: fitScroll ? 36 : 42,
+          borderRadius: 8,
+          gap: 9,
         } as CSSProperties
       }
     >
       <span
         style={{
-          position: "absolute",
-          top: 9,
-          right: 12,
-          width: 5,
-          height: 5,
-          borderRadius: "50%",
-          background: isActive ? color : "rgba(255,255,255,0.22)",
-          boxShadow: isActive ? `0 0 6px ${color}` : "none",
-          transition: "background 260ms",
-        }}
-      />
-      <span
-        style={{
           position: "relative",
           fontFamily: "'Bungee', sans-serif",
-          fontSize: fitScroll ? 13 : 15,
-          letterSpacing: "0.16em",
-          lineHeight: 1.05,
+          fontSize: fitScroll ? 12 : 13,
+          letterSpacing: "0.14em",
+          lineHeight: 1,
           color: "inherit",
           textShadow: isActive ? `0 0 12px ${color}aa` : "none",
         }}
@@ -59,27 +46,14 @@ export function PresetCard({
         {name}
       </span>
       {!fitScroll && (
-        <span
-          className="font-[var(--font-mono)]"
-          style={{
-            position: "relative",
-            fontSize: 9,
-            letterSpacing: "0.3em",
-            textTransform: "uppercase",
-            marginTop: 5,
-            paddingLeft: "0.3em",
-            color: isActive ? `${color}cc` : "rgba(120,140,128,0.5)",
-          }}
-        >
-          {tag}
-        </span>
+        <PresetCurve presetIdx={index} color={isActive ? color : "#e7e4dc"} dim={!isActive} />
       )}
       <span
         style={{
           position: "absolute",
           bottom: -1,
-          left: "28%",
-          right: "28%",
+          left: "26%",
+          right: "26%",
           height: 2,
           background: isActive ? color : "transparent",
           boxShadow: isActive ? `0 0 8px ${color}` : "none",

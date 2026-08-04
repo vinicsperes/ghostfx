@@ -8,7 +8,7 @@ import LoadingScreen from "./LoadingScreen";
 import OnboardingModal from "./OnboardingModal";
 import GhostMark from "./GhostMark";
 import PresetBg from "./background/PresetBg";
-import { PRESETS, PALETTE, PRESET_META, PRESET_TAGS } from "./data/presets";
+import { PRESETS, PALETTE, PRESET_META } from "./data/presets";
 import {
   RecorderControls,
   Console,
@@ -17,10 +17,11 @@ import {
   TunerButton,
   PanelLabel,
   Metronome,
+  TopBar,
+  AboutModal,
   MicBlockedModal,
   FeedbackModal,
   PresetCard,
-  BottomBar,
   KeyboardDisplay,
   Fader,
   WebGLFallback,
@@ -115,6 +116,7 @@ export default function App() {
   const metronome = useMetronome({ ctxRef: fx.ctxRef, ensureAudio: fx.ensureAudio });
   const [countInEnabled, setCountInEnabled] = useState(false);
   const [tunerOpen, setTunerOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const tuning = useTuner({
     enabled: tunerOpen,
     getMicWaveform: fx.getMicWaveform,
@@ -292,9 +294,29 @@ export default function App() {
 
       {warningDone && (
         <div
-          className="hidden lg:flex fixed bottom-0 left-[360px] right-0 z-[40] items-stretch pointer-events-none"
-          style={{ padding: "8px max(28px,2.2vw) 16px" }}
+          className="hidden lg:flex fixed bottom-0 left-0 right-0 z-[40] flex-col items-stretch pointer-events-none"
+          style={{ padding: "8px max(22px,1.8vw) 16px", gap: 10 }}
         >
+          {keyboardMode && (
+            <div
+              className="pointer-events-auto self-center w-full"
+              style={{
+                maxWidth: 620,
+                padding: "12px 14px",
+                background: "rgba(3,3,8,0.94)",
+                border: "1px solid rgba(255,255,255,0.09)",
+                borderRadius: 14,
+              }}
+            >
+              <KeyboardDisplay
+                activeKeys={synth.activeKeys}
+                accent={themeColor}
+                playNote={synth.playNote}
+                stopNote={synth.stopNote}
+                labelMode="key"
+              />
+            </div>
+          )}
           <div
             className="flex-1 flex items-stretch px-5 py-3.5 pointer-events-auto"
             style={{
@@ -314,6 +336,8 @@ export default function App() {
               levels={{ drive, echo, tone, reverb, mod, master: masterVolume }}
               onKnobChange={handleKnobChange}
               onOpenTuner={() => setTunerOpen(true)}
+              keyboardMode={keyboardMode}
+              onToggleKeyboard={() => setKeyboardMode((v) => !v)}
               countInEnabled={countInEnabled}
               onToggleCountIn={() => setCountInEnabled((v) => !v)}
               onRecord={() => void handleRecord()}
@@ -324,10 +348,14 @@ export default function App() {
         </div>
       )}
 
-      <BottomBar
-        presets={PRESETS}
+      <TopBar
         activePresetIdx={presetIdx}
         onPresetSelect={handlePresetSelect}
+        onOpenAbout={() => setAboutOpen(true)}
+        accent={themeColor}
+        ledColor={ledColor}
+        statusLabel={isActive ? "Active" : fx.ready ? "Ready" : "Idle"}
+        live={isActive}
       />
 
       <div className="lg:hidden fixed inset-0 z-[25] flex flex-col pointer-events-none">
@@ -389,8 +417,8 @@ export default function App() {
           {PRESETS.map((p, i) => (
             <PresetCard
               key={i}
+              index={i}
               name={p.name}
-              tag={PRESET_TAGS[i]}
               color={PRESET_META[i].color}
               isActive={presetIdx === i}
               onSelect={() => handlePresetSelect(i)}
@@ -527,258 +555,6 @@ export default function App() {
         <WebGLFallback isActive={isActive} onTap={handleTap} accent={themeColor} />
       )}
 
-      <aside
-        className="hud-scroll hidden lg:flex fixed left-0 top-0 h-full z-[25] select-none flex-col"
-        style={{
-          width: 360,
-          background:
-            "linear-gradient(105deg, rgba(6,9,11,0.95) 48%, rgba(6,9,11,0.82) 76%, rgba(6,9,11,0.30) 100%)",
-          backdropFilter: "blur(7px)",
-          WebkitBackdropFilter: "blur(7px)",
-          borderRight: "1px solid rgba(231,228,220,0.07)",
-          padding: "clamp(22px,2.4vh,34px) 30px",
-          gap: "clamp(18px,2.4vh,30px)",
-          pointerEvents: "auto",
-          overflowY: "auto",
-        }}
-      >
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <GhostMark variant="solid" size={28} color="#e7e4dc" ledColor={themeColor} />
-            <span
-              style={{
-                fontFamily: "'Saira', sans-serif",
-                fontWeight: 800,
-                fontSize: 25,
-                lineHeight: 1,
-                letterSpacing: "-0.01em",
-                color: "#e7e4dc",
-              }}
-            >
-              GHOST<span style={{ color: themeColor }}>FX</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div
-              className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ background: themeColor, boxShadow: `0 0 6px ${themeColor}` }}
-            />
-            <span
-              className="font-[var(--font-mono)] uppercase tracking-[0.22em]"
-              style={{ fontSize: 10, color: `${themeColor}b3` }}
-            >
-              Signal Processor MK.I
-            </span>
-          </div>
-        </div>
-
-        <div
-          style={{
-            height: 1,
-            background: `linear-gradient(to right, ${themeColor}40, transparent)`,
-          }}
-        />
-
-        <div className="flex flex-col" style={{ gap: 0 }}>
-          <span
-            className="font-[var(--font-display)] uppercase"
-            style={{
-              fontSize: "clamp(30px, 4.4vw, 44px)",
-              color: "#ffffff",
-              letterSpacing: "-0.01em",
-              lineHeight: 1,
-              whiteSpace: "nowrap",
-            }}
-          >
-            ONE PEDAL.
-          </span>
-          <span
-            style={{
-              fontSize: "clamp(30px, 4.4vw, 44px)",
-              color: themeColor,
-              fontFamily: '"Rock 3D", system-ui',
-              fontWeight: 400,
-              letterSpacing: "0.02em",
-              lineHeight: 1.2,
-              whiteSpace: "nowrap",
-              textShadow: `0 0 24px ${themeColor}66, 0 0 48px ${themeColor}22`,
-            }}
-          >
-            {presetIdx !== null ? PRESET_META[presetIdx].word : "HAUNTED"}
-          </span>
-          <span
-            className="font-[var(--font-serif)] italic"
-            style={{
-              fontSize: "clamp(34px, 5vw, 50px)",
-              color: "#ffffff",
-              opacity: 0.82,
-              letterSpacing: "-0.02em",
-              lineHeight: 1.05,
-            }}
-          >
-            tones.
-          </span>
-          <p
-            className="font-[var(--font-mono)] leading-relaxed"
-            style={{ fontSize: 11, color: "#aaaac4", marginTop: 14 }}
-          >
-            Browser-based guitar FX: drive, echo,
-            <br />
-            tone, modulation &amp; reverb. Zero install.
-          </p>
-        </div>
-
-        <PresetInfo presetIdx={presetIdx} accent={themeColor} />
-
-        {keyboardMode && (
-          <div className="flex flex-col" style={{ gap: 7 }}>
-            <div className="flex items-center gap-2">
-              <div style={{ width: 8, height: 1, background: `${themeColor}99` }} />
-              <span
-                className="font-[var(--font-mono)] uppercase tracking-[0.35em]"
-                style={{ fontSize: 9, color: `${themeColor}99` }}
-              >
-                Keys
-              </span>
-              <div style={{ flex: 1, height: 1, background: `${themeColor}30` }} />
-            </div>
-            <KeyboardDisplay
-              activeKeys={synth.activeKeys}
-              accent={themeColor}
-              playNote={synth.playNote}
-              stopNote={synth.stopNote}
-              labelMode="key"
-            />
-          </div>
-        )}
-
-        <div className="flex flex-col pointer-events-auto" style={{ gap: 8 }}>
-          <div className="flex items-center gap-2">
-            <div style={{ width: 8, height: 1, background: `${themeColor}99` }} />
-            <span
-              className="font-[var(--font-mono)] uppercase tracking-[0.35em]"
-              style={{ fontSize: 9, color: `${themeColor}99` }}
-            >
-              Tools
-            </span>
-            <div style={{ flex: 1, height: 1, background: `${themeColor}30` }} />
-          </div>
-          <button
-            onClick={() => setKeyboardMode((v) => !v)}
-            className="flex items-center justify-center gap-3 transition-all active:scale-95"
-            style={{
-              width: "100%",
-              height: 48,
-              borderRadius: 7,
-              cursor: "pointer",
-              border: `1px solid ${keyboardMode ? themeColor + "60" : "rgba(255,255,255,0.08)"}`,
-              background: keyboardMode ? `${themeColor}10` : "rgba(255,255,255,0.02)",
-              color: keyboardMode ? themeColor : "rgba(255,255,255,0.35)",
-              transition: "all 180ms ease",
-              boxShadow: keyboardMode ? `0 0 14px ${themeColor}20` : "none",
-            }}
-            onMouseEnter={(e) => {
-              if (!keyboardMode) {
-                e.currentTarget.style.borderColor = `${themeColor}40`;
-                e.currentTarget.style.color = `${themeColor}cc`;
-                e.currentTarget.style.background = `${themeColor}08`;
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!keyboardMode) {
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-                e.currentTarget.style.color = "rgba(255,255,255,0.35)";
-                e.currentTarget.style.background = "rgba(255,255,255,0.02)";
-              }
-            }}
-          >
-            <svg width="24" height="18" viewBox="0 0 22 16" fill="none">
-              <rect
-                x="0.7"
-                y="0.7"
-                width="20.6"
-                height="14.6"
-                rx="1.5"
-                stroke="currentColor"
-                strokeWidth="1.3"
-              />
-              <line x1="4.5" y1="0.7" x2="4.5" y2="15.3" stroke="currentColor" strokeWidth="1" />
-              <line x1="8.8" y1="0.7" x2="8.8" y2="15.3" stroke="currentColor" strokeWidth="1" />
-              <line x1="13.2" y1="0.7" x2="13.2" y2="15.3" stroke="currentColor" strokeWidth="1" />
-              <line x1="17.5" y1="0.7" x2="17.5" y2="15.3" stroke="currentColor" strokeWidth="1" />
-              <rect x="2.7" y="0.7" width="3.6" height="9.2" rx="0.8" fill="currentColor" />
-              <rect x="11.4" y="0.7" width="3.6" height="9.2" rx="0.8" fill="currentColor" />
-              <rect x="15.7" y="0.7" width="3.6" height="9.2" rx="0.8" fill="currentColor" />
-            </svg>
-            <span
-              className="font-[var(--font-mono)]"
-              style={{ fontSize: 10, letterSpacing: "0.12em" }}
-            >
-              KEYBOARD SYNTH
-            </span>
-          </button>
-        </div>
-
-        <div style={{ flex: 1 }} />
-
-        {(() => {
-          const blocked = fx.feedbackBlocked;
-          const lit = blocked || isActive;
-          const tone = blocked ? "#ff5a5a" : isActive ? ledColor : "rgba(150,160,175,0.5)";
-          return (
-            <div
-              className="flex items-center"
-              style={{
-                gap: 8,
-                padding: "5px 11px",
-                borderRadius: 999,
-                border: `1px solid ${
-                  blocked ? "#ff5a5a45" : isActive ? ledColor + "45" : "rgba(255,255,255,0.08)"
-                }`,
-                background: blocked
-                  ? "rgba(255,90,90,0.07)"
-                  : isActive
-                    ? ledColor + "10"
-                    : "rgba(255,255,255,0.02)",
-                transition: "border-color 240ms ease, background 240ms ease",
-              }}
-            >
-              <div
-                className={lit ? "animate-pulse" : ""}
-                style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: "50%",
-                  background: tone,
-                  boxShadow: lit ? `0 0 8px ${tone}` : "none",
-                  flexShrink: 0,
-                }}
-              />
-              <span
-                className="font-[var(--font-mono)]"
-                style={{
-                  fontSize: 9,
-                  letterSpacing: "0.08em",
-                  color: blocked
-                    ? "#ff9090"
-                    : isActive
-                      ? "rgba(222,226,230,0.82)"
-                      : "rgba(188,188,210,0.5)",
-                }}
-              >
-                {blocked
-                  ? "MUTED · FEEDBACK"
-                  : isActive
-                    ? "ACTIVE · MONITORING"
-                    : fx.ready
-                      ? "BYPASS · STOMP TO ARM"
-                      : "IDLE"}
-              </span>
-            </div>
-          );
-        })()}
-      </aside>
-
       {fx.error && (
         <div className="absolute inset-x-0 bottom-24 flex justify-center z-20 pointer-events-none">
           <div
@@ -802,6 +578,10 @@ export default function App() {
           }}
           onDismiss={() => setMicDismissed(true)}
         />
+      )}
+
+      {aboutOpen && (
+        <AboutModal presetIdx={presetIdx} accent={themeColor} onClose={() => setAboutOpen(false)} />
       )}
 
       {tunerOpen && (
