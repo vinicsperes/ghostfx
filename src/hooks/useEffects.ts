@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createDistortionCurve,
-  driveOversample,
-  mapDrivePreGain,
   createLimiterCurve,
   createTapeCurve,
-  createReverbIR,
+  driveOversample,
+  mapDrivePreGain,
   masterGainFromKnob,
 } from "../audio/dsp";
 import { CABS, DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
+import { buildChain, reverbBuffers, type ChainNodes } from "../audio/chain";
 import { useRecorder } from "./useRecorder";
 
 export type EffectsState = "idle" | "bypass" | "active";
@@ -77,73 +77,15 @@ export function useEffects({
 
   const recordDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
 
-  const nodesRef = useRef<{
-    preFilter: BiquadFilterNode | null;
-    midEmphasis: BiquadFilterNode | null;
-    preGain: GainNode | null;
-    drive: WaveShaperNode | null;
-    driveTrim: GainNode | null;
-    cabHP: BiquadFilterNode | null;
-    cabBody: BiquadFilterNode | null;
-    cabPres: BiquadFilterNode | null;
-    cabLP: BiquadFilterNode | null;
-    toneFilter: BiquadFilterNode | null;
-    delay: DelayNode | null;
-    lfoGain: GainNode | null;
-    feedback: GainNode | null;
-    delayLoopHP: BiquadFilterNode | null;
-    delayLoopLP: BiquadFilterNode | null;
-    delaySat: WaveShaperNode | null;
-    wet: GainNode | null;
-    modDelay: DelayNode | null;
-    modLfo: OscillatorNode | null;
-    modDepth: GainNode | null;
-    modDamp: BiquadFilterNode | null;
-    modFb: GainNode | null;
-    modWet: GainNode | null;
-    reverbPre: DelayNode | null;
-    convolverA: ConvolverNode | null;
-    convolverB: ConvolverNode | null;
-    reverbWetA: GainNode | null;
-    reverbWetB: GainNode | null;
-    reverbWet: GainNode | null;
-    bypass: GainNode | null;
-    effects: GainNode | null;
-    masterGain: GainNode | null;
-    guard: GainNode | null;
-    notches: BiquadFilterNode[];
-  }>({
-    preFilter: null,
-    midEmphasis: null,
-    preGain: null,
-    drive: null,
-    driveTrim: null,
-    cabHP: null,
-    cabBody: null,
-    cabPres: null,
-    cabLP: null,
-    toneFilter: null,
-    delay: null,
-    lfoGain: null,
-    feedback: null,
-    delayLoopHP: null,
-    delayLoopLP: null,
-    delaySat: null,
-    wet: null,
-    modDelay: null,
-    modLfo: null,
-    modDepth: null,
-    modDamp: null,
-    modFb: null,
-    modWet: null,
-    reverbPre: null,
-    convolverA: null,
-    convolverB: null,
-    reverbWetA: null,
-    reverbWetB: null,
-    reverbWet: null,
+  const nodesRef = useRef<
+    Partial<ChainNodes> & {
+      bypass: GainNode | null;
+      masterGain: GainNode | null;
+      guard: GainNode | null;
+      notches: BiquadFilterNode[];
+    }
+  >({
     bypass: null,
-    effects: null,
     masterGain: null,
     guard: null,
     notches: [],
@@ -184,128 +126,16 @@ export function useEffects({
       monoSum.channelCount = 1;
       monoSum.channelCountMode = "explicit";
 
-      const dp = DRIVES[presetIdx ?? 0] ?? DRIVES[0];
-
-      const preFilter = ctx.createBiquadFilter();
-      preFilter.type = "highpass";
-      preFilter.frequency.value = dp.preHp;
-
-      const midEmphasis = ctx.createBiquadFilter();
-      midEmphasis.type = "peaking";
-      midEmphasis.frequency.value = dp.midHz;
-      midEmphasis.Q.value = 0.7;
-      midEmphasis.gain.value = dp.midGain;
-
-      const preGain = ctx.createGain();
-      preGain.gain.value = mapDrivePreGain(drive);
-
-      const driveNode = ctx.createWaveShaper();
-      driveNode.curve = createDistortionCurve(drive, dp.shape);
-      driveNode.oversample = driveOversample(drive, dp.shape);
-
-      const driveTrim = ctx.createGain();
-      driveTrim.gain.value = dp.trim;
-
-      const cab = CABS[presetIdx ?? 0] ?? CABS[0];
-      const cabHP = ctx.createBiquadFilter();
-      cabHP.type = "highpass";
-      cabHP.frequency.value = cab.lowCut;
-      cabHP.Q.value = 0.707;
-      const cabBody = ctx.createBiquadFilter();
-      cabBody.type = "peaking";
-      cabBody.frequency.value = cab.bodyHz;
-      cabBody.Q.value = 0.9;
-      cabBody.gain.value = cab.bodyGain;
-      const cabPres = ctx.createBiquadFilter();
-      cabPres.type = "peaking";
-      cabPres.frequency.value = cab.presHz;
-      cabPres.Q.value = 1.0;
-      cabPres.gain.value = cab.presGain;
-      const cabLP = ctx.createBiquadFilter();
-      cabLP.type = "lowpass";
-      cabLP.frequency.value = cab.topCut;
-      cabLP.Q.value = 0.9;
-
-      const toneFilter = ctx.createBiquadFilter();
-      toneFilter.type = "lowpass";
-      toneFilter.frequency.value = 600 * Math.pow(20, tone);
-
-      const dl = DELAYS[presetIdx ?? 0] ?? DELAYS[0];
-
-      const delayNode = ctx.createDelay(2.0);
-      delayNode.delayTime.value = dl.timeMin + echo * (dl.timeMax - dl.timeMin);
-
-      const lfo = ctx.createOscillator();
-      const lfoGain = ctx.createGain();
-      lfo.type = "sine";
-      lfo.frequency.value = 0.85;
-      lfoGain.gain.value = 0.003 * echo;
-      lfo.connect(lfoGain);
-      lfoGain.connect(delayNode.delayTime);
-      lfo.start();
-
-      const feedbackGain = ctx.createGain();
-      feedbackGain.gain.value = dl.fbMin + echo * (dl.fbMax - dl.fbMin);
-
-      const delayLoopHP = ctx.createBiquadFilter();
-      delayLoopHP.type = "highpass";
-      delayLoopHP.frequency.value = dl.loopHp;
-      delayLoopHP.Q.value = 0.707;
-      const delayLoopLP = ctx.createBiquadFilter();
-      delayLoopLP.type = "lowpass";
-      delayLoopLP.frequency.value = dl.loopLp;
-      delayLoopLP.Q.value = 0.707;
-      const delaySat = ctx.createWaveShaper();
-      delaySat.curve = createTapeCurve(dl.sat);
-      delaySat.oversample = "none";
-
-      const wetGain = ctx.createGain();
-      wetGain.gain.value = echo * 0.5;
-
-      const mp = MODS[presetIdx ?? 0] ?? MODS[0];
-      const modDelay = ctx.createDelay(0.05);
-      modDelay.delayTime.value = mp.base;
-      const modLfo = ctx.createOscillator();
-      modLfo.type = "sine";
-      modLfo.frequency.value = mp.rate;
-      const modDepth = ctx.createGain();
-      modDepth.gain.value = mp.depthMin + mod * (mp.depthMax - mp.depthMin);
-      modLfo.connect(modDepth);
-      modDepth.connect(modDelay.delayTime);
-      modLfo.start();
-      const modDamp = ctx.createBiquadFilter();
-      modDamp.type = "lowpass";
-      modDamp.frequency.value = mp.damp;
-      const modFb = ctx.createGain();
-      modFb.gain.value = mod * mp.fbMax;
-      const modWet = ctx.createGain();
-      modWet.gain.value = mod * mp.mixMax;
-
-      const reverbIdx = presetIdx ?? 0;
-      irBuffersRef.current = REVERBS.map((r) => {
-        const [l, rr] = createReverbIR(ctx.sampleRate, r.decay, r.tone, r.width);
-        const buf = ctx.createBuffer(2, l.length, ctx.sampleRate);
-        buf.copyToChannel(l, 0);
-        buf.copyToChannel(rr, 1);
-        return buf;
-      });
-
-      const reverbPre = ctx.createDelay(0.2);
-      reverbPre.delayTime.value = REVERBS[reverbIdx].predelay;
-
-      const convolverA = ctx.createConvolver();
-      convolverA.normalize = true;
-      convolverA.buffer = irBuffersRef.current[reverbIdx];
-      const convolverB = ctx.createConvolver();
-      convolverB.normalize = true;
-
-      const reverbWetA = ctx.createGain();
-      reverbWetA.gain.value = 1;
-      const reverbWetB = ctx.createGain();
-      reverbWetB.gain.value = 0;
-
-      const reverbWet = ctx.createGain();
-      reverbWet.gain.value = reverb * 0.5;
+      const {
+        input: chainIn,
+        output: effectsGain,
+        nodes: chain,
+      } = buildChain(
+        ctx,
+        { drive, echo, tone, reverb, mod, presetIdx },
+        (irBuffersRef.current = reverbBuffers(ctx)),
+      );
+      effectsGain.gain.value = 0;
 
       const limiter = ctx.createWaveShaper();
       limiter.curve = createLimiterCurve();
@@ -336,49 +166,11 @@ export function useEffects({
       analyserRef.current = analyser;
 
       const bypassGain = ctx.createGain();
-      const effectsGain = ctx.createGain();
       bypassGain.gain.value = 1;
-      effectsGain.gain.value = 0;
 
       src.connect(monoSum);
       monoSum.connect(bypassGain);
-      monoSum.connect(preFilter);
-      preFilter.connect(midEmphasis);
-      midEmphasis.connect(preGain);
-      preGain.connect(driveNode);
-      driveNode.connect(driveTrim);
-      driveTrim.connect(cabHP);
-      cabHP.connect(cabBody);
-      cabBody.connect(cabPres);
-      cabPres.connect(cabLP);
-      cabLP.connect(toneFilter);
-
-      toneFilter.connect(effectsGain);
-
-      toneFilter.connect(delayNode);
-      delayNode.connect(delayLoopHP);
-      delayLoopHP.connect(delayLoopLP);
-      delayLoopLP.connect(delaySat);
-      delaySat.connect(feedbackGain);
-      feedbackGain.connect(delayNode);
-      delaySat.connect(wetGain);
-      wetGain.connect(effectsGain);
-
-      toneFilter.connect(modDelay);
-      modDelay.connect(modDamp);
-      modDamp.connect(modFb);
-      modFb.connect(modDelay);
-      modDamp.connect(modWet);
-      modWet.connect(effectsGain);
-
-      toneFilter.connect(reverbPre);
-      reverbPre.connect(convolverA);
-      reverbPre.connect(convolverB);
-      convolverA.connect(reverbWetA);
-      convolverB.connect(reverbWetB);
-      reverbWetA.connect(reverbWet);
-      reverbWetB.connect(reverbWet);
-      reverbWet.connect(effectsGain);
+      monoSum.connect(chainIn);
 
       const chainSum = ctx.createGain();
       bypassGain.connect(chainSum);
@@ -423,37 +215,8 @@ export function useEffects({
       recordDestRef.current = recordDest;
 
       nodesRef.current = {
-        preFilter,
-        midEmphasis,
-        preGain,
-        drive: driveNode,
-        driveTrim,
-        cabHP,
-        cabBody,
-        cabPres,
-        cabLP,
-        toneFilter,
-        delay: delayNode,
-        lfoGain,
-        feedback: feedbackGain,
-        delayLoopHP,
-        delayLoopLP,
-        delaySat,
-        wet: wetGain,
-        modDelay,
-        modLfo,
-        modDepth,
-        modDamp,
-        modFb,
-        modWet,
-        reverbPre,
-        convolverA,
-        convolverB,
-        reverbWetA,
-        reverbWetB,
-        reverbWet,
+        ...chain,
         bypass: bypassGain,
-        effects: effectsGain,
         masterGain,
         guard: guardGain,
         notches,
