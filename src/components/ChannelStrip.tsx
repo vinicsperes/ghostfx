@@ -9,7 +9,7 @@ export function ChannelStrip({
   accent,
   onChange,
   highlight = false,
-  height = 86,
+  height = 104,
 }: {
   label: string;
   value: number;
@@ -59,17 +59,18 @@ export function ChannelStrip({
   );
 
   const pct = Math.round(value * 100);
-  const capBottom = value * (height - 16);
+  const capBottom = value * (height - 18);
 
   return (
-    <div className="flex flex-col items-center" style={{ gap: 6, width: 34 }}>
+    <div className="flex flex-col items-center" style={{ gap: 7, width: 40 }}>
       <span
         className="font-[var(--font-mono)]"
         style={{
-          fontSize: 9.5,
+          fontSize: 11,
           lineHeight: 1,
+          fontWeight: 700,
           fontVariantNumeric: "tabular-nums",
-          color: highlight && value < 0.02 ? "#f5a33e" : accent,
+          color: highlight && value < 0.02 ? "#f5a33e" : "rgba(231,228,220,0.82)",
         }}
       >
         {pct}
@@ -91,7 +92,7 @@ export function ChannelStrip({
         }}
         style={{
           position: "relative",
-          width: 26,
+          width: 30,
           height,
           cursor: "grab",
           touchAction: "none",
@@ -128,7 +129,7 @@ export function ChannelStrip({
             left: 0,
             right: 0,
             bottom: capBottom,
-            height: 16,
+            height: 18,
             borderRadius: 3,
             background: "linear-gradient(180deg,#2b2f33,#15181a)",
             border: "1px solid rgba(231,228,220,0.16)",
@@ -153,9 +154,9 @@ export function ChannelStrip({
       <span
         className="font-[var(--font-mono)]"
         style={{
-          fontSize: 7.5,
-          letterSpacing: "0.1em",
-          color: "rgba(231,228,220,0.42)",
+          fontSize: 8,
+          letterSpacing: "0.12em",
+          color: "rgba(231,228,220,0.4)",
         }}
       >
         {label}

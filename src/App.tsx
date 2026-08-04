@@ -282,6 +282,15 @@ export default function App() {
 
       <PresetBg presetIdx={presetIdx} introActive={!warningDone} />
 
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          zIndex: 2,
+          background:
+            "radial-gradient(ellipse 62% 58% at 52% 46%, rgba(4,5,8,0.18) 0%, rgba(4,5,8,0.62) 46%, rgba(4,5,8,0.88) 78%, rgba(4,5,8,0.96) 100%)",
+        }}
+      />
+
       {drive > 0.45 && (
         <div
           className="absolute inset-0 pointer-events-none z-[5]"
@@ -417,7 +426,6 @@ export default function App() {
           {PRESETS.map((p, i) => (
             <PresetCard
               key={i}
-              index={i}
               name={p.name}
               color={PRESET_META[i].color}
               isActive={presetIdx === i}
@@ -524,7 +532,7 @@ export default function App() {
         <ErrorBoundary
           fallback={<WebGLFallback isActive={isActive} onTap={handleTap} accent={themeColor} />}
         >
-          <div className="absolute inset-0 z-[2]">
+          <div className="absolute inset-0" style={{ zIndex: 3 }}>
             <Pedal3D
               ledColor={themeColor}
               isPlaying={isActive}

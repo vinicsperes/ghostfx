@@ -1,15 +1,12 @@
 import type { CSSProperties } from "react";
-import { PresetCurve } from "./PresetCurve";
 
 export function PresetCard({
-  index,
   name,
   color,
   isActive,
   onSelect,
   fitScroll = false,
 }: {
-  index: number;
   name: string;
   color: string;
   isActive: boolean;
@@ -26,9 +23,8 @@ export function PresetCard({
           "--c": color,
           flex: fitScroll ? "1 0 auto" : "1 1 0",
           minWidth: fitScroll ? 96 : 104,
-          height: fitScroll ? 36 : 42,
+          height: fitScroll ? 36 : 40,
           borderRadius: 8,
-          gap: 9,
         } as CSSProperties
       }
     >
@@ -37,7 +33,7 @@ export function PresetCard({
           position: "relative",
           fontFamily: "'Bungee', sans-serif",
           fontSize: fitScroll ? 12 : 13,
-          letterSpacing: "0.14em",
+          letterSpacing: "0.16em",
           lineHeight: 1,
           color: "inherit",
           textShadow: isActive ? `0 0 12px ${color}aa` : "none",
@@ -45,9 +41,6 @@ export function PresetCard({
       >
         {name}
       </span>
-      {!fitScroll && (
-        <PresetCurve presetIdx={index} color={isActive ? color : "#e7e4dc"} dim={!isActive} />
-      )}
       <span
         style={{
           position: "absolute",

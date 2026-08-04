@@ -56,7 +56,6 @@ export function TopBar({
         {PRESETS.map((p, i) => (
           <PresetCard
             key={p.name}
-            index={i}
             name={p.name}
             color={PRESET_META[i].color}
             isActive={activePresetIdx === i}

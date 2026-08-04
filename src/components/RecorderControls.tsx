@@ -137,7 +137,16 @@ export function RecorderControls({
           badgeRef.current.textContent = `${clock(at)} / ${clock(duration)}`;
           badgeRef.current.style.color = "rgba(188,188,210,0.8)";
         }
-      } else if (badgeRef.current) {
+      } else {
+        c.globalAlpha = 0.16;
+        const nBars = Math.floor(W / STEP);
+        for (let b = 0; b < nBars; b++) {
+          bar(b * STEP + (STEP - BARW) / 2, minH, 1);
+        }
+        c.globalAlpha = 1;
+      }
+
+      if (!isRecording && !(peaks && peaks.length > 0) && badgeRef.current) {
         badgeRef.current.textContent = countingIn
           ? "COUNT IN"
           : isProcessing
@@ -240,6 +249,7 @@ export function RecorderControls({
           style={{
             position: "relative",
             flex: 1,
+            maxWidth: 460,
             height: scopeHeight,
             borderRadius: 6,
             overflow: "hidden",
