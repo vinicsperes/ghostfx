@@ -3,6 +3,7 @@ import { useEffects } from "./hooks/useEffects";
 import { useMetronome } from "./hooks/useMetronome";
 import { useTuner } from "./hooks/useTuner";
 import { useSynth, NOTE_KEYS } from "./hooks/useSynth";
+import { useColorTransition } from "./hooks/useColorTransition";
 import Pedal3D from "./Pedal3D";
 import LoadingScreen from "./LoadingScreen";
 import OnboardingModal from "./OnboardingModal";
@@ -15,6 +16,8 @@ import {
   MobileSheet,
   TunerModal,
   TunerButton,
+  MixerModal,
+  TempoModal,
   PanelLabel,
   Metronome,
   TopBar,
@@ -37,20 +40,6 @@ const WEBGL_OK = (() => {
     return false;
   }
 })();
-
-function hexToRgb(h: string): [number, number, number] {
-  return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
-}
-function lerpHex(a: string, b: string, t: number): string {
-  const [r1, g1, b1] = hexToRgb(a),
-    [r2, g2, b2] = hexToRgb(b);
-  return (
-    "#" +
-    [r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t]
-      .map((v) => Math.round(v).toString(16).padStart(2, "0"))
-      .join("")
-  );
-}
 
 const WARNING_ACK_KEY = "ghostfx.onboardAck";
 
@@ -117,6 +106,8 @@ export default function App() {
   const [countInEnabled, setCountInEnabled] = useState(false);
   const [tunerOpen, setTunerOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [mixerOpen, setMixerOpen] = useState(false);
+  const [tempoOpen, setTempoOpen] = useState(false);
   const tuning = useTuner({
     enabled: tunerOpen,
     getMicWaveform: fx.getMicWaveform,
@@ -230,29 +221,10 @@ export default function App() {
 
   const isActive = fx.state === "active";
   const themeTarget = presetIdx !== null ? PRESET_META[presetIdx].color : PALETTE.accent;
-  const liveColorRef = useRef<string>(themeTarget);
-  const colorAnimRaf = useRef(0);
-  const [themeColor, setThemeColor] = useState<string>(themeTarget);
+  const chassisTarget = presetIdx !== null ? PRESET_META[presetIdx].chassis : PALETTE.pedal;
+  const themeColor = useColorTransition(themeTarget);
+  const chassisColor = useColorTransition(chassisTarget);
   const ledColor = isActive ? "#f53e3e" : themeColor;
-
-  useEffect(() => {
-    cancelAnimationFrame(colorAnimRaf.current);
-    const from = liveColorRef.current;
-    const to = themeTarget;
-    let t0: number | null = null;
-    const DURATION = 450;
-    const tick = (now: number) => {
-      if (t0 === null) t0 = now;
-      const p = Math.min(1, (now - t0) / DURATION);
-      const e = p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p;
-      const c = lerpHex(from, to, e);
-      liveColorRef.current = c;
-      setThemeColor(c);
-      if (p < 1) colorAnimRaf.current = requestAnimationFrame(tick);
-    };
-    colorAnimRaf.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(colorAnimRaf.current);
-  }, [themeTarget]);
 
   const handleKnobChange = useCallback(
     (knob: "drive" | "echo" | "tone" | "reverb" | "mod" | "master", value: number) => {
@@ -329,26 +301,28 @@ export default function App() {
           <div
             className="flex-1 flex items-stretch px-5 py-3.5 pointer-events-auto"
             style={{
-              background: "rgba(3,3,8,0.94)",
+              background:
+                "linear-gradient(180deg, rgba(18,20,24,0.52) 0%, rgba(8,10,13,0.62) 100%)",
+              backdropFilter: "blur(22px) saturate(150%)",
+              WebkitBackdropFilter: "blur(22px) saturate(150%)",
               border: `1px solid ${
                 fx.recorder.isRecording || metronome.countingIn
                   ? themeColor + "55"
-                  : "rgba(255,255,255,0.09)"
+                  : "rgba(231,228,220,0.12)"
               }`,
-              borderRadius: 14,
+              borderRadius: 18,
+              boxShadow: "0 18px 50px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07)",
               transition: "border-color 200ms",
             }}
           >
             <Console
               recorder={fx.recorder}
               metronome={metronome}
-              levels={{ drive, echo, tone, reverb, mod, master: masterVolume }}
-              onKnobChange={handleKnobChange}
+              onOpenMixer={() => setMixerOpen(true)}
               onOpenTuner={() => setTunerOpen(true)}
+              onOpenTempo={() => setTempoOpen(true)}
               keyboardMode={keyboardMode}
               onToggleKeyboard={() => setKeyboardMode((v) => !v)}
-              countInEnabled={countInEnabled}
-              onToggleCountIn={() => setCountInEnabled((v) => !v)}
               onRecord={() => void handleRecord()}
               getLevelRef={getLevelRef}
               accent={themeColor}
@@ -526,7 +500,7 @@ export default function App() {
               palette={{
                 ...PALETTE,
                 accent: themeColor,
-                pedal: presetIdx !== null ? PRESET_META[presetIdx].chassis : PALETTE.pedal,
+                pedal: chassisColor,
               }}
               presetIdx={presetIdx}
               stompCount={stompCount}
@@ -568,6 +542,25 @@ export default function App() {
 
       {aboutOpen && (
         <AboutModal presetIdx={presetIdx} accent={themeColor} onClose={() => setAboutOpen(false)} />
+      )}
+
+      {mixerOpen && (
+        <MixerModal
+          levels={{ drive, echo, tone, reverb, mod, master: masterVolume }}
+          onKnobChange={handleKnobChange}
+          accent={themeColor}
+          onClose={() => setMixerOpen(false)}
+        />
+      )}
+
+      {tempoOpen && (
+        <TempoModal
+          metronome={metronome}
+          countInEnabled={countInEnabled}
+          onToggleCountIn={() => setCountInEnabled((v) => !v)}
+          accent={themeColor}
+          onClose={() => setTempoOpen(false)}
+        />
       )}
 
       {tunerOpen && (
