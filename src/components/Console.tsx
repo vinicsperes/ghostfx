@@ -152,7 +152,7 @@ export function Console({
 
         <Divider />
 
-        <Section label="Tempo" grow>
+        <Section label="Tempo">
           <Metronome
             metronome={metronome}
             countInEnabled={countInEnabled}

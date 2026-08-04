@@ -64,7 +64,7 @@ export function Metronome({
   } as const;
 
   return (
-    <div className="flex flex-col" style={{ gap: compact ? 11 : 7, minWidth: compact ? 0 : 168 }}>
+    <div className="flex flex-col" style={{ gap: compact ? 11 : 7, width: compact ? "100%" : 186 }}>
       <div className="flex items-center" style={{ gap: compact ? 9 : 7 }}>
         <button
           onClick={toggle}
@@ -120,7 +120,7 @@ export function Metronome({
         value={bpm}
         onChange={(e) => setBpm(Number(e.target.value))}
         aria-label="Tempo"
-        style={{ width: "100%", accentColor: accent, height: 3, cursor: "pointer" }}
+        style={{ width: 186, accentColor: accent, height: 3, cursor: "pointer" }}
       />
 
       <div className="flex items-center" style={{ gap: 8 }}>
@@ -154,7 +154,6 @@ export function Metronome({
           title="Count in four beats before recording"
           style={{
             ...chip,
-            marginLeft: "auto",
             padding: "0 7px",
             letterSpacing: "0.1em",
             borderColor: countInEnabled ? `${accent}60` : "rgba(231,228,220,0.12)",
