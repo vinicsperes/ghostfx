@@ -76,6 +76,7 @@ export function useEffects({
   const convUnloadRef = useRef<number | null>(null);
 
   const recordDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const dryDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
 
   const nodesRef = useRef<
     Partial<ChainNodes> & {
@@ -214,6 +215,10 @@ export function useEffects({
       recLimiter.connect(recordDest);
       recordDestRef.current = recordDest;
 
+      const dryDest = ctx.createMediaStreamDestination();
+      monoSum.connect(dryDest);
+      dryDestRef.current = dryDest;
+
       nodesRef.current = {
         ...chain,
         bypass: bypassGain,
@@ -249,6 +254,7 @@ export function useEffects({
   const recorder = useRecorder({
     ctxRef,
     destRef: recordDestRef,
+    dryDestRef,
     ensureAudio: init,
     presetIdx,
     masterVolume,

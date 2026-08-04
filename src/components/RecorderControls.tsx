@@ -38,6 +38,8 @@ export function RecorderControls({
     downloadTake,
     getPlayPosition,
     getRecordElapsed,
+    reampTake,
+    reampingTo,
   } = recorder;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -298,6 +300,44 @@ export function RecorderControls({
         </button>
       </div>
 
+      {activeTake?.dryBlob && (
+        <div className="flex items-center" style={{ gap: 6 }}>
+          <span
+            className="font-[var(--font-mono)] uppercase shrink-0"
+            style={{ fontSize: 8, letterSpacing: "0.22em", color: "rgba(231,228,220,0.38)" }}
+          >
+            Re-amp
+          </span>
+          <div className="preset-scroll flex overflow-x-auto" style={{ gap: 5 }}>
+            {PRESETS.map((p, i) => {
+              const busy = reampingTo === i;
+              return (
+                <button
+                  key={p.name}
+                  onClick={() => void reampTake(i)}
+                  disabled={reampingTo !== null || isRecording}
+                  title={`Hear this take through ${p.name}`}
+                  className="font-[var(--font-mono)] shrink-0 transition-all active:scale-95"
+                  style={{
+                    padding: "3px 8px",
+                    fontSize: 9,
+                    letterSpacing: "0.1em",
+                    borderRadius: 4,
+                    border: `1px solid ${busy ? PRESET_META[i].color + "88" : "rgba(255,255,255,0.09)"}`,
+                    background: busy ? `${PRESET_META[i].color}18` : "rgba(255,255,255,0.02)",
+                    color: busy ? PRESET_META[i].color : "rgba(231,228,220,0.55)",
+                    cursor: reampingTo !== null ? "wait" : "pointer",
+                    opacity: reampingTo !== null && !busy ? 0.4 : 1,
+                  }}
+                >
+                  {busy ? "..." : p.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {takes.length > 0 && (
         <div className="preset-scroll flex items-center overflow-x-auto" style={{ gap: 6 }}>
           {takes.map((take, i) => {
@@ -341,7 +381,7 @@ export function RecorderControls({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {name} {clock(take.duration)}
+                    {take.reamped ? `${name} ↺` : name} {clock(take.duration)}
                   </span>
                 </button>
                 <button

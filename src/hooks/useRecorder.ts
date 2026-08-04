@@ -1,15 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { computePeaks, encodeMp3, encodeWav } from "../audio/encode";
-import { masterGainFromKnob } from "../audio/dsp";
+import { createLimiterCurve, masterGainFromKnob } from "../audio/dsp";
+import { buildChain, reverbBuffers } from "../audio/chain";
+import { PRESETS } from "../data/presets";
 
 export type Take = {
   id: string;
   blob: Blob;
+  dryBlob: Blob | null;
   peaks: Float32Array;
   duration: number;
   presetIdx: number | null;
   createdAt: number;
+  reamped: boolean;
 };
+
+const REVERB_TAIL_S = 3;
 
 export const MAX_REC_MS = 180000;
 export const WARN_REC_MS = 10000;
@@ -25,12 +31,14 @@ function pickMime(): string {
 export function useRecorder({
   ctxRef,
   destRef,
+  dryDestRef,
   ensureAudio,
   presetIdx,
   masterVolume,
 }: {
   ctxRef: React.RefObject<AudioContext | null>;
   destRef: React.RefObject<MediaStreamAudioDestinationNode | null>;
+  dryDestRef: React.RefObject<MediaStreamAudioDestinationNode | null>;
   ensureAudio: () => Promise<void>;
   presetIdx: number | null;
   masterVolume: number;
@@ -40,10 +48,13 @@ export function useRecorder({
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [reampingTo, setReampingTo] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
+  const dryRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const dryChunksRef = useRef<Blob[]>([]);
   const recTimeoutRef = useRef<number | null>(null);
   const recStartRef = useRef(0);
   const recordingRef = useRef(false);
@@ -224,6 +235,8 @@ export function useRecorder({
     }
     const rec = recorderRef.current;
     if (rec && rec.state !== "inactive") rec.stop();
+    const dry = dryRecorderRef.current;
+    if (dry && dry.state !== "inactive") dry.stop();
     recordingRef.current = false;
     setIsRecording(false);
   }, []);
@@ -250,18 +263,34 @@ export function useRecorder({
     rec.ondataavailable = (e) => {
       if (e.data.size > 0) chunksRef.current.push(e.data);
     };
+
+    dryChunksRef.current = [];
+    const dryDest = dryDestRef.current;
+    const dryRec = dryDest
+      ? new MediaRecorder(dryDest.stream, mime ? { mimeType: mime } : undefined)
+      : null;
+    if (dryRec) {
+      dryRec.ondataavailable = (e) => {
+        if (e.data.size > 0) dryChunksRef.current.push(e.data);
+      };
+    }
     rec.onstop = async () => {
       setIsProcessing(true);
       const blob = new Blob(chunksRef.current, { type: mime || "audio/webm" });
       try {
         const buffer = await ctx.decodeAudioData(await blob.arrayBuffer());
+        const dryBlob = dryChunksRef.current.length
+          ? new Blob(dryChunksRef.current, { type: mime || "audio/webm" })
+          : null;
         const take: Take = {
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           blob,
+          dryBlob,
           peaks: computePeaks(buffer),
           duration: buffer.duration,
           presetIdx: presetIdxRef.current,
           createdAt: Date.now(),
+          reamped: false,
         };
         cacheRef.current = { id: take.id, buffer };
         setTakes((prev) => [take, ...prev].slice(0, MAX_TAKES));
@@ -274,12 +303,79 @@ export function useRecorder({
       }
     };
     rec.start();
+    dryRec?.start();
     recorderRef.current = rec;
+    dryRecorderRef.current = dryRec;
     recStartRef.current = performance.now();
     recordingRef.current = true;
     setIsRecording(true);
     recTimeoutRef.current = window.setTimeout(stopRecording, MAX_REC_MS);
-  }, [ensureAudio, ctxRef, destRef, stopRecording, stopSource]);
+  }, [ensureAudio, ctxRef, destRef, dryDestRef, stopRecording, stopSource]);
+
+  const reampTake = useCallback(
+    async (targetPreset: number) => {
+      const take = takes.find((t) => t.id === activeTakeId);
+      const ctx = ctxRef.current;
+      if (!take?.dryBlob || !ctx || reampingTo !== null) return;
+
+      setReampingTo(targetPreset);
+      try {
+        const dry = await ctx.decodeAudioData(await take.dryBlob.arrayBuffer());
+        const frames = Math.ceil((dry.duration + REVERB_TAIL_S) * ctx.sampleRate);
+        const offline = new OfflineAudioContext(2, frames, ctx.sampleRate);
+
+        const preset = PRESETS[targetPreset];
+        const { input, output } = buildChain(
+          offline,
+          {
+            drive: preset.drive,
+            echo: preset.echo,
+            tone: preset.tone,
+            reverb: preset.reverb,
+            mod: preset.mod,
+            presetIdx: targetPreset,
+          },
+          reverbBuffers(offline),
+        );
+
+        const limiter = offline.createWaveShaper();
+        limiter.curve = createLimiterCurve();
+        limiter.oversample = "none";
+
+        const src = offline.createBufferSource();
+        src.buffer = dry;
+        src.connect(input);
+        output.connect(limiter);
+        limiter.connect(offline.destination);
+        src.start(0);
+
+        const rendered = await offline.startRendering();
+        const blob = encodeWav(rendered);
+        const next: Take = {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          blob,
+          dryBlob: take.dryBlob,
+          peaks: computePeaks(rendered),
+          duration: rendered.duration,
+          presetIdx: targetPreset,
+          createdAt: Date.now(),
+          reamped: true,
+        };
+        cacheRef.current = { id: next.id, buffer: rendered };
+        stopSource();
+        setPlayingId(null);
+        playOffsetRef.current = 0;
+        setTakes((prev) => [next, ...prev].slice(0, MAX_TAKES));
+        setActiveTakeId(next.id);
+        setError(null);
+      } catch {
+        setError("could not re-amp that take");
+      } finally {
+        setReampingTo(null);
+      }
+    },
+    [takes, activeTakeId, ctxRef, reampingTo, stopSource],
+  );
 
   const downloadTake = useCallback(
     async (id?: string) => {
@@ -341,5 +437,7 @@ export function useRecorder({
     downloadTake,
     getPlayPosition,
     getRecordElapsed,
+    reampTake,
+    reampingTo,
   };
 }
