@@ -1,8 +1,34 @@
 import { RecorderControls } from "./RecorderControls";
 import { PanelLabel } from "./PanelLabel";
 import { ToolButton } from "./ToolButton";
+import { ToolTray } from "./ToolTray";
+import { ChannelStrip } from "./ChannelStrip";
+import { Metronome } from "./Metronome";
+import { TunerDisplay } from "./TunerDisplay";
+import { KeyboardDisplay } from "./KeyboardDisplay";
 import type { useMetronome } from "../hooks/useMetronome";
 import type { useRecorder } from "../hooks/useRecorder";
+import type { useSynth } from "../hooks/useSynth";
+import type { TunerReading } from "../hooks/useTuner";
+
+export type ToolId = "mix" | "tune" | "synth" | "tempo";
+export type KnobId = "drive" | "echo" | "tone" | "reverb" | "mod" | "master";
+
+const STRIPS: { id: KnobId; label: string }[] = [
+  { id: "drive", label: "DRV" },
+  { id: "echo", label: "ECHO" },
+  { id: "tone", label: "TONE" },
+  { id: "reverb", label: "RVB" },
+  { id: "mod", label: "MOD" },
+  { id: "master", label: "VOL" },
+];
+
+const TITLES: Record<ToolId, string> = {
+  mix: "Signal",
+  tune: "Tuner",
+  synth: "Keyboard synth",
+  tempo: "Tempo",
+};
 
 function FaderIcon() {
   return (
@@ -83,75 +109,132 @@ function TempoIcon({ running }: { running: boolean }) {
 export function Console({
   recorder,
   metronome,
-  onOpenMixer,
-  onOpenTuner,
-  onOpenTempo,
-  keyboardMode,
-  onToggleKeyboard,
+  synth,
+  tuning,
+  levels,
+  onKnobChange,
+  activeTool,
+  onToolChange,
+  countInEnabled,
+  onToggleCountIn,
   onRecord,
   getLevelRef,
   accent,
 }: {
   recorder: ReturnType<typeof useRecorder>;
   metronome: ReturnType<typeof useMetronome>;
-  onOpenMixer: () => void;
-  onOpenTuner: () => void;
-  onOpenTempo: () => void;
-  keyboardMode: boolean;
-  onToggleKeyboard: () => void;
+  synth: ReturnType<typeof useSynth>;
+  tuning: TunerReading;
+  levels: Record<KnobId, number>;
+  onKnobChange: (id: KnobId, value: number) => void;
+  activeTool: ToolId | null;
+  onToolChange: (tool: ToolId | null) => void;
+  countInEnabled: boolean;
+  onToggleCountIn: () => void;
   onRecord: () => void;
   getLevelRef: { current: (() => number) | null };
   accent: string;
 }) {
+  const toggle = (tool: ToolId) => onToolChange(activeTool === tool ? null : tool);
   return (
-    <div className="flex items-stretch w-full" style={{ gap: 20 }}>
-      <div className="flex flex-col justify-end" style={{ gap: 9 }}>
-        <PanelLabel>Tools</PanelLabel>
-        <div className="flex items-end" style={{ gap: 8 }}>
-          <ToolButton
-            label="MIX"
-            icon={<FaderIcon />}
+    <div className="flex flex-col w-full" style={{ gap: 13 }}>
+      {activeTool && (
+        <ToolTray title={TITLES[activeTool]} accent={accent} onClose={() => onToolChange(null)}>
+          {activeTool === "mix" && (
+            <div className="flex items-end justify-center" style={{ gap: 14 }}>
+              {STRIPS.map((s) => (
+                <ChannelStrip
+                  key={s.id}
+                  label={s.label}
+                  value={levels[s.id]}
+                  accent={accent}
+                  highlight={s.id === "master"}
+                  onChange={(v) => onKnobChange(s.id, v)}
+                  height={112}
+                />
+              ))}
+            </div>
+          )}
+          {activeTool === "tune" && (
+            <div className="self-center w-full" style={{ maxWidth: 380 }}>
+              <TunerDisplay reading={tuning} accent={accent} size="sm" />
+            </div>
+          )}
+          {activeTool === "tempo" && (
+            <div className="self-center">
+              <Metronome
+                metronome={metronome}
+                countInEnabled={countInEnabled}
+                onToggleCountIn={onToggleCountIn}
+                accent={accent}
+              />
+            </div>
+          )}
+          {activeTool === "synth" && (
+            <div className="self-center w-full" style={{ maxWidth: 620 }}>
+              <KeyboardDisplay
+                activeKeys={synth.activeKeys}
+                accent={accent}
+                playNote={synth.playNote}
+                stopNote={synth.stopNote}
+                labelMode="key"
+              />
+            </div>
+          )}
+        </ToolTray>
+      )}
+
+      <div className="flex items-start w-full" style={{ gap: 20 }}>
+        <div className="flex flex-col" style={{ gap: 9 }}>
+          <PanelLabel>Tools</PanelLabel>
+          <div className="flex items-end" style={{ gap: 8 }}>
+            <ToolButton
+              label="MIX"
+              icon={<FaderIcon />}
+              accent={accent}
+              active={activeTool === "mix"}
+              onClick={() => toggle("mix")}
+              title="Signal faders"
+            />
+            <ToolButton
+              label="TUNE"
+              icon={<ForkIcon />}
+              accent={accent}
+              active={activeTool === "tune"}
+              onClick={() => toggle("tune")}
+              title="Tuner"
+            />
+            <ToolButton
+              label="SYNTH"
+              icon={<KeysIcon />}
+              accent={accent}
+              active={activeTool === "synth"}
+              onClick={() => toggle("synth")}
+              title="Play the built-in synth with your keyboard"
+            />
+            <ToolButton
+              label={String(metronome.bpm)}
+              icon={<TempoIcon running={metronome.isRunning} />}
+              accent={accent}
+              active={activeTool === "tempo" || metronome.isRunning || metronome.countingIn}
+              onClick={() => toggle("tempo")}
+              title="Tempo and count-in"
+            />
+          </div>
+        </div>
+
+        <div style={{ width: 1, alignSelf: "stretch", background: "rgba(231,228,220,0.07)" }} />
+
+        <div className="flex flex-col" style={{ gap: 9, flex: "1 1 0", minWidth: 0 }}>
+          <PanelLabel>{metronome.countingIn ? "Counting in" : "Recorder"}</PanelLabel>
+          <RecorderControls
+            recorder={recorder}
+            onRecord={onRecord}
+            getLevelRef={getLevelRef}
             accent={accent}
-            onClick={onOpenMixer}
-            title="Signal faders"
-          />
-          <ToolButton
-            label="TUNE"
-            icon={<ForkIcon />}
-            accent={accent}
-            onClick={onOpenTuner}
-            title="Tuner"
-          />
-          <ToolButton
-            label="SYNTH"
-            icon={<KeysIcon />}
-            accent={accent}
-            active={keyboardMode}
-            onClick={onToggleKeyboard}
-            title="Play the built-in synth with your keyboard"
-          />
-          <ToolButton
-            label={String(metronome.bpm)}
-            icon={<TempoIcon running={metronome.isRunning} />}
-            accent={accent}
-            active={metronome.isRunning || metronome.countingIn}
-            onClick={onOpenTempo}
-            title="Tempo and count-in"
+            countingIn={metronome.countingIn}
           />
         </div>
-      </div>
-
-      <div style={{ width: 1, alignSelf: "stretch", background: "rgba(231,228,220,0.07)" }} />
-
-      <div className="flex flex-col justify-end" style={{ gap: 9, flex: "1 1 0", minWidth: 0 }}>
-        <PanelLabel>{metronome.countingIn ? "Counting in" : "Recorder"}</PanelLabel>
-        <RecorderControls
-          recorder={recorder}
-          onRecord={onRecord}
-          getLevelRef={getLevelRef}
-          accent={accent}
-          countingIn={metronome.countingIn}
-        />
       </div>
     </div>
   );

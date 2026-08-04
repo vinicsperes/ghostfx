@@ -4,6 +4,7 @@ import { useMetronome } from "./hooks/useMetronome";
 import { useTuner } from "./hooks/useTuner";
 import { useSynth, NOTE_KEYS } from "./hooks/useSynth";
 import { useColorTransition } from "./hooks/useColorTransition";
+import type { ToolId } from "./components/Console";
 import Pedal3D from "./Pedal3D";
 import LoadingScreen from "./LoadingScreen";
 import OnboardingModal from "./OnboardingModal";
@@ -15,9 +16,6 @@ import {
   Console,
   MobileSheet,
   TunerModal,
-  TunerButton,
-  MixerModal,
-  TempoModal,
   PanelLabel,
   Metronome,
   TopBar,
@@ -62,7 +60,6 @@ export default function App() {
     }
   });
   const [micDismissed, setMicDismissed] = useState(false);
-  const [keyboardMode, setKeyboardMode] = useState(false);
   const [sheetTab, setSheetTab] = useState<"signal" | "keyboard" | "rec">("signal");
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [stompCount, setStompCount] = useState(0);
@@ -106,8 +103,7 @@ export default function App() {
   const [countInEnabled, setCountInEnabled] = useState(false);
   const [tunerOpen, setTunerOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
-  const [mixerOpen, setMixerOpen] = useState(false);
-  const [tempoOpen, setTempoOpen] = useState(false);
+  const [activeTool, setActiveTool] = useState<ToolId | null>(null);
   const tuning = useTuner({
     enabled: tunerOpen,
     getMicWaveform: fx.getMicWaveform,
@@ -161,6 +157,7 @@ export default function App() {
   const synth = useSynth({ drive, echo, tone, reverb, mod, masterVolume, presetIdx });
   const { playNote, stopNote } = synth;
 
+  const keyboardMode = activeTool === "synth";
   useEffect(() => {
     if (!keyboardMode) return;
     const onDown = (e: KeyboardEvent) => {
@@ -278,26 +275,6 @@ export default function App() {
           className="hidden lg:flex fixed bottom-0 left-0 right-0 z-[40] flex-col items-stretch pointer-events-none"
           style={{ padding: "8px max(22px,1.8vw) 16px", gap: 10 }}
         >
-          {keyboardMode && (
-            <div
-              className="pointer-events-auto self-center w-full"
-              style={{
-                maxWidth: 620,
-                padding: "12px 14px",
-                background: "rgba(3,3,8,0.94)",
-                border: "1px solid rgba(255,255,255,0.09)",
-                borderRadius: 14,
-              }}
-            >
-              <KeyboardDisplay
-                activeKeys={synth.activeKeys}
-                accent={themeColor}
-                playNote={synth.playNote}
-                stopNote={synth.stopNote}
-                labelMode="key"
-              />
-            </div>
-          )}
           <div
             className="flex-1 flex items-stretch px-5 py-3.5 pointer-events-auto"
             style={{
@@ -318,11 +295,14 @@ export default function App() {
             <Console
               recorder={fx.recorder}
               metronome={metronome}
-              onOpenMixer={() => setMixerOpen(true)}
-              onOpenTuner={() => setTunerOpen(true)}
-              onOpenTempo={() => setTempoOpen(true)}
-              keyboardMode={keyboardMode}
-              onToggleKeyboard={() => setKeyboardMode((v) => !v)}
+              synth={synth}
+              tuning={tuning}
+              levels={{ drive, echo, tone, reverb, mod, master: masterVolume }}
+              onKnobChange={handleKnobChange}
+              activeTool={activeTool}
+              onToolChange={setActiveTool}
+              countInEnabled={countInEnabled}
+              onToggleCountIn={() => setCountInEnabled((v) => !v)}
               onRecord={() => void handleRecord()}
               getLevelRef={getLevelRef}
               accent={themeColor}
@@ -394,7 +374,29 @@ export default function App() {
             </button>
           }
           trailing={
-            <TunerButton onOpen={() => setTunerOpen(true)} accent={themeColor} variant="icon" />
+            <button
+              onClick={() => setTunerOpen(true)}
+              aria-label="Open tuner"
+              title="Tuner"
+              className="flex items-center justify-center transition-all active:scale-90"
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 7,
+                border: `1px solid ${themeColor}35`,
+                background: `${themeColor}0f`,
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M8 3v7a4 4 0 0 0 4 4v7m4-18v7a4 4 0 0 1-4 4"
+                  stroke={themeColor}
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
           }
         >
           {sheetTab === "signal" && (
@@ -532,7 +534,7 @@ export default function App() {
           onRetry={() => fx.toggle()}
           onKeyboard={() => {
             setMicDismissed(true);
-            setKeyboardMode(true);
+            setActiveTool("synth");
             setSheetTab("keyboard");
             setSheetExpanded(true);
           }}
@@ -542,25 +544,6 @@ export default function App() {
 
       {aboutOpen && (
         <AboutModal presetIdx={presetIdx} accent={themeColor} onClose={() => setAboutOpen(false)} />
-      )}
-
-      {mixerOpen && (
-        <MixerModal
-          levels={{ drive, echo, tone, reverb, mod, master: masterVolume }}
-          onKnobChange={handleKnobChange}
-          accent={themeColor}
-          onClose={() => setMixerOpen(false)}
-        />
-      )}
-
-      {tempoOpen && (
-        <TempoModal
-          metronome={metronome}
-          countInEnabled={countInEnabled}
-          onToggleCountIn={() => setCountInEnabled((v) => !v)}
-          accent={themeColor}
-          onClose={() => setTempoOpen(false)}
-        />
       )}
 
       {tunerOpen && (
