@@ -5,21 +5,29 @@ import type { ToolId } from "./Console";
 import type { ReactNode } from "react";
 
 function GearIcon({ open }: { open: boolean }) {
+  const teeth = Array.from({ length: 8 }, (_, i) => (i * 360) / 8);
   return (
     <svg
-      width="20"
-      height="20"
+      width="21"
+      height="21"
       viewBox="0 0 24 24"
       fill="none"
-      style={{ transform: open ? "rotate(60deg)" : "none", transition: "transform 260ms" }}
+      style={{ transform: open ? "rotate(45deg)" : "none", transition: "transform 300ms" }}
     >
-      <circle cx="12" cy="12" r="3.1" stroke="currentColor" strokeWidth="1.6" />
-      <path
-        d="M12 2.6v2.2m0 14.4v2.2M21.4 12h-2.2M4.8 12H2.6m14.7-6.6-1.6 1.6M8.1 15.9l-1.6 1.6m10.8 0-1.6-1.6M8.1 8.1 6.5 6.5"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
+      {teeth.map((deg) => (
+        <rect
+          key={deg}
+          x="10.6"
+          y="1.4"
+          width="2.8"
+          height="4.4"
+          rx="0.7"
+          fill="currentColor"
+          transform={`rotate(${deg} 12 12)`}
+        />
+      ))}
+      <circle cx="12" cy="12" r="7.1" fill="currentColor" />
+      <circle cx="12" cy="12" r="3.1" fill="#0a0c0f" />
     </svg>
   );
 }
@@ -48,23 +56,28 @@ export function ToolDock({
   }, [open]);
 
   return (
-    <div ref={ref} className="flex flex-col items-end pointer-events-auto" style={{ gap: 10 }}>
+    <div
+      ref={ref}
+      className="relative flex items-center justify-center pointer-events-auto shrink-0"
+    >
       {open && (
-        <Surface style={{ padding: 10 }}>
-          <div className="flex items-end" style={{ gap: 8 }}>
-            {tools.map((t) => (
-              <ToolButton
-                key={t.id}
-                label={t.label}
-                icon={t.icon}
-                accent={accent}
-                active={activeTool === t.id}
-                title={t.title}
-                onClick={() => onToolChange(activeTool === t.id ? null : t.id)}
-              />
-            ))}
-          </div>
-        </Surface>
+        <div className="absolute" style={{ bottom: "calc(100% + 10px)", right: 0 }}>
+          <Surface style={{ padding: 10 }}>
+            <div className="flex items-end" style={{ gap: 8 }}>
+              {tools.map((t) => (
+                <ToolButton
+                  key={t.id}
+                  label={t.label}
+                  icon={t.icon}
+                  accent={accent}
+                  active={activeTool === t.id}
+                  title={t.title}
+                  onClick={() => onToolChange(activeTool === t.id ? null : t.id)}
+                />
+              ))}
+            </div>
+          </Surface>
+        </div>
       )}
 
       <button
@@ -74,9 +87,9 @@ export function ToolDock({
         title="Tools"
         className="flex items-center justify-center transition-all active:scale-90"
         style={{
-          width: 46,
-          height: 46,
-          borderRadius: 14,
+          width: 52,
+          height: 52,
+          borderRadius: 16,
           border: `1px solid ${open || activeTool ? accent + "55" : "rgba(231,228,220,0.12)"}`,
           background: "linear-gradient(180deg, rgba(18,20,24,0.6) 0%, rgba(8,10,13,0.7) 100%)",
           backdropFilter: "blur(22px) saturate(150%)",

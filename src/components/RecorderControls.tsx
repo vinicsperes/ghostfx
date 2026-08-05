@@ -191,244 +191,264 @@ export function RecorderControls({
     background: "rgba(10,10,16,0.9)",
   } as const;
   const isPlaying = !!activeTake && playingId === activeTake.id;
+  const isOriginal = !!activeTake && activeRig === (activeTake.presetIdx ?? 0);
 
   return (
-    <div className="flex flex-col w-full" style={{ gap: 7 }}>
-      <div className="flex items-center gap-1.5 w-full lg:gap-3.5">
-        <button
-          onClick={onRecord}
-          disabled={isProcessing || countingIn}
-          title={isRecording ? "Stop (Space)" : "Record (Space)"}
-          aria-label={isRecording ? "Stop recording" : "Record"}
-          className={btn}
-          style={{
-            ...btnBase,
-            border: `1px solid ${isRecording ? REC : accent + "30"}`,
-            opacity: isProcessing || countingIn ? 0.5 : 1,
-            cursor: isProcessing ? "wait" : "pointer",
-          }}
-        >
+    <div className="flex w-full" style={{ gap: 18 }}>
+      {takes.length > 0 && (
+        <div className="flex flex-col shrink-0" style={{ gap: 7, width: 176 }}>
           <span
-            className={isRecording || countingIn ? "animate-pulse" : ""}
-            style={{
-              width: 14,
-              height: 14,
-              borderRadius: isRecording ? 3 : "50%",
-              background: REC,
-              boxShadow: `0 0 7px ${REC}`,
-            }}
-          />
-        </button>
-
-        <button
-          onClick={() => void togglePlay()}
-          disabled={!activeTake || isRecording}
-          title={isPlaying ? "Pause" : "Play take"}
-          aria-label={isPlaying ? "Pause" : "Play take"}
-          className={btn}
-          style={{
-            ...btnBase,
-            border: `1px solid ${accent}30`,
-            color: activeTake && !isRecording ? accent : "rgba(255,255,255,0.25)",
-            cursor: activeTake && !isRecording ? "pointer" : "not-allowed",
-            opacity: activeTake && !isRecording ? 1 : 0.5,
-          }}
-        >
-          {isPlaying ? (
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
-              <rect x="3" y="2.5" width="3.6" height="11" rx="1" />
-              <rect x="9.4" y="2.5" width="3.6" height="11" rx="1" />
-            </svg>
-          ) : (
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M4 2.6v10.8a.7.7 0 0 0 1.07.6l8.4-5.4a.7.7 0 0 0 0-1.2l-8.4-5.4A.7.7 0 0 0 4 2.6Z" />
-            </svg>
-          )}
-        </button>
-
-        <div
-          onPointerDown={onScrub}
-          style={{
-            position: "relative",
-            flex: 1,
-            height: scopeHeight,
-            borderRadius: 6,
-            overflow: "hidden",
-            background: "rgba(0,0,0,0.4)",
-            border: "1px solid rgba(255,255,255,0.05)",
-            cursor: activeTake && !isRecording ? "pointer" : "default",
-            touchAction: "none",
-          }}
-        >
-          <canvas
-            ref={canvasRef}
-            width={520}
-            height={scopeHeight}
-            style={{ width: "100%", height: "100%", display: "block" }}
-          />
-          <span
-            ref={badgeRef}
-            style={{
-              position: "absolute",
-              top: 4,
-              right: 5,
-              fontSize: 9,
-              fontFamily: "monospace",
-              letterSpacing: "0.1em",
-              color: "rgba(188,188,210,0.8)",
-              background: "rgba(3,3,8,0.8)",
-              padding: "1px 5px",
-              borderRadius: 4,
-              pointerEvents: "none",
-            }}
-          />
-        </div>
-
-        <button
-          onClick={() => void downloadTake()}
-          disabled={!activeTake}
-          title={activeTake ? "Download MP3" : "Record something first"}
-          aria-label="Download take"
-          className={btn}
-          style={{
-            ...btnBase,
-            border: `1px solid ${accent}30`,
-            color: activeTake ? accent : "rgba(255,255,255,0.25)",
-            cursor: activeTake ? "pointer" : "not-allowed",
-            opacity: activeTake ? 1 : 0.5,
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-            <path
-              d="M9 2v9M9 11l-3.4-3.4M9 11l3.4-3.4"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path d="M3 14.8h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-        </button>
-      </div>
-
-      {activeTake && (
-        <div className="flex items-center" style={{ gap: 9 }}>
-          <span
-            className="font-[var(--font-mono)] uppercase shrink-0"
+            className="font-[var(--font-mono)] uppercase"
             style={{ fontSize: 8.5, letterSpacing: "0.24em", color: "rgba(231,228,220,0.42)" }}
           >
-            Through
+            Takes
           </span>
-          <div className="preset-scroll flex overflow-x-auto" style={{ gap: 5 }}>
-            {PRESETS.map((p, i) => {
-              const on = activeRig === i;
-              const busy = reampingTo === i;
-              const recorded = (activeTake.presetIdx ?? 0) === i;
-              const canReamp = recorded || !!activeTake.dryBlob;
+          <div
+            className="preset-scroll flex flex-col overflow-y-auto"
+            style={{ gap: 4, maxHeight: scopeHeight + 46 }}
+          >
+            {takes.map((take) => {
+              const on = take.id === activeTake?.id;
+              const idx = take.presetIdx ?? 0;
+              const color = PRESET_META[idx].color;
               return (
-                <button
-                  key={p.name}
-                  onClick={() => void setRig(i)}
-                  disabled={!canReamp || reampingTo !== null || isRecording}
-                  title={recorded ? `${p.name}, as recorded` : `Hear this take through ${p.name}`}
-                  className="font-[var(--font-mono)] shrink-0 flex items-center transition-all active:scale-95"
+                <div
+                  key={take.id}
+                  className="flex items-center shrink-0"
                   style={{
-                    gap: 5,
-                    padding: "6px 12px",
-                    fontSize: 10.5,
-                    letterSpacing: "0.1em",
+                    gap: 8,
+                    paddingRight: 4,
                     borderRadius: 6,
-                    border: `1px solid ${on ? PRESET_META[i].color + "88" : "rgba(255,255,255,0.09)"}`,
-                    background: on ? `${PRESET_META[i].color}18` : "rgba(255,255,255,0.02)",
-                    color: on ? PRESET_META[i].color : "rgba(231,228,220,0.55)",
-                    cursor: reampingTo !== null ? "wait" : canReamp ? "pointer" : "not-allowed",
-                    opacity: !canReamp ? 0.35 : reampingTo !== null && !busy ? 0.4 : 1,
+                    border: `1px solid ${on ? accent + "45" : "transparent"}`,
+                    background: on ? `${accent}10` : "transparent",
                   }}
                 >
-                  {recorded && (
+                  <button
+                    onClick={() => selectTake(take.id)}
+                    className="flex items-center flex-1 min-w-0"
+                    style={{ gap: 8, padding: "6px 0 6px 9px", cursor: "pointer" }}
+                    title={`${PRESETS[idx].name} take, ${clock(take.duration)}`}
+                  >
                     <span
-                      title="as recorded"
                       style={{
-                        width: 4,
-                        height: 4,
-                        borderRadius: "50%",
-                        background: on ? PRESET_META[i].color : "rgba(231,228,220,0.4)",
+                        width: 7,
+                        height: 7,
+                        borderRadius: 2,
+                        flexShrink: 0,
+                        background: color,
+                        boxShadow: on ? `0 0 6px ${color}` : "none",
                       }}
                     />
-                  )}
-                  {busy ? "..." : p.name}
-                </button>
+                    <span
+                      className="font-[var(--font-mono)] truncate"
+                      style={{
+                        flex: 1,
+                        textAlign: "left",
+                        fontSize: 10.5,
+                        color: on ? "#e7e4dc" : "rgba(231,228,220,0.6)",
+                      }}
+                    >
+                      {PRESETS[idx].name}
+                    </span>
+                    <span
+                      className="font-[var(--font-mono)]"
+                      style={{
+                        fontSize: 9.5,
+                        fontVariantNumeric: "tabular-nums",
+                        color: "rgba(231,228,220,0.38)",
+                      }}
+                    >
+                      {clock(take.duration)}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => deleteTake(take.id)}
+                    aria-label="Delete take"
+                    title="Delete take"
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1,
+                      padding: "0 4px",
+                      color: "rgba(231,228,220,0.3)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
               );
             })}
           </div>
         </div>
       )}
 
-      {takes.length > 0 && (
-        <div className="preset-scroll flex items-center overflow-x-auto" style={{ gap: 6 }}>
-          {takes.map((take, i) => {
-            const on = take.id === activeTake?.id;
-            const color =
-              take.presetIdx !== null ? PRESET_META[take.presetIdx].color : "rgba(255,255,255,0.5)";
-            const name = take.presetIdx !== null ? PRESETS[take.presetIdx].name : "TAKE";
-            return (
-              <div
-                key={take.id}
-                className="flex items-center shrink-0"
-                style={{
-                  gap: 8,
-                  padding: "6px 8px 6px 11px",
-                  borderRadius: 7,
-                  border: `1px solid ${on ? accent + "55" : "rgba(255,255,255,0.08)"}`,
-                  background: on ? `${accent}12` : "rgba(255,255,255,0.02)",
-                }}
-              >
-                <button
-                  onClick={() => selectTake(take.id)}
-                  className="flex items-center"
-                  style={{ gap: 6, cursor: "pointer" }}
-                  title={`Take ${takes.length - i} on ${name}`}
-                >
-                  <span
+      <div className="flex flex-col flex-1 min-w-0" style={{ gap: 10 }}>
+        <div className="flex items-center gap-1.5 w-full lg:gap-3">
+          <button
+            onClick={onRecord}
+            disabled={isProcessing || countingIn}
+            title={isRecording ? "Stop (Space)" : "Record (Space)"}
+            aria-label={isRecording ? "Stop recording" : "Record"}
+            className={btn}
+            style={{
+              ...btnBase,
+              border: `1px solid ${isRecording ? REC : accent + "30"}`,
+              opacity: isProcessing || countingIn ? 0.5 : 1,
+              cursor: isProcessing ? "wait" : "pointer",
+            }}
+          >
+            <span
+              className={isRecording || countingIn ? "animate-pulse" : ""}
+              style={{
+                width: 14,
+                height: 14,
+                borderRadius: isRecording ? 3 : "50%",
+                background: REC,
+                boxShadow: `0 0 7px ${REC}`,
+              }}
+            />
+          </button>
+
+          <button
+            onClick={() => void togglePlay()}
+            disabled={!activeTake || isRecording}
+            title={isPlaying ? "Pause" : "Play take"}
+            aria-label={isPlaying ? "Pause" : "Play take"}
+            className={btn}
+            style={{
+              ...btnBase,
+              border: `1px solid ${accent}30`,
+              color: activeTake && !isRecording ? accent : "rgba(255,255,255,0.25)",
+              cursor: activeTake && !isRecording ? "pointer" : "not-allowed",
+              opacity: activeTake && !isRecording ? 1 : 0.5,
+            }}
+          >
+            {isPlaying ? (
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                <rect x="3" y="2.5" width="3.6" height="11" rx="1" />
+                <rect x="9.4" y="2.5" width="3.6" height="11" rx="1" />
+              </svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M4 2.6v10.8a.7.7 0 0 0 1.07.6l8.4-5.4a.7.7 0 0 0 0-1.2l-8.4-5.4A.7.7 0 0 0 4 2.6Z" />
+              </svg>
+            )}
+          </button>
+
+          <div
+            onPointerDown={onScrub}
+            style={{
+              position: "relative",
+              flex: 1,
+              height: scopeHeight,
+              borderRadius: 8,
+              overflow: "hidden",
+              background: "rgba(0,0,0,0.32)",
+              border: "1px solid rgba(255,255,255,0.05)",
+              cursor: activeTake && !isRecording ? "pointer" : "default",
+              touchAction: "none",
+            }}
+          >
+            <canvas
+              ref={canvasRef}
+              width={520}
+              height={scopeHeight}
+              style={{ width: "100%", height: "100%", display: "block" }}
+            />
+            <span
+              ref={badgeRef}
+              style={{
+                position: "absolute",
+                top: 5,
+                right: 7,
+                fontSize: 9,
+                fontFamily: "monospace",
+                letterSpacing: "0.1em",
+                color: "rgba(188,188,210,0.8)",
+                background: "rgba(3,3,8,0.8)",
+                padding: "1px 5px",
+                borderRadius: 4,
+                pointerEvents: "none",
+              }}
+            />
+          </div>
+
+          <button
+            onClick={() => void downloadTake()}
+            disabled={!activeTake}
+            title={activeTake ? "Download MP3" : "Record something first"}
+            aria-label="Download take"
+            className={btn}
+            style={{
+              ...btnBase,
+              border: `1px solid ${accent}30`,
+              color: activeTake ? accent : "rgba(255,255,255,0.25)",
+              cursor: activeTake ? "pointer" : "not-allowed",
+              opacity: activeTake ? 1 : 0.5,
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+              <path
+                d="M9 2v9M9 11l-3.4-3.4M9 11l3.4-3.4"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path d="M3 14.8h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {activeTake && (
+          <div className="flex items-center" style={{ gap: 10 }}>
+            <span
+              className="font-[var(--font-mono)] uppercase shrink-0"
+              style={{ fontSize: 8.5, letterSpacing: "0.2em", color: "rgba(231,228,220,0.42)" }}
+            >
+              Playing through
+            </span>
+            <div className="preset-scroll flex overflow-x-auto" style={{ gap: 5 }}>
+              {PRESETS.map((p, i) => {
+                const on = activeRig === i;
+                const busy = reampingTo === i;
+                const recorded = (activeTake.presetIdx ?? 0) === i;
+                const canReamp = recorded || !!activeTake.dryBlob;
+                return (
+                  <button
+                    key={p.name}
+                    onClick={() => void setRig(i)}
+                    disabled={!canReamp || reampingTo !== null || isRecording}
+                    title={recorded ? `${p.name}, as recorded` : `Re-amp through ${p.name}`}
+                    className="font-[var(--font-mono)] shrink-0 transition-all active:scale-95"
                     style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: "50%",
-                      background: color,
-                      boxShadow: `0 0 5px ${color}`,
-                    }}
-                  />
-                  <span
-                    className="font-[var(--font-mono)]"
-                    style={{
-                      fontSize: 10.5,
+                      padding: "5px 11px",
+                      fontSize: 10,
                       letterSpacing: "0.08em",
-                      color: on ? accent : "rgba(231,228,220,0.62)",
-                      whiteSpace: "nowrap",
+                      borderRadius: 999,
+                      border: `1px solid ${on ? PRESET_META[i].color + "99" : "rgba(255,255,255,0.08)"}`,
+                      background: on ? `${PRESET_META[i].color}1f` : "transparent",
+                      color: on ? PRESET_META[i].color : "rgba(231,228,220,0.5)",
+                      cursor: reampingTo !== null ? "wait" : canReamp ? "pointer" : "not-allowed",
+                      opacity: !canReamp ? 0.3 : reampingTo !== null && !busy ? 0.4 : 1,
                     }}
                   >
-                    {name} {clock(take.duration)}
-                  </span>
-                </button>
-                <button
-                  onClick={() => deleteTake(take.id)}
-                  aria-label="Delete take"
-                  title="Delete take"
-                  style={{
-                    fontSize: 15,
-                    lineHeight: 1,
-                    padding: "0 3px",
-                    color: "rgba(231,228,220,0.35)",
-                    cursor: "pointer",
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                    {busy ? "..." : p.name}
+                  </button>
+                );
+              })}
+            </div>
+            {!isOriginal && (
+              <span
+                className="font-[var(--font-mono)] shrink-0"
+                style={{ fontSize: 9, color: "rgba(231,228,220,0.34)" }}
+              >
+                re-amped
+              </span>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
