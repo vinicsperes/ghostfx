@@ -24,6 +24,8 @@ export function useMetronome({
   const [bpm, setBpmState] = useState(120);
   const [isRunning, setIsRunning] = useState(false);
   const [countingIn, setCountingIn] = useState(false);
+  const [level, setLevelState] = useState(0.7);
+  const levelRef = useRef(0.7);
 
   const bpmRef = useRef(bpm);
   const runningRef = useRef(false);
@@ -38,12 +40,23 @@ export function useMetronome({
   const ensureGain = useCallback((ctx: AudioContext) => {
     if (!gainRef.current) {
       const gain = ctx.createGain();
-      gain.gain.value = 1;
+      gain.gain.value = levelRef.current;
       gain.connect(ctx.destination);
       gainRef.current = gain;
     }
     return gainRef.current;
   }, []);
+
+  const setLevel = useCallback(
+    (next: number) => {
+      const clamped = Math.max(0, Math.min(1, next));
+      levelRef.current = clamped;
+      setLevelState(clamped);
+      const ctx = ctxRef.current;
+      if (gainRef.current && ctx) gainRef.current.gain.setTargetAtTime(clamped, ctx.currentTime, 0.02);
+    },
+    [ctxRef],
+  );
 
   const click = useCallback(
     (ctx: AudioContext, time: number, accent: boolean) => {
@@ -186,6 +199,8 @@ export function useMetronome({
   return {
     bpm,
     setBpm,
+    level,
+    setLevel,
     isRunning,
     countingIn,
     toggle,

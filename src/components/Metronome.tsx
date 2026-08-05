@@ -15,7 +15,8 @@ export function Metronome({
   accent: string;
   compact?: boolean;
 }) {
-  const { bpm, setBpm, isRunning, countingIn, toggle, getBeat, beatsPerBar } = metronome;
+  const { bpm, setBpm, level, setLevel, isRunning, countingIn, toggle, getBeat, beatsPerBar } =
+    metronome;
   const dotsRef = useRef<(HTMLSpanElement | null)[]>([]);
   const rafRef = useRef(0);
   const tapRef = useRef<number[]>([]);
@@ -154,6 +155,40 @@ export function Metronome({
     />
   );
 
+  const volume = (
+    <div className="flex items-center shrink-0" style={{ gap: 7 }}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path d="M11 5 6 9H2v6h4l5 4V5Z" fill="rgba(231,228,220,0.5)" />
+        {level > 0.05 && (
+          <path
+            d="M15 9.2a4 4 0 0 1 0 5.6"
+            stroke="rgba(231,228,220,0.5)"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+        )}
+        {level > 0.55 && (
+          <path
+            d="M18 6.6a8 8 0 0 1 0 10.8"
+            stroke="rgba(231,228,220,0.5)"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+        )}
+      </svg>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={Math.round(level * 100)}
+        onChange={(e) => setLevel(Number(e.target.value) / 100)}
+        aria-label="Metronome volume"
+        title="Metronome volume"
+        style={{ width: 74, accentColor: accent, height: 3, cursor: "pointer" }}
+      />
+    </div>
+  );
+
   const actions = (
     <div className="flex items-center shrink-0" style={{ gap: 7 }}>
       <button
@@ -192,7 +227,10 @@ export function Metronome({
           {beats}
         </div>
         {slider}
-        <div className="flex items-center justify-between">{actions}</div>
+        <div className="flex items-center justify-between" style={{ gap: 12 }}>
+          {actions}
+          {volume}
+        </div>
       </div>
     );
   }
@@ -203,6 +241,7 @@ export function Metronome({
       {readout}
       {slider}
       {beats}
+      {volume}
       {actions}
     </div>
   );
