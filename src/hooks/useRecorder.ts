@@ -455,6 +455,10 @@ export function useRecorder({
     getRecordElapsed,
     setRig,
     rigOf: (id: string, fallback: number) => rigByTake[id] ?? fallback,
+    peaksOf: (take: Take) => {
+      const rig = rigByTake[take.id] ?? take.presetIdx ?? 0;
+      return views[`${take.id}:${rig}`]?.peaks ?? take.peaks;
+    },
     activeRig,
     activePeaks,
     activeDuration,

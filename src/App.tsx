@@ -31,7 +31,6 @@ import {
   KeyboardDisplay,
   Fader,
   WebGLFallback,
-  PresetInfo,
   ErrorBoundary,
 } from "./components";
 
@@ -47,9 +46,8 @@ const WEBGL_OK = (() => {
 const WARNING_ACK_KEY = "ghostfx.onboardAck";
 
 const SHEET_TABS = [
-  { key: "signal", label: "Signal" },
-  { key: "keyboard", label: "Keys" },
-  { key: "rec", label: "Rec" },
+  { key: "rec", label: "Recorder" },
+  { key: "tools", label: "Tools" },
 ] as const;
 
 const EXPLODE_MS = 2400;
@@ -65,7 +63,7 @@ export default function App() {
     }
   });
   const [micDismissed, setMicDismissed] = useState(false);
-  const [sheetTab, setSheetTab] = useState<"signal" | "keyboard" | "rec">("signal");
+  const [sheetTab, setSheetTab] = useState<"rec" | "tools">("rec");
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [stompCount, setStompCount] = useState(0);
   const [presetIdx, setPresetIdx] = useState<number | null>(0);
@@ -410,63 +408,21 @@ export default function App() {
             </button>
           }
         >
-          {sheetTab === "signal" && (
-            <div className="flex flex-col" style={{ gap: 2 }}>
-              <Fader
-                label="DRIVE"
-                value={drive}
-                accent={themeColor}
-                onChange={(v) => handleKnobChange("drive", v)}
-              />
-              <Fader
-                label="ECHO"
-                value={echo}
-                accent={themeColor}
-                onChange={(v) => handleKnobChange("echo", v)}
-              />
-              <Fader
-                label="TONE"
-                value={tone}
-                accent={themeColor}
-                onChange={(v) => handleKnobChange("tone", v)}
-              />
-              <Fader
-                label="REVERB"
-                value={reverb}
-                accent={themeColor}
-                onChange={(v) => handleKnobChange("reverb", v)}
-              />
-              <Fader
-                label="MOD"
-                value={mod}
-                accent={themeColor}
-                onChange={(v) => handleKnobChange("mod", v)}
-              />
-              <Fader
-                label="VOLUME"
-                value={masterVolume}
-                accent={themeColor}
-                onChange={(v) => handleKnobChange("master", v)}
-                highlight
-              />
-              <div style={{ marginTop: 12 }}>
-                <PresetInfo presetIdx={presetIdx} accent={themeColor} />
-              </div>
-            </div>
-          )}
-          {sheetTab === "keyboard" && (
-            <KeyboardDisplay
-              activeKeys={synth.activeKeys}
+          {sheetTab === "rec" && warningDone && (
+            <RecorderControls
+              recorder={fx.recorder}
+              onRecord={() => void handleRecord()}
+              getLevelRef={getLevelRef}
               accent={themeColor}
-              playNote={synth.playNote}
-              stopNote={synth.stopNote}
-              labelMode="note"
+              scopeHeight={54}
+              countingIn={metronome.countingIn}
             />
           )}
-          {sheetTab === "rec" && warningDone && (
-            <div className="flex flex-col" style={{ gap: 20 }}>
+
+          {sheetTab === "tools" && (
+            <div className="flex flex-col" style={{ gap: 18 }}>
               <div className="flex flex-col" style={{ gap: 10 }}>
-                <PanelLabel accent={themeColor}>Tempo</PanelLabel>
+                <PanelLabel>Tempo</PanelLabel>
                 <Metronome
                   metronome={metronome}
                   countInEnabled={countInEnabled}
@@ -476,16 +432,55 @@ export default function App() {
                 />
               </div>
               <div className="flex flex-col" style={{ gap: 10 }}>
-                <PanelLabel accent={themeColor}>
-                  {metronome.countingIn ? "Counting in" : "Recorder"}
-                </PanelLabel>
-                <RecorderControls
-                  recorder={fx.recorder}
-                  onRecord={() => void handleRecord()}
-                  getLevelRef={getLevelRef}
+                <PanelLabel>Signal</PanelLabel>
+                <div className="flex flex-col" style={{ gap: 2 }}>
+                  <Fader
+                    label="DRIVE"
+                    value={drive}
+                    accent={themeColor}
+                    onChange={(v) => handleKnobChange("drive", v)}
+                  />
+                  <Fader
+                    label="ECHO"
+                    value={echo}
+                    accent={themeColor}
+                    onChange={(v) => handleKnobChange("echo", v)}
+                  />
+                  <Fader
+                    label="TONE"
+                    value={tone}
+                    accent={themeColor}
+                    onChange={(v) => handleKnobChange("tone", v)}
+                  />
+                  <Fader
+                    label="REVERB"
+                    value={reverb}
+                    accent={themeColor}
+                    onChange={(v) => handleKnobChange("reverb", v)}
+                  />
+                  <Fader
+                    label="MOD"
+                    value={mod}
+                    accent={themeColor}
+                    onChange={(v) => handleKnobChange("mod", v)}
+                  />
+                  <Fader
+                    label="VOLUME"
+                    value={masterVolume}
+                    accent={themeColor}
+                    onChange={(v) => handleKnobChange("master", v)}
+                    highlight
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col" style={{ gap: 10 }}>
+                <PanelLabel>Keyboard synth</PanelLabel>
+                <KeyboardDisplay
+                  activeKeys={synth.activeKeys}
                   accent={themeColor}
-                  scopeHeight={54}
-                  countingIn={metronome.countingIn}
+                  playNote={synth.playNote}
+                  stopNote={synth.stopNote}
+                  labelMode="note"
                 />
               </div>
             </div>
@@ -546,7 +541,7 @@ export default function App() {
           onKeyboard={() => {
             setMicDismissed(true);
             setActiveTool("synth");
-            setSheetTab("keyboard");
+            setSheetTab("tools");
             setSheetExpanded(true);
           }}
           onDismiss={() => setMicDismissed(true)}

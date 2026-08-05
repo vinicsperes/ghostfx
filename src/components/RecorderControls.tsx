@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { useRecorder } from "../hooks/useRecorder";
 import { MAX_REC_MS, WARN_REC_MS } from "../hooks/useRecorder";
 import { PRESETS, PRESET_META } from "../data/presets";
+import { MiniWave } from "./MiniWave";
 
 const REC = "#f53e3e";
 
@@ -40,7 +41,7 @@ export function RecorderControls({
     getRecordElapsed,
     setRig,
     rigOf,
-    activeRig,
+    peaksOf,
     activePeaks,
     activeDuration,
     reampingTo,
@@ -192,167 +193,204 @@ export function RecorderControls({
     background: "rgba(10,10,16,0.9)",
   } as const;
   const isPlaying = !!activeTake && playingId === activeTake.id;
-  const isOriginal = !!activeTake && activeRig === (activeTake.presetIdx ?? 0);
+  const [rigMenu, setRigMenu] = useState<string | null>(null);
+  useEffect(() => {
+    if (!rigMenu) return;
+    const away = () => setRigMenu(null);
+    window.addEventListener("pointerdown", away);
+    return () => window.removeEventListener("pointerdown", away);
+  }, [rigMenu]);
 
   return (
     <div className="flex flex-col w-full" style={{ gap: 12 }}>
-      <div className="flex items-start w-full" style={{ gap: 20 }}>
-        <div
-          className="flex flex-col shrink-0"
-          style={{ gap: 7, width: "clamp(190px, 20%, 300px)" }}
+      <div className="flex flex-col w-full" style={{ gap: 7 }}>
+        <span
+          className="font-[var(--font-mono)] uppercase"
+          style={{ fontSize: 8.5, letterSpacing: "0.24em", color: "rgba(231,228,220,0.42)" }}
         >
-          <span
-            className="font-[var(--font-mono)] uppercase"
-            style={{ fontSize: 8.5, letterSpacing: "0.24em", color: "rgba(231,228,220,0.42)" }}
-          >
-            Takes {takes.length > 0 && <span style={{ opacity: 0.55 }}>· {takes.length}</span>}
-          </span>
-          <div style={{ position: "relative" }}>
-            <div className="take-list flex flex-col overflow-y-auto" style={{ gap: 3, height: 92 }}>
-              {takes.length === 0 && (
-                <span
-                  className="font-[var(--font-mono)]"
-                  style={{ fontSize: 10, color: "rgba(231,228,220,0.26)", padding: "8px 2px" }}
-                >
-                  nothing recorded yet
-                </span>
-              )}
-              {takes.map((take) => {
-                const on = take.id === activeTake?.id;
-                const recorded = take.presetIdx ?? 0;
-                const rig = rigOf(take.id, recorded);
-                const color = PRESET_META[rig].color;
-                const moved = rig !== recorded;
-                return (
-                  <div
-                    key={take.id}
-                    className="flex items-center shrink-0"
-                    style={{
-                      gap: 8,
-                      paddingRight: 4,
-                      borderRadius: 6,
-                      border: `1px solid ${on ? accent + "45" : "transparent"}`,
-                      background: on ? `${accent}10` : "transparent",
-                    }}
-                  >
-                    <button
-                      onClick={() => selectTake(take.id)}
-                      className="flex items-center flex-1 min-w-0"
-                      style={{ gap: 8, padding: "6px 0 6px 9px", cursor: "pointer" }}
-                    >
-                      <span
-                        style={{
-                          width: 7,
-                          height: 7,
-                          borderRadius: 2,
-                          flexShrink: 0,
-                          background: color,
-                          boxShadow: on ? `0 0 6px ${color}` : "none",
-                          transition: "background 220ms, box-shadow 220ms",
-                        }}
-                      />
-                      <span
-                        className="font-[var(--font-mono)] truncate"
-                        style={{
-                          flex: 1,
-                          textAlign: "left",
-                          fontSize: 10.5,
-                          color: on ? "#e7e4dc" : "rgba(231,228,220,0.6)",
-                        }}
-                      >
-                        {PRESETS[rig].name}
-                        {moved && <span style={{ opacity: 0.45 }}> ↺</span>}
-                      </span>
-                      <span
-                        className="font-[var(--font-mono)]"
-                        style={{
-                          fontSize: 9.5,
-                          fontVariantNumeric: "tabular-nums",
-                          color: "rgba(231,228,220,0.38)",
-                        }}
-                      >
-                        {clock(take.duration)}
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => deleteTake(take.id)}
-                      aria-label="Delete take"
-                      title="Delete take"
-                      style={{
-                        fontSize: 14,
-                        lineHeight: 1,
-                        padding: "0 4px",
-                        color: "rgba(231,228,220,0.3)",
-                        cursor: "pointer",
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-            {takes.length > 3 && (
-              <div
-                className="pointer-events-none"
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 22,
-                  background:
-                    "linear-gradient(180deg, rgba(10,12,15,0) 0%, rgba(10,12,15,0.9) 100%)",
-                }}
-              />
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-col flex-1 min-w-0" style={{ gap: 7 }}>
-          <span
-            className="font-[var(--font-mono)] uppercase"
-            style={{ fontSize: 8.5, letterSpacing: "0.24em", color: "rgba(231,228,220,0.42)" }}
-          >
-            Playing through
-            {activeTake && !isOriginal && (
-              <span style={{ marginLeft: 8, opacity: 0.7, letterSpacing: "0.1em" }}>
-                · re-amped
+          Takes {takes.length > 0 && <span style={{ opacity: 0.55 }}>· {takes.length}</span>}
+        </span>
+        <div style={{ position: "relative" }}>
+          <div className="take-list flex flex-col overflow-y-auto" style={{ gap: 3, height: 108 }}>
+            {takes.length === 0 && (
+              <span
+                className="font-[var(--font-mono)]"
+                style={{ fontSize: 10, color: "rgba(231,228,220,0.26)", padding: "10px 2px" }}
+              >
+                nothing recorded yet
               </span>
             )}
-          </span>
-          <div className="flex items-center flex-wrap" style={{ gap: 6 }}>
-            {PRESETS.map((p, i) => {
-              const on = !!activeTake && activeRig === i;
-              const busy = reampingTo === i;
-              const recorded = !!activeTake && (activeTake.presetIdx ?? 0) === i;
-              const canReamp = !!activeTake && (recorded || !!activeTake.dryBlob);
+            {takes.map((take) => {
+              const on = take.id === activeTake?.id;
+              const recorded = take.presetIdx ?? 0;
+              const rig = rigOf(take.id, recorded);
+              const color = PRESET_META[rig].color;
+              const moved = rig !== recorded;
+              const menuOpen = rigMenu === take.id;
               return (
-                <button
-                  key={p.name}
-                  onClick={() => void setRig(i)}
-                  disabled={!canReamp || reampingTo !== null || isRecording}
-                  title={recorded ? `${p.name}, as recorded` : `Re-amp through ${p.name}`}
-                  className="font-[var(--font-mono)] transition-all active:scale-95"
+                <div
+                  key={take.id}
+                  className="flex items-center shrink-0"
                   style={{
-                    flex: "1 1 88px",
-                    minWidth: 88,
-                    padding: "7px 13px",
-                    fontSize: 10,
-                    letterSpacing: "0.08em",
-                    borderRadius: 999,
-                    border: `1px solid ${on ? PRESET_META[i].color + "99" : "rgba(255,255,255,0.08)"}`,
-                    background: on ? `${PRESET_META[i].color}1f` : "transparent",
-                    color: on ? PRESET_META[i].color : "rgba(231,228,220,0.5)",
-                    cursor: reampingTo !== null ? "wait" : canReamp ? "pointer" : "not-allowed",
-                    opacity: !canReamp ? 0.28 : reampingTo !== null && !busy ? 0.4 : 1,
+                    gap: 12,
+                    padding: "5px 6px 5px 9px",
+                    borderRadius: 7,
+                    border: `1px solid ${on ? accent + "40" : "transparent"}`,
+                    background: on ? `${accent}0d` : "transparent",
                   }}
                 >
-                  {busy ? "..." : p.name}
-                </button>
+                  <button
+                    onClick={() => selectTake(take.id)}
+                    className="flex items-center shrink-0"
+                    style={{ gap: 8, cursor: "pointer" }}
+                    title="Select this take"
+                  >
+                    <span
+                      style={{
+                        width: 7,
+                        height: 7,
+                        borderRadius: 2,
+                        background: color,
+                        boxShadow: on ? `0 0 6px ${color}` : "none",
+                        transition: "background 220ms, box-shadow 220ms",
+                      }}
+                    />
+                  </button>
+
+                  <div style={{ position: "relative" }}>
+                    <button
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={() => setRigMenu(menuOpen ? null : take.id)}
+                      disabled={!take.dryBlob || reampingTo !== null || isRecording}
+                      aria-expanded={menuOpen}
+                      title={take.dryBlob ? "Hear this take through another rig" : "No dry signal"}
+                      className="font-[var(--font-mono)] flex items-center"
+                      style={{
+                        gap: 5,
+                        width: 96,
+                        padding: "4px 7px",
+                        borderRadius: 5,
+                        border: `1px solid ${menuOpen ? accent + "55" : "rgba(231,228,220,0.09)"}`,
+                        background: menuOpen ? `${accent}12` : "rgba(255,255,255,0.02)",
+                        fontSize: 10,
+                        color: on ? "#e7e4dc" : "rgba(231,228,220,0.62)",
+                        cursor: take.dryBlob ? "pointer" : "default",
+                      }}
+                    >
+                      <span className="truncate" style={{ flex: 1, textAlign: "left" }}>
+                        {reampingTo !== null && on ? "..." : PRESETS[rig].name}
+                      </span>
+                      {moved && <span style={{ opacity: 0.5 }}>↺</span>}
+                      <span style={{ fontSize: 8, opacity: 0.6 }}>▾</span>
+                    </button>
+
+                    {menuOpen && (
+                      <div
+                        className="tool-tray-in"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        style={{
+                          position: "absolute",
+                          bottom: "calc(100% + 5px)",
+                          left: 0,
+                          zIndex: 20,
+                          padding: 4,
+                          borderRadius: 8,
+                          minWidth: 118,
+                          background: "rgba(10,12,15,0.98)",
+                          border: "1px solid rgba(231,228,220,0.12)",
+                          boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
+                        }}
+                      >
+                        {PRESETS.map((p, i) => (
+                          <button
+                            key={p.name}
+                            onClick={() => {
+                              setRigMenu(null);
+                              selectTake(take.id);
+                              void setRig(i);
+                            }}
+                            className="font-[var(--font-mono)] flex items-center w-full"
+                            style={{
+                              gap: 7,
+                              padding: "6px 8px",
+                              borderRadius: 5,
+                              fontSize: 10,
+                              color: rig === i ? PRESET_META[i].color : "rgba(231,228,220,0.6)",
+                              background: rig === i ? `${PRESET_META[i].color}14` : "transparent",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: 6,
+                                height: 6,
+                                borderRadius: 2,
+                                background: PRESET_META[i].color,
+                              }}
+                            />
+                            {p.name}
+                            {i === recorded && (
+                              <span style={{ marginLeft: "auto", fontSize: 8, opacity: 0.5 }}>
+                                REC
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => selectTake(take.id)}
+                    className="flex items-center flex-1 min-w-0"
+                    style={{ cursor: "pointer" }}
+                    title="Select this take"
+                  >
+                    <MiniWave peaks={peaksOf(take)} color={color} width={240} height={22} />
+                  </button>
+
+                  <span
+                    className="font-[var(--font-mono)] shrink-0"
+                    style={{
+                      fontSize: 9.5,
+                      fontVariantNumeric: "tabular-nums",
+                      color: "rgba(231,228,220,0.4)",
+                    }}
+                  >
+                    {clock(take.duration)}
+                  </span>
+                  <button
+                    onClick={() => deleteTake(take.id)}
+                    aria-label="Delete take"
+                    title="Delete take"
+                    className="shrink-0"
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1,
+                      padding: "0 4px",
+                      color: "rgba(231,228,220,0.3)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
               );
             })}
           </div>
+          {takes.length > 3 && (
+            <div
+              className="pointer-events-none"
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 22,
+                background: "linear-gradient(180deg, rgba(10,12,15,0) 0%, rgba(10,12,15,0.9) 100%)",
+              }}
+            />
+          )}
         </div>
       </div>
 
