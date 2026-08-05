@@ -47,6 +47,13 @@ const WARNING_ACK_KEY = "ghostfx.onboardAck";
 
 const SHEET_TABS = [{ key: "rec", label: "Recorder" }] as const;
 
+const TOOL_LABEL: Record<string, string> = {
+  mix: "Signal",
+  tune: "Tuner",
+  synth: "Keyboard synth",
+  tempo: "Tempo",
+};
+
 const MOBILE_TOOLS = (bpm: number) => [
   { id: "mix" as const, label: "MIX", icon: <FaderIcon />, title: "Signal faders" },
   { id: "tune" as const, label: "TUNE", icon: <ForkIcon />, title: "Tuner" },
@@ -397,6 +404,30 @@ export default function App() {
             />
           }
         >
+          {activeTool !== null && (
+            <button
+              onClick={() => setActiveTool(null)}
+              className="flex items-center font-[var(--font-mono)] uppercase"
+              style={{
+                gap: 8,
+                marginBottom: 14,
+                padding: "6px 10px 6px 7px",
+                borderRadius: 7,
+                border: "1px solid rgba(231,228,220,0.1)",
+                background: "rgba(255,255,255,0.02)",
+                fontSize: 9.5,
+                letterSpacing: "0.18em",
+                color: "rgba(231,228,220,0.66)",
+                cursor: "pointer",
+              }}
+            >
+              <span style={{ fontSize: 12, lineHeight: 1, color: themeColor }}>‹</span>
+              Recorder
+              <span style={{ opacity: 0.4 }}>·</span>
+              <span style={{ color: themeColor }}>{TOOL_LABEL[activeTool]}</span>
+            </button>
+          )}
+
           {activeTool === null && warningDone && (
             <RecorderControls
               recorder={fx.recorder}

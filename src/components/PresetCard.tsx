@@ -41,19 +41,6 @@ export function PresetCard({
       >
         {name}
       </span>
-      <span
-        style={{
-          position: "absolute",
-          bottom: -1,
-          left: "26%",
-          right: "26%",
-          height: 2,
-          background: isActive ? color : "transparent",
-          boxShadow: isActive ? `0 0 8px ${color}` : "none",
-          borderRadius: 1,
-          pointerEvents: "none",
-        }}
-      />
     </button>
   );
 }
