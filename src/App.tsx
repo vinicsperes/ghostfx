@@ -390,7 +390,10 @@ export default function App() {
             <ToolDock
               tools={MOBILE_TOOLS(metronome.bpm)}
               activeTool={activeTool}
-              onToolChange={setActiveTool}
+              onToolChange={(tool) => {
+                setActiveTool(tool);
+                setSheetExpanded(true);
+              }}
               accent={themeColor}
               placement="down"
             />

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { ToolButton } from "./ToolButton";
-import { Surface } from "./Surface";
 import type { ToolId } from "./Console";
 import type { ReactNode } from "react";
 
@@ -8,11 +7,14 @@ function GearIcon({ open }: { open: boolean }) {
   const teeth = Array.from({ length: 8 }, (_, i) => (i * 360) / 8);
   return (
     <svg
-      width="21"
-      height="21"
+      width="17"
+      height="17"
       viewBox="0 0 24 24"
       fill="none"
-      style={{ transform: open ? "rotate(45deg)" : "none", transition: "transform 300ms" }}
+      style={{
+        transform: open ? "rotate(90deg)" : "none",
+        transition: "transform 420ms cubic-bezier(0.34, 1.4, 0.5, 1)",
+      }}
     >
       {teeth.map((deg) => (
         <rect
@@ -71,7 +73,15 @@ export function ToolDock({
               : { top: "calc(100% + 10px)", right: 0 }
           }
         >
-          <Surface style={{ padding: 10 }}>
+          <div
+            style={{
+              padding: 8,
+              borderRadius: 14,
+              background: "rgba(8,10,13,0.985)",
+              border: `1px solid ${accent}22`,
+              boxShadow: "0 18px 44px rgba(0,0,0,0.72)",
+            }}
+          >
             <div className="flex items-end" style={{ gap: 8 }}>
               {tools.map((t) => (
                 <ToolButton
@@ -81,11 +91,14 @@ export function ToolDock({
                   accent={accent}
                   active={activeTool === t.id}
                   title={t.title}
-                  onClick={() => onToolChange(activeTool === t.id ? null : t.id)}
+                  onClick={() => {
+                    setOpen(false);
+                    onToolChange(activeTool === t.id ? null : t.id);
+                  }}
                 />
               ))}
             </div>
-          </Surface>
+          </div>
         </div>
       )}
 
@@ -94,17 +107,14 @@ export function ToolDock({
         aria-label="Tools"
         aria-expanded={open}
         title="Tools"
-        className="flex items-center justify-center transition-all active:scale-90"
+        className="tool-gear flex items-center justify-center"
         style={{
-          width: placement === "up" ? 52 : 38,
-          height: placement === "up" ? 52 : 38,
-          borderRadius: placement === "up" ? 16 : 10,
-          border: `1px solid ${open || activeTool ? accent + "55" : "rgba(231,228,220,0.12)"}`,
-          background: "linear-gradient(180deg, rgba(18,20,24,0.6) 0%, rgba(8,10,13,0.7) 100%)",
-          backdropFilter: "blur(22px) saturate(150%)",
-          WebkitBackdropFilter: "blur(22px) saturate(150%)",
-          boxShadow: "0 12px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)",
-          color: open || activeTool ? accent : "rgba(231,228,220,0.6)",
+          width: 30,
+          height: 30,
+          borderRadius: 9,
+          border: `1px solid ${open ? accent + "4d" : "transparent"}`,
+          background: open ? `${accent}12` : "transparent",
+          color: open || activeTool ? accent : "rgba(231,228,220,0.42)",
           cursor: "pointer",
         }}
       >
