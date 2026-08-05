@@ -3,8 +3,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const SCHEDULE_AHEAD = 0.12;
 const TICK_MS = 25;
 const BEATS_PER_BAR = 4;
-const CLICK_LEVEL = 0.32;
-const ACCENT_LEVEL = 0.55;
+const CLICK_LEVEL = 0.11;
+const ACCENT_LEVEL = 0.17;
+const CLICK_HZ = 620;
+const ACCENT_HZ = 880;
+const DROP = 0.72;
+const TONE_HZ = 2200;
+const DECAY = 0.055;
 
 export const MIN_BPM = 40;
 export const MAX_BPM = 240;
@@ -45,15 +50,26 @@ export function useMetronome({
       const out = ensureGain(ctx);
       const osc = ctx.createOscillator();
       const env = ctx.createGain();
-      osc.type = "square";
-      osc.frequency.setValueAtTime(accent ? 1600 : 1000, time);
+      const tone = ctx.createBiquadFilter();
+
+      const hz = accent ? ACCENT_HZ : CLICK_HZ;
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(hz, time);
+      osc.frequency.exponentialRampToValueAtTime(hz * DROP, time + DECAY);
+
+      tone.type = "lowpass";
+      tone.frequency.value = TONE_HZ;
+      tone.Q.value = 0.707;
+
       env.gain.setValueAtTime(0.0001, time);
-      env.gain.linearRampToValueAtTime(accent ? ACCENT_LEVEL : CLICK_LEVEL, time + 0.002);
-      env.gain.exponentialRampToValueAtTime(0.0005, time + 0.05);
-      osc.connect(env);
+      env.gain.linearRampToValueAtTime(accent ? ACCENT_LEVEL : CLICK_LEVEL, time + 0.004);
+      env.gain.exponentialRampToValueAtTime(0.0005, time + DECAY);
+
+      osc.connect(tone);
+      tone.connect(env);
       env.connect(out);
       osc.start(time);
-      osc.stop(time + 0.06);
+      osc.stop(time + DECAY + 0.01);
     },
     [ensureGain],
   );
