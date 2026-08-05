@@ -119,10 +119,8 @@ export default function PresetBg({
       const s = glState.current;
       if (s && gl) {
         const time = (now - startRef.current) * 0.00012;
-        const dpr = Math.min(2, window.devicePixelRatio || 1);
-        const sidebar = window.innerWidth >= 1024 ? 360 * dpr : 0;
         gl.uniform1f(s.tLoc, time);
-        gl.uniform2f(s.rLoc, gl.canvas.width + sidebar, gl.canvas.height);
+        gl.uniform2f(s.rLoc, gl.canvas.width, gl.canvas.height);
         gl.uniform1f(s.blendLoc, t.blend);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
       }
