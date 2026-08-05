@@ -166,6 +166,13 @@ export function useMetronome({
       setCountingIn(true);
 
       const endsAt = from + beats * spb;
+      beatRef.current = 0;
+      startTimeRef.current = endsAt;
+      nextTimeRef.current = endsAt;
+      runningRef.current = true;
+      setIsRunning(true);
+      schedule();
+
       await new Promise<void>((resolve) => {
         window.setTimeout(
           () => {
@@ -177,7 +184,7 @@ export function useMetronome({
         );
       });
     },
-    [ensureAudio, ctxRef, ensureGain, stop, click],
+    [ensureAudio, ctxRef, ensureGain, stop, click, schedule],
   );
 
   const getBeat = useCallback(() => {
