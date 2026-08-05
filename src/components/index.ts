@@ -6,6 +6,8 @@ export { TunerModal } from "./TunerModal";
 export { ToolButton } from "./ToolButton";
 export { ToolTray } from "./ToolTray";
 export { Surface } from "./Surface";
+export { ToolDock } from "./ToolDock";
+export { FaderIcon, ForkIcon, KeysIcon, TempoIcon } from "./ToolIcons";
 export { TunerDisplay } from "./TunerDisplay";
 export { ToolPanel } from "./ToolPanel";
 export { PanelLabel } from "./PanelLabel";

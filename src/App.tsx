@@ -15,6 +15,11 @@ import {
   RecorderControls,
   Console,
   MobileSheet,
+  ToolDock,
+  FaderIcon,
+  ForkIcon,
+  KeysIcon,
+  TempoIcon,
   TunerModal,
   PanelLabel,
   Metronome,
@@ -290,6 +295,29 @@ export default function App() {
             getLevelRef={getLevelRef}
             accent={themeColor}
           />
+          <div className="flex justify-end pointer-events-none">
+            <ToolDock
+              tools={[
+                { id: "mix", label: "MIX", icon: <FaderIcon />, title: "Signal faders" },
+                { id: "tune", label: "TUNE", icon: <ForkIcon />, title: "Tuner" },
+                {
+                  id: "synth",
+                  label: "SYNTH",
+                  icon: <KeysIcon />,
+                  title: "Play the built-in synth with your keyboard",
+                },
+                {
+                  id: "tempo",
+                  label: String(metronome.bpm),
+                  icon: <TempoIcon running={metronome.isRunning} />,
+                  title: "Tempo and count-in",
+                },
+              ]}
+              activeTool={activeTool}
+              onToolChange={setActiveTool}
+              accent={themeColor}
+            />
+          </div>
         </div>
       )}
 

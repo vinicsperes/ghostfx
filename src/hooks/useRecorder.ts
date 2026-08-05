@@ -12,7 +12,6 @@ export type Take = {
   duration: number;
   presetIdx: number | null;
   createdAt: number;
-  reamped: boolean;
 };
 
 const REVERB_TAIL_S = 3;
@@ -49,6 +48,9 @@ export function useRecorder({
   const [isProcessing, setIsProcessing] = useState(false);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [reampingTo, setReampingTo] = useState<number | null>(null);
+  const [rigByTake, setRigByTake] = useState<Record<string, number>>({});
+  const [views, setViews] = useState<Record<string, { peaks: Float32Array; duration: number }>>({});
+  const buffersRef = useRef<Map<string, AudioBuffer>>(new Map());
   const [error, setError] = useState<string | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -63,7 +65,6 @@ export function useRecorder({
   const playGainRef = useRef<GainNode | null>(null);
   const playStartRef = useRef(0);
   const playOffsetRef = useRef(0);
-  const cacheRef = useRef<{ id: string; buffer: AudioBuffer } | null>(null);
 
   const presetIdxRef = useRef(presetIdx);
   const masterVolumeRef = useRef(masterVolume);
@@ -82,7 +83,11 @@ export function useRecorder({
   }, [masterVolume, ctxRef]);
 
   const activeTake = takes.find((t) => t.id === activeTakeId) ?? null;
-  const activeDuration = activeTake?.duration ?? 0;
+  const activeRig = activeTake ? (rigByTake[activeTake.id] ?? activeTake.presetIdx ?? 0) : 0;
+  const viewKey = activeTake ? `${activeTake.id}:${activeRig}` : "";
+  const activeView = views[viewKey] ?? null;
+  const activePeaks = activeView?.peaks ?? activeTake?.peaks ?? null;
+  const activeDuration = activeView?.duration ?? activeTake?.duration ?? 0;
 
   const stopSource = useCallback(() => {
     const src = sourceRef.current;
@@ -107,13 +112,16 @@ export function useRecorder({
   }, [ctxRef, stopSource]);
 
   const decodeTake = useCallback(
-    async (take: Take): Promise<AudioBuffer | null> => {
-      if (cacheRef.current?.id === take.id) return cacheRef.current.buffer;
+    async (take: Take, rig?: number): Promise<AudioBuffer | null> => {
+      const target = rig ?? take.presetIdx ?? 0;
+      const key = `${take.id}:${target}`;
+      const cached = buffersRef.current.get(key);
+      if (cached) return cached;
       const ctx = ctxRef.current;
       if (!ctx) return null;
       try {
         const buffer = await ctx.decodeAudioData(await take.blob.arrayBuffer());
-        cacheRef.current = { id: take.id, buffer };
+        buffersRef.current.set(key, buffer);
         return buffer;
       } catch {
         setError("could not read that take");
@@ -128,7 +136,7 @@ export function useRecorder({
       const ctx = ctxRef.current;
       if (!ctx) return;
       if (ctx.state === "suspended") await ctx.resume();
-      const buffer = await decodeTake(take);
+      const buffer = await decodeTake(take, rigByTake[take.id]);
       if (!buffer) return;
 
       stopSource();
@@ -155,7 +163,7 @@ export function useRecorder({
       playOffsetRef.current = from;
       setPlayingId(take.id);
     },
-    [ctxRef, decodeTake, stopSource],
+    [ctxRef, decodeTake, stopSource, rigByTake],
   );
 
   const togglePlay = useCallback(
@@ -213,7 +221,9 @@ export function useRecorder({
 
   const deleteTake = useCallback(
     (id: string) => {
-      if (cacheRef.current?.id === id) cacheRef.current = null;
+      for (const key of [...buffersRef.current.keys()]) {
+        if (key.startsWith(`${id}:`)) buffersRef.current.delete(key);
+      }
       if (playingId === id) {
         stopSource();
         setPlayingId(null);
@@ -290,9 +300,8 @@ export function useRecorder({
           duration: buffer.duration,
           presetIdx: presetIdxRef.current,
           createdAt: Date.now(),
-          reamped: false,
         };
-        cacheRef.current = { id: take.id, buffer };
+        buffersRef.current.set(`${take.id}:${take.presetIdx ?? 0}`, buffer);
         setTakes((prev) => [take, ...prev].slice(0, MAX_TAKES));
         setActiveTakeId(take.id);
         setError(null);
@@ -312,19 +321,34 @@ export function useRecorder({
     recTimeoutRef.current = window.setTimeout(stopRecording, MAX_REC_MS);
   }, [ensureAudio, ctxRef, destRef, dryDestRef, stopRecording, stopSource]);
 
-  const reampTake = useCallback(
-    async (targetPreset: number) => {
+  const setRig = useCallback(
+    async (targetRig: number) => {
       const take = takes.find((t) => t.id === activeTakeId);
       const ctx = ctxRef.current;
-      if (!take?.dryBlob || !ctx || reampingTo !== null) return;
+      if (!take || !ctx || reampingTo !== null) return;
 
-      setReampingTo(targetPreset);
+      const key = `${take.id}:${targetRig}`;
+      const original = targetRig === (take.presetIdx ?? 0);
+
+      if (buffersRef.current.has(key) || original) {
+        stopSource();
+        setPlayingId(null);
+        playOffsetRef.current = 0;
+        setRigByTake((prev) => ({ ...prev, [take.id]: targetRig }));
+        return;
+      }
+      if (!take.dryBlob) {
+        setError("this take has no dry signal to re-amp");
+        return;
+      }
+
+      setReampingTo(targetRig);
       try {
         const dry = await ctx.decodeAudioData(await take.dryBlob.arrayBuffer());
         const frames = Math.ceil((dry.duration + REVERB_TAIL_S) * ctx.sampleRate);
         const offline = new OfflineAudioContext(2, frames, ctx.sampleRate);
 
-        const preset = PRESETS[targetPreset];
+        const preset = PRESETS[targetRig];
         const { input, output } = buildChain(
           offline,
           {
@@ -333,7 +357,7 @@ export function useRecorder({
             tone: preset.tone,
             reverb: preset.reverb,
             mod: preset.mod,
-            presetIdx: targetPreset,
+            presetIdx: targetRig,
           },
           reverbBuffers(offline),
         );
@@ -350,23 +374,15 @@ export function useRecorder({
         src.start(0);
 
         const rendered = await offline.startRendering();
-        const blob = encodeWav(rendered);
-        const next: Take = {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          blob,
-          dryBlob: take.dryBlob,
-          peaks: computePeaks(rendered),
-          duration: rendered.duration,
-          presetIdx: targetPreset,
-          createdAt: Date.now(),
-          reamped: true,
-        };
-        cacheRef.current = { id: next.id, buffer: rendered };
+        buffersRef.current.set(key, rendered);
         stopSource();
         setPlayingId(null);
         playOffsetRef.current = 0;
-        setTakes((prev) => [next, ...prev].slice(0, MAX_TAKES));
-        setActiveTakeId(next.id);
+        setViews((prev) => ({
+          ...prev,
+          [key]: { peaks: computePeaks(rendered), duration: rendered.duration },
+        }));
+        setRigByTake((prev) => ({ ...prev, [take.id]: targetRig }));
         setError(null);
       } catch {
         setError("could not re-amp that take");
@@ -381,7 +397,7 @@ export function useRecorder({
     async (id?: string) => {
       const take = takes.find((t) => t.id === (id ?? activeTakeId));
       if (!take) return;
-      const buffer = await decodeTake(take);
+      const buffer = await decodeTake(take, rigByTake[take.id]);
       if (!buffer) return;
       let blob: Blob;
       let ext: string;
@@ -401,7 +417,7 @@ export function useRecorder({
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     },
-    [takes, activeTakeId, decodeTake],
+    [takes, activeTakeId, decodeTake, rigByTake],
   );
 
   useEffect(() => {
@@ -437,7 +453,10 @@ export function useRecorder({
     downloadTake,
     getPlayPosition,
     getRecordElapsed,
-    reampTake,
+    setRig,
+    activeRig,
+    activePeaks,
+    activeDuration,
     reampingTo,
   };
 }

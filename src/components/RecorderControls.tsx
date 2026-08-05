@@ -38,7 +38,10 @@ export function RecorderControls({
     downloadTake,
     getPlayPosition,
     getRecordElapsed,
-    reampTake,
+    setRig,
+    activeRig,
+    activePeaks,
+    activeDuration,
     reampingTo,
   } = recorder;
 
@@ -56,8 +59,8 @@ export function RecorderControls({
     if (!canvas) return;
     const c = canvas.getContext("2d");
     if (!c) return;
-    const peaks = activeTake?.peaks ?? null;
-    const duration = activeTake?.duration ?? 0;
+    const peaks = activePeaks;
+    const duration = activeDuration;
     const isPlaying = !!activeTake && playingId === activeTake.id;
 
     const draw = () => {
@@ -163,6 +166,8 @@ export function RecorderControls({
     isProcessing,
     countingIn,
     activeTake,
+    activePeaks,
+    activeDuration,
     playingId,
     accent,
     scopeHeight,
@@ -175,7 +180,7 @@ export function RecorderControls({
     if (!activeTake || isRecording) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    void seek(ratio * activeTake.duration);
+    void seek(ratio * activeDuration);
   };
 
   const btn = "flex items-center justify-center transition-all active:scale-90 shrink-0";
@@ -306,36 +311,51 @@ export function RecorderControls({
         </button>
       </div>
 
-      {activeTake?.dryBlob && (
-        <div className="flex items-center" style={{ gap: 6 }}>
+      {activeTake && (
+        <div className="flex items-center" style={{ gap: 9 }}>
           <span
             className="font-[var(--font-mono)] uppercase shrink-0"
             style={{ fontSize: 8.5, letterSpacing: "0.24em", color: "rgba(231,228,220,0.42)" }}
           >
-            Re-amp
+            Through
           </span>
           <div className="preset-scroll flex overflow-x-auto" style={{ gap: 5 }}>
             {PRESETS.map((p, i) => {
+              const on = activeRig === i;
               const busy = reampingTo === i;
+              const recorded = (activeTake.presetIdx ?? 0) === i;
+              const canReamp = recorded || !!activeTake.dryBlob;
               return (
                 <button
                   key={p.name}
-                  onClick={() => void reampTake(i)}
-                  disabled={reampingTo !== null || isRecording}
-                  title={`Hear this take through ${p.name}`}
-                  className="font-[var(--font-mono)] shrink-0 transition-all active:scale-95"
+                  onClick={() => void setRig(i)}
+                  disabled={!canReamp || reampingTo !== null || isRecording}
+                  title={recorded ? `${p.name}, as recorded` : `Hear this take through ${p.name}`}
+                  className="font-[var(--font-mono)] shrink-0 flex items-center transition-all active:scale-95"
                   style={{
+                    gap: 5,
                     padding: "6px 12px",
                     fontSize: 10.5,
                     letterSpacing: "0.1em",
                     borderRadius: 6,
-                    border: `1px solid ${busy ? PRESET_META[i].color + "88" : "rgba(255,255,255,0.09)"}`,
-                    background: busy ? `${PRESET_META[i].color}18` : "rgba(255,255,255,0.02)",
-                    color: busy ? PRESET_META[i].color : "rgba(231,228,220,0.55)",
-                    cursor: reampingTo !== null ? "wait" : "pointer",
-                    opacity: reampingTo !== null && !busy ? 0.4 : 1,
+                    border: `1px solid ${on ? PRESET_META[i].color + "88" : "rgba(255,255,255,0.09)"}`,
+                    background: on ? `${PRESET_META[i].color}18` : "rgba(255,255,255,0.02)",
+                    color: on ? PRESET_META[i].color : "rgba(231,228,220,0.55)",
+                    cursor: reampingTo !== null ? "wait" : canReamp ? "pointer" : "not-allowed",
+                    opacity: !canReamp ? 0.35 : reampingTo !== null && !busy ? 0.4 : 1,
                   }}
                 >
+                  {recorded && (
+                    <span
+                      title="as recorded"
+                      style={{
+                        width: 4,
+                        height: 4,
+                        borderRadius: "50%",
+                        background: on ? PRESET_META[i].color : "rgba(231,228,220,0.4)",
+                      }}
+                    />
+                  )}
                   {busy ? "..." : p.name}
                 </button>
               );
@@ -387,7 +407,7 @@ export function RecorderControls({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {take.reamped ? `${name} ↺` : name} {clock(take.duration)}
+                    {name} {clock(take.duration)}
                   </span>
                 </button>
                 <button
