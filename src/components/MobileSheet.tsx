@@ -184,50 +184,52 @@ export function MobileSheet<K extends string>({
         </div>
       </div>
 
-      <div
-        className="flex px-3"
-        style={{ gap: 4, borderBottom: "1px solid rgba(231,228,220,0.08)" }}
-      >
-        {tabs.map(({ key, label }) => {
-          const on = active === key;
-          return (
-            <button
-              key={key}
-              onClick={() => {
-                onSelect(key);
-                onExpandedChange(true);
-              }}
-              aria-pressed={on}
-              className="flex-1 flex items-center justify-center font-[var(--font-mono)] relative"
-              style={{
-                padding: "13px 0",
-                fontSize: 10.5,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                borderRadius: "7px 7px 0 0",
-                background: on ? `${accent}0f` : "transparent",
-                color: on ? accent : "rgba(231,228,220,0.46)",
-                transition: "color 200ms, background 200ms",
-              }}
-            >
-              {label}
-              {on && (
-                <span
-                  style={{
-                    position: "absolute",
-                    left: "20%",
-                    right: "20%",
-                    bottom: -1,
-                    height: 2,
-                    background: accent,
-                    boxShadow: `0 0 8px ${accent}`,
-                  }}
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {tabs.length > 1 && (
+        <div
+          className="flex px-3"
+          style={{ gap: 4, borderBottom: "1px solid rgba(231,228,220,0.08)" }}
+        >
+          {tabs.map(({ key, label }) => {
+            const on = active === key;
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  onSelect(key);
+                  onExpandedChange(true);
+                }}
+                aria-pressed={on}
+                className="flex-1 flex items-center justify-center font-[var(--font-mono)] relative"
+                style={{
+                  padding: "13px 0",
+                  fontSize: 10.5,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  borderRadius: "7px 7px 0 0",
+                  background: on ? `${accent}0f` : "transparent",
+                  color: on ? accent : "rgba(231,228,220,0.46)",
+                  transition: "color 200ms, background 200ms",
+                }}
+              >
+                {label}
+                {on && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: "20%",
+                      right: "20%",
+                      bottom: -1,
+                      height: 2,
+                      background: accent,
+                      boxShadow: `0 0 8px ${accent}`,
+                    }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div
         ref={contentRef}

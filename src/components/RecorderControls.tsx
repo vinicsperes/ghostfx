@@ -3,6 +3,7 @@ import type { useRecorder } from "../hooks/useRecorder";
 import { MAX_REC_MS, WARN_REC_MS } from "../hooks/useRecorder";
 import { PRESETS, PRESET_META } from "../data/presets";
 import { MiniWave } from "./MiniWave";
+import { Popover } from "./Popover";
 
 const REC = "#f53e3e";
 
@@ -197,136 +198,11 @@ export function RecorderControls({
   const isOriginal = !!activeTake && activeRig === (activeTake.presetIdx ?? 0);
   const [rigMenu, setRigMenu] = useState(false);
   const [drawer, setDrawer] = useState(false);
-  useEffect(() => {
-    if (!rigMenu && !drawer) return;
-    const away = () => {
-      setRigMenu(false);
-      setDrawer(false);
-    };
-    window.addEventListener("pointerdown", away);
-    return () => window.removeEventListener("pointerdown", away);
-  }, [rigMenu, drawer]);
+  const rigAnchor = useRef<HTMLButtonElement>(null);
+  const drawerAnchor = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="flex flex-col w-full" style={{ gap: 9, position: "relative" }}>
-      {drawer && (
-        <div
-          className="tool-tray-in"
-          onPointerDown={(e) => e.stopPropagation()}
-          style={{
-            position: "absolute",
-            bottom: "calc(100% + 12px)",
-            left: 0,
-            right: 0,
-            zIndex: 40,
-            padding: "12px 14px 14px",
-            borderRadius: 12,
-            background: "rgba(9,11,14,0.98)",
-            border: "1px solid rgba(231,228,220,0.13)",
-            boxShadow: "0 20px 50px rgba(0,0,0,0.65)",
-          }}
-        >
-          <div className="flex items-center justify-between" style={{ marginBottom: 9 }}>
-            <span
-              className="font-[var(--font-mono)] uppercase"
-              style={{ fontSize: 8.5, letterSpacing: "0.26em", color: "rgba(231,228,220,0.45)" }}
-            >
-              Takes
-            </span>
-            <button
-              onClick={() => setDrawer(false)}
-              aria-label="Close takes"
-              className="font-[var(--font-mono)] transition-colors hover:text-white"
-              style={{ fontSize: 12, color: "rgba(231,228,220,0.4)", cursor: "pointer" }}
-            >
-              ×
-            </button>
-          </div>
-          <div
-            className="take-list flex flex-col overflow-y-auto"
-            style={{ gap: 3, maxHeight: 210 }}
-          >
-            {takes.map((take) => {
-              const on = take.id === activeTake?.id;
-              const rig = rigOf(take.id, take.presetIdx ?? 0);
-              const color = PRESET_META[rig].color;
-              return (
-                <div
-                  key={take.id}
-                  className="flex items-center shrink-0"
-                  style={{
-                    gap: 12,
-                    padding: "6px 6px 6px 10px",
-                    borderRadius: 7,
-                    border: `1px solid ${on ? accent + "40" : "transparent"}`,
-                    background: on ? `${accent}0d` : "transparent",
-                  }}
-                >
-                  <button
-                    onClick={() => {
-                      selectTake(take.id);
-                      setDrawer(false);
-                    }}
-                    className="flex items-center flex-1 min-w-0"
-                    style={{ gap: 12, cursor: "pointer" }}
-                  >
-                    <span
-                      style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: 2,
-                        flexShrink: 0,
-                        background: color,
-                        boxShadow: on ? `0 0 6px ${color}` : "none",
-                      }}
-                    />
-                    <span
-                      className="font-[var(--font-mono)] shrink-0"
-                      style={{
-                        width: 62,
-                        textAlign: "left",
-                        fontSize: 10.5,
-                        color: on ? "#e7e4dc" : "rgba(231,228,220,0.62)",
-                      }}
-                    >
-                      {PRESETS[rig].name}
-                    </span>
-                    <span className="flex-1 min-w-0">
-                      <MiniWave peaks={peaksOf(take)} color={color} width={300} height={22} />
-                    </span>
-                    <span
-                      className="font-[var(--font-mono)] shrink-0"
-                      style={{
-                        fontSize: 9.5,
-                        fontVariantNumeric: "tabular-nums",
-                        color: "rgba(231,228,220,0.4)",
-                      }}
-                    >
-                      {clock(take.duration)}
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => deleteTake(take.id)}
-                    aria-label="Delete take"
-                    title="Delete take"
-                    className="shrink-0"
-                    style={{
-                      fontSize: 14,
-                      lineHeight: 1,
-                      padding: "0 4px",
-                      color: "rgba(231,228,220,0.3)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
+    <div className="flex flex-col w-full" style={{ gap: 9 }}>
       <div className="flex items-center gap-1.5 w-full lg:gap-3">
         <button
           onClick={onRecord}
@@ -418,9 +294,10 @@ export function RecorderControls({
         </div>
       </div>
 
-      <div className="flex items-center" style={{ gap: 10 }}>
-        <div style={{ position: "relative" }}>
+      <div ref={drawerAnchor} className="flex items-center" style={{ gap: 10 }}>
+        <div>
           <button
+            ref={rigAnchor}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => setRigMenu((v) => !v)}
             disabled={!activeTake?.dryBlob || reampingTo !== null || isRecording}
@@ -451,58 +328,125 @@ export function RecorderControls({
             <span style={{ fontSize: 8, opacity: 0.6 }}>▾</span>
           </button>
 
-          {rigMenu && activeTake && (
-            <div
-              className="tool-tray-in"
-              onPointerDown={(e) => e.stopPropagation()}
-              style={{
-                position: "absolute",
-                bottom: "calc(100% + 6px)",
-                left: 0,
-                zIndex: 50,
-                padding: 4,
-                borderRadius: 8,
-                minWidth: 132,
-                background: "rgba(9,11,14,0.98)",
-                border: "1px solid rgba(231,228,220,0.13)",
-                boxShadow: "0 14px 34px rgba(0,0,0,0.65)",
-              }}
-            >
-              {PRESETS.map((p, i) => (
+          <Popover
+            anchorRef={rigAnchor}
+            open={rigMenu && !!activeTake}
+            onClose={() => setRigMenu(false)}
+            width={150}
+          >
+            {PRESETS.map((p, i) => (
+              <button
+                key={p.name}
+                onClick={() => {
+                  setRigMenu(false);
+                  void setRig(i);
+                }}
+                className="font-[var(--font-mono)] flex items-center w-full"
+                style={{
+                  gap: 8,
+                  padding: "8px 9px",
+                  borderRadius: 6,
+                  fontSize: 10.5,
+                  color: activeRig === i ? PRESET_META[i].color : "rgba(231,228,220,0.62)",
+                  background: activeRig === i ? `${PRESET_META[i].color}14` : "transparent",
+                  cursor: "pointer",
+                }}
+              >
+                <span
+                  style={{ width: 6, height: 6, borderRadius: 2, background: PRESET_META[i].color }}
+                />
+                {p.name}
+                {(activeTake?.presetIdx ?? 0) === i && (
+                  <span style={{ marginLeft: "auto", fontSize: 8, opacity: 0.5 }}>REC</span>
+                )}
+              </button>
+            ))}
+          </Popover>
+        </div>
+
+        <Popover
+          anchorRef={drawerAnchor}
+          open={drawer && takes.length > 0}
+          onClose={() => setDrawer(false)}
+        >
+          {takes.map((take) => {
+            const on = take.id === activeTake?.id;
+            const rig = rigOf(take.id, take.presetIdx ?? 0);
+            const color = PRESET_META[rig].color;
+            return (
+              <div
+                key={take.id}
+                className="flex items-center"
+                style={{
+                  gap: 12,
+                  padding: "7px 6px 7px 10px",
+                  borderRadius: 7,
+                  border: `1px solid ${on ? accent + "40" : "transparent"}`,
+                  background: on ? `${accent}0d` : "transparent",
+                }}
+              >
                 <button
-                  key={p.name}
                   onClick={() => {
-                    setRigMenu(false);
-                    void setRig(i);
+                    selectTake(take.id);
+                    setDrawer(false);
                   }}
-                  className="font-[var(--font-mono)] flex items-center w-full"
-                  style={{
-                    gap: 8,
-                    padding: "6px 9px",
-                    borderRadius: 5,
-                    fontSize: 10.5,
-                    color: activeRig === i ? PRESET_META[i].color : "rgba(231,228,220,0.62)",
-                    background: activeRig === i ? `${PRESET_META[i].color}14` : "transparent",
-                    cursor: "pointer",
-                  }}
+                  className="flex items-center flex-1 min-w-0"
+                  style={{ gap: 12, cursor: "pointer" }}
                 >
                   <span
                     style={{
-                      width: 6,
-                      height: 6,
+                      width: 7,
+                      height: 7,
                       borderRadius: 2,
-                      background: PRESET_META[i].color,
+                      flexShrink: 0,
+                      background: color,
+                      boxShadow: on ? `0 0 6px ${color}` : "none",
                     }}
                   />
-                  {p.name}
-                  {(activeTake.presetIdx ?? 0) === i && (
-                    <span style={{ marginLeft: "auto", fontSize: 8, opacity: 0.5 }}>REC</span>
-                  )}
+                  <span
+                    className="font-[var(--font-mono)] shrink-0"
+                    style={{
+                      width: 58,
+                      textAlign: "left",
+                      fontSize: 10.5,
+                      color: on ? "#e7e4dc" : "rgba(231,228,220,0.62)",
+                    }}
+                  >
+                    {PRESETS[rig].name}
+                  </span>
+                  <span className="flex-1 min-w-0 hidden sm:block">
+                    <MiniWave peaks={peaksOf(take)} color={color} width={220} height={20} />
+                  </span>
+                  <span
+                    className="font-[var(--font-mono)] shrink-0"
+                    style={{
+                      fontSize: 9.5,
+                      fontVariantNumeric: "tabular-nums",
+                      color: "rgba(231,228,220,0.4)",
+                    }}
+                  >
+                    {clock(take.duration)}
+                  </span>
                 </button>
-              ))}
-            </div>
-          )}
-        </div>
+                <button
+                  onClick={() => deleteTake(take.id)}
+                  aria-label="Delete take"
+                  title="Delete take"
+                  className="shrink-0"
+                  style={{
+                    fontSize: 15,
+                    lineHeight: 1,
+                    padding: "0 5px",
+                    color: "rgba(231,228,220,0.3)",
+                    cursor: "pointer",
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
+        </Popover>
 
         <button
           onPointerDown={(e) => e.stopPropagation()}

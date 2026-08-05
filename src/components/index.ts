@@ -7,6 +7,7 @@ export { ToolButton } from "./ToolButton";
 export { ToolTray } from "./ToolTray";
 export { Surface } from "./Surface";
 export { MiniWave } from "./MiniWave";
+export { Popover } from "./Popover";
 export { ToolDock } from "./ToolDock";
 export { FaderIcon, ForkIcon, KeysIcon, TempoIcon } from "./ToolIcons";
 export { TunerDisplay } from "./TunerDisplay";

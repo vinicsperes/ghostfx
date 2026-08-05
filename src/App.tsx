@@ -21,7 +21,7 @@ import {
   KeysIcon,
   TempoIcon,
   TunerModal,
-  PanelLabel,
+  TunerDisplay,
   Metronome,
   TopBar,
   AboutModal,
@@ -45,10 +45,14 @@ const WEBGL_OK = (() => {
 
 const WARNING_ACK_KEY = "ghostfx.onboardAck";
 
-const SHEET_TABS = [
-  { key: "rec", label: "Recorder" },
-  { key: "tools", label: "Tools" },
-] as const;
+const SHEET_TABS = [{ key: "rec", label: "Recorder" }] as const;
+
+const MOBILE_TOOLS = (bpm: number) => [
+  { id: "mix" as const, label: "MIX", icon: <FaderIcon />, title: "Signal faders" },
+  { id: "tune" as const, label: "TUNE", icon: <ForkIcon />, title: "Tuner" },
+  { id: "synth" as const, label: "KEYS", icon: <KeysIcon />, title: "Keyboard synth" },
+  { id: "tempo" as const, label: String(bpm), icon: <TempoIcon running={false} />, title: "Tempo" },
+];
 
 const EXPLODE_MS = 2400;
 const smoothstep = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
@@ -63,7 +67,7 @@ export default function App() {
     }
   });
   const [micDismissed, setMicDismissed] = useState(false);
-  const [sheetTab, setSheetTab] = useState<"rec" | "tools">("rec");
+  const [sheetTab, setSheetTab] = useState<"rec">("rec");
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [stompCount, setStompCount] = useState(0);
   const [presetIdx, setPresetIdx] = useState<number | null>(0);
@@ -383,32 +387,16 @@ export default function App() {
             </button>
           }
           trailing={
-            <button
-              onClick={() => setTunerOpen(true)}
-              aria-label="Open tuner"
-              title="Tuner"
-              className="flex items-center justify-center transition-all active:scale-90"
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 7,
-                border: `1px solid ${themeColor}35`,
-                background: `${themeColor}0f`,
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M8 3v7a4 4 0 0 0 4 4v7m4-18v7a4 4 0 0 1-4 4"
-                  stroke={themeColor}
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
+            <ToolDock
+              tools={MOBILE_TOOLS(metronome.bpm)}
+              activeTool={activeTool}
+              onToolChange={setActiveTool}
+              accent={themeColor}
+              placement="down"
+            />
           }
         >
-          {sheetTab === "rec" && warningDone && (
+          {activeTool === null && warningDone && (
             <RecorderControls
               recorder={fx.recorder}
               onRecord={() => void handleRecord()}
@@ -419,71 +407,68 @@ export default function App() {
             />
           )}
 
-          {sheetTab === "tools" && (
-            <div className="flex flex-col" style={{ gap: 18 }}>
-              <div className="flex flex-col" style={{ gap: 10 }}>
-                <PanelLabel>Tempo</PanelLabel>
-                <Metronome
-                  metronome={metronome}
-                  countInEnabled={countInEnabled}
-                  onToggleCountIn={() => setCountInEnabled((v) => !v)}
-                  accent={themeColor}
-                  compact
-                />
-              </div>
-              <div className="flex flex-col" style={{ gap: 10 }}>
-                <PanelLabel>Signal</PanelLabel>
-                <div className="flex flex-col" style={{ gap: 2 }}>
-                  <Fader
-                    label="DRIVE"
-                    value={drive}
-                    accent={themeColor}
-                    onChange={(v) => handleKnobChange("drive", v)}
-                  />
-                  <Fader
-                    label="ECHO"
-                    value={echo}
-                    accent={themeColor}
-                    onChange={(v) => handleKnobChange("echo", v)}
-                  />
-                  <Fader
-                    label="TONE"
-                    value={tone}
-                    accent={themeColor}
-                    onChange={(v) => handleKnobChange("tone", v)}
-                  />
-                  <Fader
-                    label="REVERB"
-                    value={reverb}
-                    accent={themeColor}
-                    onChange={(v) => handleKnobChange("reverb", v)}
-                  />
-                  <Fader
-                    label="MOD"
-                    value={mod}
-                    accent={themeColor}
-                    onChange={(v) => handleKnobChange("mod", v)}
-                  />
-                  <Fader
-                    label="VOLUME"
-                    value={masterVolume}
-                    accent={themeColor}
-                    onChange={(v) => handleKnobChange("master", v)}
-                    highlight
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col" style={{ gap: 10 }}>
-                <PanelLabel>Keyboard synth</PanelLabel>
-                <KeyboardDisplay
-                  activeKeys={synth.activeKeys}
-                  accent={themeColor}
-                  playNote={synth.playNote}
-                  stopNote={synth.stopNote}
-                  labelMode="note"
-                />
-              </div>
+          {activeTool === "tempo" && (
+            <Metronome
+              metronome={metronome}
+              countInEnabled={countInEnabled}
+              onToggleCountIn={() => setCountInEnabled((v) => !v)}
+              accent={themeColor}
+              compact
+            />
+          )}
+
+          {activeTool === "tune" && <TunerDisplay reading={tuning} accent={themeColor} size="sm" />}
+
+          {activeTool === "mix" && (
+            <div className="flex flex-col" style={{ gap: 2 }}>
+              <Fader
+                label="DRIVE"
+                value={drive}
+                accent={themeColor}
+                onChange={(v) => handleKnobChange("drive", v)}
+              />
+              <Fader
+                label="ECHO"
+                value={echo}
+                accent={themeColor}
+                onChange={(v) => handleKnobChange("echo", v)}
+              />
+              <Fader
+                label="TONE"
+                value={tone}
+                accent={themeColor}
+                onChange={(v) => handleKnobChange("tone", v)}
+              />
+              <Fader
+                label="REVERB"
+                value={reverb}
+                accent={themeColor}
+                onChange={(v) => handleKnobChange("reverb", v)}
+              />
+              <Fader
+                label="MOD"
+                value={mod}
+                accent={themeColor}
+                onChange={(v) => handleKnobChange("mod", v)}
+              />
+              <Fader
+                label="VOLUME"
+                value={masterVolume}
+                accent={themeColor}
+                onChange={(v) => handleKnobChange("master", v)}
+                highlight
+              />
             </div>
+          )}
+
+          {activeTool === "synth" && (
+            <KeyboardDisplay
+              activeKeys={synth.activeKeys}
+              accent={themeColor}
+              playNote={synth.playNote}
+              stopNote={synth.stopNote}
+              labelMode="note"
+            />
           )}
         </MobileSheet>
       </div>
@@ -541,7 +526,7 @@ export default function App() {
           onKeyboard={() => {
             setMicDismissed(true);
             setActiveTool("synth");
-            setSheetTab("tools");
+            setActiveTool("synth");
             setSheetExpanded(true);
           }}
           onDismiss={() => setMicDismissed(true)}
