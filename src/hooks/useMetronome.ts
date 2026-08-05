@@ -53,7 +53,8 @@ export function useMetronome({
       levelRef.current = clamped;
       setLevelState(clamped);
       const ctx = ctxRef.current;
-      if (gainRef.current && ctx) gainRef.current.gain.setTargetAtTime(clamped, ctx.currentTime, 0.02);
+      if (gainRef.current && ctx)
+        gainRef.current.gain.setTargetAtTime(clamped, ctx.currentTime, 0.02);
     },
     [ctxRef],
   );
