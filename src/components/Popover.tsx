@@ -8,15 +8,24 @@ export function Popover({
   open,
   onClose,
   width,
+  placement = "top",
+  align = "left",
   children,
 }: {
   anchorRef: RefObject<HTMLElement | null>;
   open: boolean;
   onClose: () => void;
   width?: number;
+  placement?: "top" | "bottom";
+  align?: "left" | "right";
   children: ReactNode;
 }) {
-  const [box, setBox] = useState<{ left: number; bottom: number; width: number } | null>(null);
+  const [box, setBox] = useState<{
+    left: number;
+    top?: number;
+    bottom?: number;
+    width: number;
+  } | null>(null);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -25,8 +34,13 @@ export function Popover({
       if (!el) return;
       const r = el.getBoundingClientRect();
       const w = width ?? r.width;
-      const left = Math.max(MARGIN, Math.min(r.left, window.innerWidth - w - MARGIN));
-      setBox({ left, bottom: window.innerHeight - r.top + 6, width: w });
+      const raw = align === "right" ? r.right - w : r.left;
+      const left = Math.max(MARGIN, Math.min(raw, window.innerWidth - w - MARGIN));
+      setBox(
+        placement === "top"
+          ? { left, bottom: window.innerHeight - r.top + 6, width: w }
+          : { left, top: r.bottom + 6, width: w },
+      );
     };
     place();
     window.addEventListener("resize", place);
@@ -35,7 +49,7 @@ export function Popover({
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
-  }, [open, anchorRef, width]);
+  }, [open, anchorRef, width, placement, align]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -53,6 +67,7 @@ export function Popover({
       style={{
         position: "fixed",
         left: box.left,
+        top: box.top,
         bottom: box.bottom,
         width: box.width,
         maxHeight: "min(52vh, 320px)",

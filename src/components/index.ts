@@ -3,7 +3,6 @@ export { Console } from "./Console";
 export { MobileSheet } from "./MobileSheet";
 export { Metronome } from "./Metronome";
 export { TunerModal } from "./TunerModal";
-export { ToolButton } from "./ToolButton";
 export { ToolTray } from "./ToolTray";
 export { Surface } from "./Surface";
 export { MiniWave } from "./MiniWave";

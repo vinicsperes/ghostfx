@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { ToolButton } from "./ToolButton";
+import { useRef, useState } from "react";
+import { Popover } from "./Popover";
 import type { ToolId } from "./Console";
 import type { ReactNode } from "react";
 
@@ -48,61 +48,13 @@ export function ToolDock({
   placement?: "up" | "down";
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const away = (e: PointerEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener("pointerdown", away);
-    return () => window.removeEventListener("pointerdown", away);
-  }, [open]);
+  const anchor = useRef<HTMLButtonElement>(null);
 
   return (
-    <div
-      ref={ref}
-      className="relative flex items-center justify-center pointer-events-auto shrink-0"
-    >
-      {open && (
-        <div
-          className="absolute"
-          style={
-            placement === "up"
-              ? { bottom: "calc(100% + 10px)", right: 0 }
-              : { top: "calc(100% + 10px)", right: 0 }
-          }
-        >
-          <div
-            style={{
-              padding: 8,
-              borderRadius: 14,
-              background: "rgba(8,10,13,0.985)",
-              border: `1px solid ${accent}22`,
-              boxShadow: "0 18px 44px rgba(0,0,0,0.72)",
-            }}
-          >
-            <div className="flex items-end" style={{ gap: 8 }}>
-              {tools.map((t) => (
-                <ToolButton
-                  key={t.id}
-                  label={t.label}
-                  icon={t.icon}
-                  accent={accent}
-                  active={activeTool === t.id}
-                  title={t.title}
-                  onClick={() => {
-                    setOpen(false);
-                    onToolChange(activeTool === t.id ? null : t.id);
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
+    <>
       <button
+        ref={anchor}
+        onPointerDown={(e) => e.stopPropagation()}
         onClick={() => setOpen((v) => !v)}
         aria-label="Tools"
         aria-expanded={open}
@@ -120,6 +72,42 @@ export function ToolDock({
       >
         <GearIcon open={open} />
       </button>
-    </div>
+
+      <Popover
+        anchorRef={anchor}
+        open={open}
+        onClose={() => setOpen(false)}
+        placement={placement === "up" ? "top" : "bottom"}
+        align="right"
+        width={176}
+      >
+        {tools.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => {
+              setOpen(false);
+              onToolChange(activeTool === t.id ? null : t.id);
+            }}
+            title={t.title}
+            className="font-[var(--font-mono)] flex items-center w-full"
+            style={{
+              gap: 11,
+              padding: "9px 10px",
+              borderRadius: 7,
+              fontSize: 10.5,
+              letterSpacing: "0.1em",
+              color: activeTool === t.id ? accent : "rgba(231,228,220,0.7)",
+              background: activeTool === t.id ? `${accent}14` : "transparent",
+              cursor: "pointer",
+            }}
+          >
+            <span className="flex items-center justify-center" style={{ width: 22 }}>
+              {t.icon}
+            </span>
+            {t.label}
+          </button>
+        ))}
+      </Popover>
+    </>
   );
 }
