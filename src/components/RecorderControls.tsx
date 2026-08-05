@@ -310,7 +310,7 @@ export function RecorderControls({
         <div className="flex items-center" style={{ gap: 6 }}>
           <span
             className="font-[var(--font-mono)] uppercase shrink-0"
-            style={{ fontSize: 8, letterSpacing: "0.22em", color: "rgba(231,228,220,0.38)" }}
+            style={{ fontSize: 8.5, letterSpacing: "0.24em", color: "rgba(231,228,220,0.42)" }}
           >
             Re-amp
           </span>
@@ -325,10 +325,10 @@ export function RecorderControls({
                   title={`Hear this take through ${p.name}`}
                   className="font-[var(--font-mono)] shrink-0 transition-all active:scale-95"
                   style={{
-                    padding: "3px 8px",
-                    fontSize: 9,
+                    padding: "6px 12px",
+                    fontSize: 10.5,
                     letterSpacing: "0.1em",
-                    borderRadius: 4,
+                    borderRadius: 6,
                     border: `1px solid ${busy ? PRESET_META[i].color + "88" : "rgba(255,255,255,0.09)"}`,
                     background: busy ? `${PRESET_META[i].color}18` : "rgba(255,255,255,0.02)",
                     color: busy ? PRESET_META[i].color : "rgba(231,228,220,0.55)",
@@ -356,9 +356,9 @@ export function RecorderControls({
                 key={take.id}
                 className="flex items-center shrink-0"
                 style={{
-                  gap: 6,
-                  padding: "3px 5px 3px 8px",
-                  borderRadius: 5,
+                  gap: 8,
+                  padding: "6px 8px 6px 11px",
+                  borderRadius: 7,
                   border: `1px solid ${on ? accent + "55" : "rgba(255,255,255,0.08)"}`,
                   background: on ? `${accent}12` : "rgba(255,255,255,0.02)",
                 }}
@@ -371,8 +371,8 @@ export function RecorderControls({
                 >
                   <span
                     style={{
-                      width: 6,
-                      height: 6,
+                      width: 7,
+                      height: 7,
                       borderRadius: "50%",
                       background: color,
                       boxShadow: `0 0 5px ${color}`,
@@ -381,7 +381,7 @@ export function RecorderControls({
                   <span
                     className="font-[var(--font-mono)]"
                     style={{
-                      fontSize: 9.5,
+                      fontSize: 10.5,
                       letterSpacing: "0.08em",
                       color: on ? accent : "rgba(231,228,220,0.62)",
                       whiteSpace: "nowrap",
@@ -395,9 +395,9 @@ export function RecorderControls({
                   aria-label="Delete take"
                   title="Delete take"
                   style={{
-                    fontSize: 13,
+                    fontSize: 15,
                     lineHeight: 1,
-                    padding: "0 2px",
+                    padding: "0 3px",
                     color: "rgba(231,228,220,0.35)",
                     cursor: "pointer",
                   }}

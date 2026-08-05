@@ -2,6 +2,7 @@ import { RecorderControls } from "./RecorderControls";
 import { PanelLabel } from "./PanelLabel";
 import { ToolButton } from "./ToolButton";
 import { ToolTray } from "./ToolTray";
+import { Surface } from "./Surface";
 import { ChannelStrip } from "./ChannelStrip";
 import { Metronome } from "./Metronome";
 import { TunerDisplay } from "./TunerDisplay";
@@ -137,104 +138,108 @@ export function Console({
 }) {
   const toggle = (tool: ToolId) => onToolChange(activeTool === tool ? null : tool);
   return (
-    <div className="flex flex-col w-full" style={{ gap: 13 }}>
+    <div className="flex flex-col w-full pointer-events-none" style={{ gap: 10 }}>
       {activeTool && (
-        <ToolTray title={TITLES[activeTool]} accent={accent} onClose={() => onToolChange(null)}>
-          {activeTool === "mix" && (
-            <div className="flex items-end justify-center" style={{ gap: 14 }}>
-              {STRIPS.map((s) => (
-                <ChannelStrip
-                  key={s.id}
-                  label={s.label}
-                  value={levels[s.id]}
+        <Surface accent={accent}>
+          <ToolTray title={TITLES[activeTool]} accent={accent} onClose={() => onToolChange(null)}>
+            {activeTool === "mix" && (
+              <div className="flex items-end justify-center" style={{ gap: 14 }}>
+                {STRIPS.map((s) => (
+                  <ChannelStrip
+                    key={s.id}
+                    label={s.label}
+                    value={levels[s.id]}
+                    accent={accent}
+                    highlight={s.id === "master"}
+                    onChange={(v) => onKnobChange(s.id, v)}
+                    height={112}
+                  />
+                ))}
+              </div>
+            )}
+            {activeTool === "tune" && (
+              <div className="self-center w-full" style={{ maxWidth: 380 }}>
+                <TunerDisplay reading={tuning} accent={accent} size="sm" />
+              </div>
+            )}
+            {activeTool === "tempo" && (
+              <div className="w-full">
+                <Metronome
+                  metronome={metronome}
+                  countInEnabled={countInEnabled}
+                  onToggleCountIn={onToggleCountIn}
                   accent={accent}
-                  highlight={s.id === "master"}
-                  onChange={(v) => onKnobChange(s.id, v)}
-                  height={112}
                 />
-              ))}
-            </div>
-          )}
-          {activeTool === "tune" && (
-            <div className="self-center w-full" style={{ maxWidth: 380 }}>
-              <TunerDisplay reading={tuning} accent={accent} size="sm" />
-            </div>
-          )}
-          {activeTool === "tempo" && (
-            <div className="w-full">
-              <Metronome
-                metronome={metronome}
-                countInEnabled={countInEnabled}
-                onToggleCountIn={onToggleCountIn}
-                accent={accent}
-              />
-            </div>
-          )}
-          {activeTool === "synth" && (
-            <div className="self-center w-full" style={{ maxWidth: 620 }}>
-              <KeyboardDisplay
-                activeKeys={synth.activeKeys}
-                accent={accent}
-                playNote={synth.playNote}
-                stopNote={synth.stopNote}
-                labelMode="key"
-              />
-            </div>
-          )}
-        </ToolTray>
+              </div>
+            )}
+            {activeTool === "synth" && (
+              <div className="self-center w-full" style={{ maxWidth: 620 }}>
+                <KeyboardDisplay
+                  activeKeys={synth.activeKeys}
+                  accent={accent}
+                  playNote={synth.playNote}
+                  stopNote={synth.stopNote}
+                  labelMode="key"
+                />
+              </div>
+            )}
+          </ToolTray>
+        </Surface>
       )}
 
-      <div className="flex items-start w-full" style={{ gap: 20 }}>
-        <div className="flex flex-col" style={{ gap: 9 }}>
-          <PanelLabel>Tools</PanelLabel>
-          <div className="flex items-end" style={{ gap: 8 }}>
-            <ToolButton
-              label="MIX"
-              icon={<FaderIcon />}
+      <div className="flex items-stretch w-full" style={{ gap: 10 }}>
+        <Surface>
+          <div className="flex flex-col" style={{ gap: 9 }}>
+            <PanelLabel>Tools</PanelLabel>
+            <div className="flex items-end" style={{ gap: 8 }}>
+              <ToolButton
+                label="MIX"
+                icon={<FaderIcon />}
+                accent={accent}
+                active={activeTool === "mix"}
+                onClick={() => toggle("mix")}
+                title="Signal faders"
+              />
+              <ToolButton
+                label="TUNE"
+                icon={<ForkIcon />}
+                accent={accent}
+                active={activeTool === "tune"}
+                onClick={() => toggle("tune")}
+                title="Tuner"
+              />
+              <ToolButton
+                label="SYNTH"
+                icon={<KeysIcon />}
+                accent={accent}
+                active={activeTool === "synth"}
+                onClick={() => toggle("synth")}
+                title="Play the built-in synth with your keyboard"
+              />
+              <ToolButton
+                label={String(metronome.bpm)}
+                icon={<TempoIcon running={metronome.isRunning} />}
+                accent={accent}
+                active={activeTool === "tempo" || metronome.isRunning || metronome.countingIn}
+                onClick={() => toggle("tempo")}
+                title="Tempo and count-in"
+              />
+            </div>
+          </div>
+        </Surface>
+
+        <Surface grow lit={recorder.isRecording || metronome.countingIn} accent={accent}>
+          <div className="flex flex-col" style={{ gap: 9, minWidth: 0 }}>
+            <PanelLabel>{metronome.countingIn ? "Counting in" : "Recorder"}</PanelLabel>
+            <RecorderControls
+              recorder={recorder}
+              onRecord={onRecord}
+              getLevelRef={getLevelRef}
               accent={accent}
-              active={activeTool === "mix"}
-              onClick={() => toggle("mix")}
-              title="Signal faders"
-            />
-            <ToolButton
-              label="TUNE"
-              icon={<ForkIcon />}
-              accent={accent}
-              active={activeTool === "tune"}
-              onClick={() => toggle("tune")}
-              title="Tuner"
-            />
-            <ToolButton
-              label="SYNTH"
-              icon={<KeysIcon />}
-              accent={accent}
-              active={activeTool === "synth"}
-              onClick={() => toggle("synth")}
-              title="Play the built-in synth with your keyboard"
-            />
-            <ToolButton
-              label={String(metronome.bpm)}
-              icon={<TempoIcon running={metronome.isRunning} />}
-              accent={accent}
-              active={activeTool === "tempo" || metronome.isRunning || metronome.countingIn}
-              onClick={() => toggle("tempo")}
-              title="Tempo and count-in"
+              countingIn={metronome.countingIn}
             />
           </div>
-        </div>
-
-        <div style={{ width: 1, alignSelf: "stretch", background: "rgba(231,228,220,0.07)" }} />
-
-        <div className="flex flex-col" style={{ gap: 9, flex: "1 1 0", minWidth: 0 }}>
-          <PanelLabel>{metronome.countingIn ? "Counting in" : "Recorder"}</PanelLabel>
-          <RecorderControls
-            recorder={recorder}
-            onRecord={onRecord}
-            getLevelRef={getLevelRef}
-            accent={accent}
-            countingIn={metronome.countingIn}
-          />
-        </div>
+        </Surface>
       </div>
     </div>
   );

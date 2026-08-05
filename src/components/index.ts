@@ -5,6 +5,7 @@ export { Metronome } from "./Metronome";
 export { TunerModal } from "./TunerModal";
 export { ToolButton } from "./ToolButton";
 export { ToolTray } from "./ToolTray";
+export { Surface } from "./Surface";
 export { TunerDisplay } from "./TunerDisplay";
 export { ToolPanel } from "./ToolPanel";
 export { PanelLabel } from "./PanelLabel";

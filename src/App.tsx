@@ -275,39 +275,21 @@ export default function App() {
           className="hidden lg:flex fixed bottom-0 left-0 right-0 z-[40] flex-col items-stretch pointer-events-none"
           style={{ padding: "8px max(22px,1.8vw) 16px", gap: 10 }}
         >
-          <div
-            className="flex-1 flex items-stretch px-5 py-3.5 pointer-events-auto"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(18,20,24,0.52) 0%, rgba(8,10,13,0.62) 100%)",
-              backdropFilter: "blur(22px) saturate(150%)",
-              WebkitBackdropFilter: "blur(22px) saturate(150%)",
-              border: `1px solid ${
-                fx.recorder.isRecording || metronome.countingIn
-                  ? themeColor + "55"
-                  : "rgba(231,228,220,0.12)"
-              }`,
-              borderRadius: 18,
-              boxShadow: "0 18px 50px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07)",
-              transition: "border-color 200ms",
-            }}
-          >
-            <Console
-              recorder={fx.recorder}
-              metronome={metronome}
-              synth={synth}
-              tuning={tuning}
-              levels={{ drive, echo, tone, reverb, mod, master: masterVolume }}
-              onKnobChange={handleKnobChange}
-              activeTool={activeTool}
-              onToolChange={setActiveTool}
-              countInEnabled={countInEnabled}
-              onToggleCountIn={() => setCountInEnabled((v) => !v)}
-              onRecord={() => void handleRecord()}
-              getLevelRef={getLevelRef}
-              accent={themeColor}
-            />
-          </div>
+          <Console
+            recorder={fx.recorder}
+            metronome={metronome}
+            synth={synth}
+            tuning={tuning}
+            levels={{ drive, echo, tone, reverb, mod, master: masterVolume }}
+            onKnobChange={handleKnobChange}
+            activeTool={activeTool}
+            onToolChange={setActiveTool}
+            countInEnabled={countInEnabled}
+            onToggleCountIn={() => setCountInEnabled((v) => !v)}
+            onRecord={() => void handleRecord()}
+            getLevelRef={getLevelRef}
+            accent={themeColor}
+          />
         </div>
       )}
 
