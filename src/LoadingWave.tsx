@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-const BARS = 68;
+const BARS = 56;
 const PASS_MS = 1500;
 const FINAL_MS = 560;
 const SIGMA = 0.085;
@@ -34,9 +34,14 @@ export default function LoadingWave({
   const phaseRef = useRef(0);
   const lastRef = useRef<number | null>(null);
 
-  progressRef.current = progress;
-  if (armed && armedAtRef.current === null) armedAtRef.current = performance.now();
-  armedRef.current = armed;
+  useEffect(() => {
+    progressRef.current = progress;
+  }, [progress]);
+
+  useEffect(() => {
+    armedRef.current = armed;
+    if (armed && armedAtRef.current === null) armedAtRef.current = performance.now();
+  }, [armed]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -67,7 +72,6 @@ export default function LoadingWave({
 
       ctx.clearRect(0, 0, W, H);
       ctx.fillStyle = color;
-      ctx.shadowColor = color;
 
       const step = W / BARS;
       const barW = Math.max(1, step * 0.42);
@@ -86,14 +90,10 @@ export default function LoadingWave({
         const h = Math.max(1 * dpr, SHAPE[i] * lift * maxH);
 
         ctx.globalAlpha = alpha;
-        ctx.shadowBlur = (pulse * 7 + settle * 5) * dpr;
-        ctx.beginPath();
-        ctx.roundRect(i * step + (step - barW) / 2, mid - h, barW, h * 2, barW / 2);
-        ctx.fill();
+        ctx.fillRect(i * step + (step - barW) / 2, mid - h, barW, h * 2);
       }
 
       ctx.globalAlpha = 1;
-      ctx.shadowBlur = 0;
       rafRef.current = requestAnimationFrame(draw);
     };
 
@@ -101,5 +101,16 @@ export default function LoadingWave({
     return () => cancelAnimationFrame(rafRef.current);
   }, [color, width, height]);
 
-  return <canvas ref={canvasRef} style={{ width, height, display: "block" }} aria-hidden />;
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        width,
+        height,
+        display: "block",
+        filter: `drop-shadow(0 0 5px ${color}66)`,
+      }}
+      aria-hidden
+    />
+  );
 }
