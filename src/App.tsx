@@ -329,7 +329,6 @@ export default function App() {
             activeTool={activeTool}
             onToolChange={setActiveTool}
             accent={themeColor}
-            placement="down"
           />
         }
       />
@@ -395,7 +394,6 @@ export default function App() {
                 setSheetExpanded(true);
               }}
               accent={themeColor}
-              placement="down"
             />
           }
         >

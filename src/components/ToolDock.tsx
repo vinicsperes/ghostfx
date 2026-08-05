@@ -39,13 +39,11 @@ export function ToolDock({
   activeTool,
   onToolChange,
   accent,
-  placement = "up",
 }: {
   tools: { id: ToolId; label: string; icon: ReactNode; title: string }[];
   activeTool: ToolId | null;
   onToolChange: (tool: ToolId | null) => void;
   accent: string;
-  placement?: "up" | "down";
 }) {
   const [open, setOpen] = useState(false);
   const anchor = useRef<HTMLButtonElement>(null);
@@ -77,7 +75,6 @@ export function ToolDock({
         anchorRef={anchor}
         open={open}
         onClose={() => setOpen(false)}
-        placement={placement === "up" ? "top" : "bottom"}
         align="right"
         width={176}
       >

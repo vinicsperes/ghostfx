@@ -8,7 +8,7 @@ export function Popover({
   open,
   onClose,
   width,
-  placement = "top",
+  placement = "auto",
   align = "left",
   children,
 }: {
@@ -16,7 +16,7 @@ export function Popover({
   open: boolean;
   onClose: () => void;
   width?: number;
-  placement?: "top" | "bottom";
+  placement?: "top" | "bottom" | "auto";
   align?: "left" | "right";
   children: ReactNode;
 }) {
@@ -25,6 +25,7 @@ export function Popover({
     top?: number;
     bottom?: number;
     width: number;
+    maxHeight: number;
   } | null>(null);
 
   useLayoutEffect(() => {
@@ -36,10 +37,20 @@ export function Popover({
       const w = width ?? r.width;
       const raw = align === "right" ? r.right - w : r.left;
       const left = Math.max(MARGIN, Math.min(raw, window.innerWidth - w - MARGIN));
+      const below = window.innerHeight - r.bottom - MARGIN * 2;
+      const above = r.top - MARGIN * 2;
+      const side =
+        placement === "auto" ? (below >= Math.min(above, 260) ? "bottom" : "top") : placement;
+
       setBox(
-        placement === "top"
-          ? { left, bottom: window.innerHeight - r.top + 6, width: w }
-          : { left, top: r.bottom + 6, width: w },
+        side === "top"
+          ? {
+              left,
+              bottom: window.innerHeight - r.top + 6,
+              width: w,
+              maxHeight: Math.max(120, above),
+            }
+          : { left, top: r.bottom + 6, width: w, maxHeight: Math.max(120, below) },
       );
     };
     place();
@@ -70,7 +81,7 @@ export function Popover({
         top: box.top,
         bottom: box.bottom,
         width: box.width,
-        maxHeight: "min(52vh, 320px)",
+        maxHeight: Math.min(box.maxHeight, 340),
         overflowY: "auto",
         zIndex: 200,
         padding: 5,
