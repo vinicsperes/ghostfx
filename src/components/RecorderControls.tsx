@@ -197,7 +197,10 @@ export function RecorderControls({
   return (
     <div className="flex flex-col w-full" style={{ gap: 12 }}>
       <div className="flex items-start w-full" style={{ gap: 20 }}>
-        <div className="flex flex-col shrink-0" style={{ gap: 7, width: 190 }}>
+        <div
+          className="flex flex-col shrink-0"
+          style={{ gap: 7, width: "clamp(190px, 20%, 300px)" }}
+        >
           <span
             className="font-[var(--font-mono)] uppercase"
             style={{ fontSize: 8.5, letterSpacing: "0.24em", color: "rgba(231,228,220,0.42)" }}
@@ -312,6 +315,11 @@ export function RecorderControls({
             style={{ fontSize: 8.5, letterSpacing: "0.24em", color: "rgba(231,228,220,0.42)" }}
           >
             Playing through
+            {activeTake && !isOriginal && (
+              <span style={{ marginLeft: 8, opacity: 0.7, letterSpacing: "0.1em" }}>
+                · re-amped
+              </span>
+            )}
           </span>
           <div className="flex items-center flex-wrap" style={{ gap: 6 }}>
             {PRESETS.map((p, i) => {
@@ -325,9 +333,11 @@ export function RecorderControls({
                   onClick={() => void setRig(i)}
                   disabled={!canReamp || reampingTo !== null || isRecording}
                   title={recorded ? `${p.name}, as recorded` : `Re-amp through ${p.name}`}
-                  className="font-[var(--font-mono)] shrink-0 transition-all active:scale-95"
+                  className="font-[var(--font-mono)] transition-all active:scale-95"
                   style={{
-                    padding: "6px 13px",
+                    flex: "1 1 88px",
+                    minWidth: 88,
+                    padding: "7px 13px",
                     fontSize: 10,
                     letterSpacing: "0.08em",
                     borderRadius: 999,
@@ -342,14 +352,6 @@ export function RecorderControls({
                 </button>
               );
             })}
-            {activeTake && !isOriginal && (
-              <span
-                className="font-[var(--font-mono)] shrink-0"
-                style={{ fontSize: 9, color: "rgba(231,228,220,0.34)" }}
-              >
-                re-amped
-              </span>
-            )}
           </div>
         </div>
       </div>
