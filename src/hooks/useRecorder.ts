@@ -57,6 +57,7 @@ export function useRecorder({
   const dryRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const dryChunksRef = useRef<Blob[]>([]);
+  const dryDoneRef = useRef<Promise<void> | null>(null);
   const recTimeoutRef = useRef<number | null>(null);
   const recStartRef = useRef(0);
   const recordingRef = useRef(false);
@@ -117,6 +118,7 @@ export function useRecorder({
       const key = `${take.id}:${target}`;
       const cached = buffersRef.current.get(key);
       if (cached) return cached;
+      if (target !== (take.presetIdx ?? 0)) return null;
       const ctx = ctxRef.current;
       if (!ctx) return null;
       try {
@@ -279,13 +281,18 @@ export function useRecorder({
     const dryRec = dryDest
       ? new MediaRecorder(dryDest.stream, mime ? { mimeType: mime } : undefined)
       : null;
+    dryDoneRef.current = null;
     if (dryRec) {
       dryRec.ondataavailable = (e) => {
         if (e.data.size > 0) dryChunksRef.current.push(e.data);
       };
+      dryDoneRef.current = new Promise<void>((resolve) => {
+        dryRec.onstop = () => resolve();
+      });
     }
     rec.onstop = async () => {
       setIsProcessing(true);
+      await dryDoneRef.current;
       const blob = new Blob(chunksRef.current, { type: mime || "audio/webm" });
       try {
         const buffer = await ctx.decodeAudioData(await blob.arrayBuffer());
@@ -302,7 +309,14 @@ export function useRecorder({
           createdAt: Date.now(),
         };
         buffersRef.current.set(`${take.id}:${take.presetIdx ?? 0}`, buffer);
-        setTakes((prev) => [take, ...prev].slice(0, MAX_TAKES));
+        setTakes((prev) => {
+          const next = [take, ...prev].slice(0, MAX_TAKES);
+          const kept = new Set(next.map((t) => t.id));
+          for (const key of [...buffersRef.current.keys()]) {
+            if (!kept.has(key.slice(0, key.lastIndexOf(":")))) buffersRef.current.delete(key);
+          }
+          return next;
+        });
         setActiveTakeId(take.id);
         setError(null);
       } catch {
