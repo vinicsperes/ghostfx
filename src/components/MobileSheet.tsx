@@ -95,6 +95,10 @@ export function MobileSheet<K extends string>({
     dragRef.current = null;
     e.currentTarget.releasePointerCapture?.(e.pointerId);
 
+    if (e.type === "pointercancel") {
+      applyY(restingY, true);
+      return;
+    }
     if (!d.moved) {
       onExpandedChange(!expanded);
       return;

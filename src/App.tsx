@@ -20,7 +20,6 @@ import {
   ForkIcon,
   KeysIcon,
   TempoIcon,
-  TunerModal,
   TunerDisplay,
   Metronome,
   TopBar,
@@ -54,11 +53,16 @@ const TOOL_LABEL: Record<string, string> = {
   tempo: "Tempo",
 };
 
-const MOBILE_TOOLS = (bpm: number) => [
+const MOBILE_TOOLS = (bpm: number, running: boolean) => [
   { id: "mix" as const, label: "MIX", icon: <FaderIcon />, title: "Signal faders" },
   { id: "tune" as const, label: "TUNE", icon: <ForkIcon />, title: "Tuner" },
   { id: "synth" as const, label: "KEYS", icon: <KeysIcon />, title: "Keyboard synth" },
-  { id: "tempo" as const, label: String(bpm), icon: <TempoIcon running={false} />, title: "Tempo" },
+  {
+    id: "tempo" as const,
+    label: String(bpm),
+    icon: <TempoIcon running={running} />,
+    title: "Tempo",
+  },
 ];
 
 const EXPLODE_MS = 2400;
@@ -115,24 +119,25 @@ export default function App() {
 
   const metronome = useMetronome({ ctxRef: fx.ctxRef, ensureAudio: fx.ensureAudio });
   const [countInEnabled, setCountInEnabled] = useState(false);
-  const [tunerOpen, setTunerOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
   const tuning = useTuner({
-    enabled: tunerOpen,
+    enabled: activeTool === "tune",
     getMicWaveform: fx.getMicWaveform,
     getSampleRate: fx.getSampleRate,
   });
 
   const { countIn } = metronome;
+  const { countingIn } = metronome;
   const handleRecord = useCallback(async () => {
+    if (countingIn) return;
     if (isRecording) {
       await toggleRecording();
       return;
     }
     if (countInEnabled) await countIn();
     await toggleRecording();
-  }, [isRecording, countInEnabled, countIn, toggleRecording]);
+  }, [countingIn, isRecording, countInEnabled, countIn, toggleRecording]);
 
   const handleRecordRef = useRef(handleRecord);
   useEffect(() => {
@@ -394,7 +399,7 @@ export default function App() {
           }
           trailing={
             <ToolDock
-              tools={MOBILE_TOOLS(metronome.bpm)}
+              tools={MOBILE_TOOLS(metronome.bpm, metronome.isRunning)}
               activeTool={activeTool}
               onToolChange={(tool) => {
                 setActiveTool(tool);
@@ -558,7 +563,6 @@ export default function App() {
           onKeyboard={() => {
             setMicDismissed(true);
             setActiveTool("synth");
-            setActiveTool("synth");
             setSheetExpanded(true);
           }}
           onDismiss={() => setMicDismissed(true)}
@@ -567,10 +571,6 @@ export default function App() {
 
       {aboutOpen && (
         <AboutModal presetIdx={presetIdx} accent={themeColor} onClose={() => setAboutOpen(false)} />
-      )}
-
-      {tunerOpen && (
-        <TunerModal reading={tuning} accent={themeColor} onClose={() => setTunerOpen(false)} />
       )}
 
       {fx.feedbackBlocked && <FeedbackModal onResume={() => fx.resumeFromFeedback()} />}

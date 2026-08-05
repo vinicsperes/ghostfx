@@ -2,7 +2,6 @@ export { RecorderControls } from "./RecorderControls";
 export { Console } from "./Console";
 export { MobileSheet } from "./MobileSheet";
 export { Metronome } from "./Metronome";
-export { TunerModal } from "./TunerModal";
 export { ToolTray } from "./ToolTray";
 export { Surface } from "./Surface";
 export { MiniWave } from "./MiniWave";

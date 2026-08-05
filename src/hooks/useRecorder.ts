@@ -190,11 +190,11 @@ export function useRecorder({
   const seek = useCallback(
     async (seconds: number) => {
       if (!activeTake) return;
-      const at = Math.max(0, Math.min(activeTake.duration, seconds));
+      const at = Math.max(0, Math.min(activeDuration, seconds));
       playOffsetRef.current = at;
       if (playingId === activeTake.id) await startPlayback(activeTake, at);
     },
-    [activeTake, playingId, startPlayback],
+    [activeTake, activeDuration, playingId, startPlayback],
   );
 
   const getPlayPosition = useCallback(() => {
