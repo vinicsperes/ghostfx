@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import GhostMark from "../GhostMark";
 import { PRESETS, PRESET_META } from "../data/presets";
 import { PresetCard } from "./PresetCard";
@@ -10,6 +11,7 @@ export function TopBar({
   ledColor,
   statusLabel,
   live,
+  dock,
 }: {
   activePresetIdx: number | null;
   onPresetSelect: (i: number) => void;
@@ -18,6 +20,7 @@ export function TopBar({
   ledColor: string;
   statusLabel: string;
   live: boolean;
+  dock?: ReactNode;
 }) {
   return (
     <div
@@ -91,6 +94,8 @@ export function TopBar({
           {statusLabel}
         </span>
       </div>
+
+      {dock}
     </div>
   );
 }

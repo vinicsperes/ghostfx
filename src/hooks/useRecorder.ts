@@ -454,6 +454,7 @@ export function useRecorder({
     getPlayPosition,
     getRecordElapsed,
     setRig,
+    rigOf: (id: string, fallback: number) => rigByTake[id] ?? fallback,
     activeRig,
     activePeaks,
     activeDuration,

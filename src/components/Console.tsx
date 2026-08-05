@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { RecorderControls } from "./RecorderControls";
 import { PanelLabel } from "./PanelLabel";
 import { ToolTray } from "./ToolTray";
@@ -45,7 +44,6 @@ export function Console({
   onRecord,
   getLevelRef,
   accent,
-  dock,
 }: {
   recorder: ReturnType<typeof useRecorder>;
   metronome: ReturnType<typeof useMetronome>;
@@ -60,7 +58,6 @@ export function Console({
   onRecord: () => void;
   getLevelRef: { current: (() => number) | null };
   accent: string;
-  dock?: ReactNode;
 }) {
   return (
     <div className="flex flex-col w-full pointer-events-none" style={{ gap: 10 }}>
@@ -125,7 +122,6 @@ export function Console({
             />
           </div>
         </Surface>
-        {dock}
       </div>
     </div>
   );

@@ -294,29 +294,6 @@ export default function App() {
             onRecord={() => void handleRecord()}
             getLevelRef={getLevelRef}
             accent={themeColor}
-            dock={
-              <ToolDock
-                tools={[
-                  { id: "mix", label: "MIX", icon: <FaderIcon />, title: "Signal faders" },
-                  { id: "tune", label: "TUNE", icon: <ForkIcon />, title: "Tuner" },
-                  {
-                    id: "synth",
-                    label: "SYNTH",
-                    icon: <KeysIcon />,
-                    title: "Play the built-in synth with your keyboard",
-                  },
-                  {
-                    id: "tempo",
-                    label: String(metronome.bpm),
-                    icon: <TempoIcon running={metronome.isRunning} />,
-                    title: "Tempo and count-in",
-                  },
-                ]}
-                activeTool={activeTool}
-                onToolChange={setActiveTool}
-                accent={themeColor}
-              />
-            }
           />
         </div>
       )}
@@ -329,6 +306,30 @@ export default function App() {
         ledColor={ledColor}
         statusLabel={isActive ? "Active" : fx.ready ? "Ready" : "Idle"}
         live={isActive}
+        dock={
+          <ToolDock
+            tools={[
+              { id: "mix", label: "MIX", icon: <FaderIcon />, title: "Signal faders" },
+              { id: "tune", label: "TUNE", icon: <ForkIcon />, title: "Tuner" },
+              {
+                id: "synth",
+                label: "SYNTH",
+                icon: <KeysIcon />,
+                title: "Play the built-in synth with your keyboard",
+              },
+              {
+                id: "tempo",
+                label: String(metronome.bpm),
+                icon: <TempoIcon running={metronome.isRunning} />,
+                title: "Tempo and count-in",
+              },
+            ]}
+            activeTool={activeTool}
+            onToolChange={setActiveTool}
+            accent={themeColor}
+            placement="down"
+          />
+        }
       />
 
       <div className="lg:hidden fixed inset-0 z-[25] flex flex-col pointer-events-none">

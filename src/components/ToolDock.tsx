@@ -37,11 +37,13 @@ export function ToolDock({
   activeTool,
   onToolChange,
   accent,
+  placement = "up",
 }: {
   tools: { id: ToolId; label: string; icon: ReactNode; title: string }[];
   activeTool: ToolId | null;
   onToolChange: (tool: ToolId | null) => void;
   accent: string;
+  placement?: "up" | "down";
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -61,7 +63,14 @@ export function ToolDock({
       className="relative flex items-center justify-center pointer-events-auto shrink-0"
     >
       {open && (
-        <div className="absolute" style={{ bottom: "calc(100% + 10px)", right: 0 }}>
+        <div
+          className="absolute"
+          style={
+            placement === "up"
+              ? { bottom: "calc(100% + 10px)", right: 0 }
+              : { top: "calc(100% + 10px)", right: 0 }
+          }
+        >
           <Surface style={{ padding: 10 }}>
             <div className="flex items-end" style={{ gap: 8 }}>
               {tools.map((t) => (
@@ -87,9 +96,9 @@ export function ToolDock({
         title="Tools"
         className="flex items-center justify-center transition-all active:scale-90"
         style={{
-          width: 52,
-          height: 52,
-          borderRadius: 16,
+          width: placement === "up" ? 52 : 38,
+          height: placement === "up" ? 52 : 38,
+          borderRadius: placement === "up" ? 16 : 10,
           border: `1px solid ${open || activeTool ? accent + "55" : "rgba(231,228,220,0.12)"}`,
           background: "linear-gradient(180deg, rgba(18,20,24,0.6) 0%, rgba(8,10,13,0.7) 100%)",
           backdropFilter: "blur(22px) saturate(150%)",
