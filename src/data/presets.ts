@@ -5,7 +5,7 @@ export const PRESETS = [
   { name: "DOOM", drive: 0.62, echo: 0.2, tone: 0.4, reverb: 0.45, mod: 0.05, master: 0.82 },
   { name: "FROST", drive: 0.25, echo: 0.35, tone: 0.8, reverb: 0.4, mod: 0.65, master: 0.95 },
   { name: "HEAVY", drive: 0.88, echo: 0.08, tone: 0.6, reverb: 0.15, mod: 0.0, master: 0.8 },
-  { name: "HAZE", drive: 0.62, echo: 0.12, tone: 0.56, reverb: 0.24, mod: 0.78, master: 0.8 },
+  { name: "HAZE", drive: 0.48, echo: 0.12, tone: 0.56, reverb: 0.24, mod: 0.82, master: 0.8 },
   { name: "FEVER", drive: 0.58, echo: 0.42, tone: 0.6, reverb: 0.4, mod: 0.15, master: 0.8 },
 ] as const;
 
@@ -82,7 +82,7 @@ export const DRIVES: DriveProfile[] = [
   { shape: "fuzz", preHp: 62, midHz: 420, midGain: 2, trim: 0.46 },
   { shape: "clean", preHp: 120, midHz: 2200, midGain: 2.5, trim: 3.8 },
   { shape: "rectifier", preHp: 125, midHz: 700, midGain: 3.5, trim: 0.32 },
-  { shape: "grunge", preHp: 125, midHz: 700, midGain: 1.5, trim: 0.47 },
+  { shape: "grunge", preHp: 118, midHz: 720, midGain: 2, trim: 0.59 },
   { shape: "smooth", preHp: 130, midHz: 1100, midGain: 5, trim: 0.63 },
 ];
 

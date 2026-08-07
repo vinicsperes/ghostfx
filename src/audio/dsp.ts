@@ -55,10 +55,10 @@ function shapeStarved(x: number, a: number): number {
 }
 
 function shapeGrunge(x: number, a: number): number {
-  const g = 2 + 20 * Math.pow(a, 1.25);
-  const y = softClip(g * x, 3.4);
-  const asym = x < 0 ? 0.94 : 1;
-  return y * asym * (0.78 / (1 + a * 0.55));
+  const g = 1.6 + 16 * Math.pow(a, 1.2);
+  const y = softClip(g * x, 2.4);
+  const asym = x < 0 ? 0.86 : 1;
+  return y * asym * (0.8 / (1 + a * 0.5));
 }
 
 const DRIVE_SHAPES: Record<DriveShape, (x: number, a: number) => number> = {
