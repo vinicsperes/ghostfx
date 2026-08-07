@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createDistortionCurve,
   createLimiterCurve,
@@ -9,6 +9,7 @@ import {
 } from "../audio/dsp";
 import { CABS, DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
 import { buildChain, reverbBuffers, type ChainNodes } from "../audio/chain";
+import type { Backing } from "../audio/render";
 import { useRecorder } from "./useRecorder";
 
 export type EffectsState = "idle" | "bypass" | "active";
@@ -19,7 +20,9 @@ type EffectsApi = {
   error: string | null;
   micBlocked: boolean;
   toggle: () => Promise<void>;
+  monitorClean: () => Promise<void>;
   ctxRef: React.RefObject<AudioContext | null>;
+  tapRef: React.RefObject<AudioNode | null>;
   ensureAudio: () => Promise<void>;
   getLevel: () => number;
   getWaveform: () => Float32Array;
@@ -39,6 +42,7 @@ export function useEffects({
   mod,
   masterVolume = 0.8,
   presetIdx = 0,
+  backingRef,
 }: {
   drive: number;
   echo: number;
@@ -47,6 +51,7 @@ export function useEffects({
   mod: number;
   masterVolume?: number;
   presetIdx?: number | null;
+  backingRef?: React.RefObject<(() => Backing | null) | null>;
 }): EffectsApi {
   const [state, setState] = useState<EffectsState>("idle");
   const [ready, setReady] = useState(false);
@@ -77,6 +82,7 @@ export function useEffects({
 
   const recordDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
   const dryDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const tapRef = useRef<AudioNode | null>(null);
 
   const nodesRef = useRef<
     Partial<ChainNodes> & {
@@ -187,6 +193,7 @@ export function useEffects({
       recLimiter.curve = createLimiterCurve();
       recLimiter.oversample = "none";
       guardGain.connect(recLimiter);
+      tapRef.current = recLimiter;
 
       const levelAnalyser = ctx.createAnalyser();
       levelAnalyser.fftSize = 256;
@@ -251,13 +258,20 @@ export function useEffects({
     }
   }, [drive, echo, tone, reverb, mod, masterVolume, presetIdx]);
 
+  const liveParams = useMemo(
+    () => ({ drive, echo, tone, reverb, mod }),
+    [drive, echo, tone, reverb, mod],
+  );
+
   const recorder = useRecorder({
     ctxRef,
     destRef: recordDestRef,
     dryDestRef,
     ensureAudio: init,
     presetIdx,
+    params: liveParams,
     masterVolume,
+    backingRef,
   });
 
   useEffect(() => {
@@ -631,6 +645,43 @@ export function useEffects({
     }
   }, [state, init, resumeFromFeedback, masterVolume]);
 
+  const monitorClean = useCallback(async () => {
+    if (feedbackLatchRef.current) {
+      resumeFromFeedback();
+      return;
+    }
+    if (!ctxRef.current) await init();
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    if (ctx.state === "suspended") await ctx.resume();
+
+    const t = ctx.currentTime;
+    const { bypass, effects, masterGain } = nodesRef.current;
+
+    if (state === "bypass") {
+      masterGain?.gain.setTargetAtTime(0, t, 0.05);
+      streamRef.current?.getAudioTracks().forEach((tr) => {
+        tr.enabled = false;
+      });
+      setState("idle");
+      return;
+    }
+
+    setError(null);
+    streamRef.current?.getAudioTracks().forEach((tr) => {
+      tr.enabled = true;
+    });
+    bypass?.gain.setTargetAtTime(1, t, 0.02);
+    effects?.gain.setTargetAtTime(0, t, 0.02);
+    masterGain?.gain.setTargetAtTime(
+      masterGainFromKnob(masterVolume),
+      t,
+      armedOnceRef.current ? 0.1 : 0.45,
+    );
+    armedOnceRef.current = true;
+    setState("bypass");
+  }, [state, init, masterVolume, resumeFromFeedback]);
+
   useEffect(() => {
     return () => {
       if (guardIntervalRef.current) clearInterval(guardIntervalRef.current);
@@ -679,12 +730,14 @@ export function useEffects({
     state,
     ready,
     ctxRef,
+    tapRef,
     ensureAudio: init,
     getMicWaveform,
     getSampleRate,
     error: error ?? recorder.error,
     micBlocked,
     toggle,
+    monitorClean,
     getLevel,
     getWaveform,
     feedbackBlocked,
