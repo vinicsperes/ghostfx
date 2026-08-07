@@ -12,7 +12,8 @@ export function TopBar({
   statusLabel,
   live,
   cleanOn,
-  onMonitorClean,
+  onBypassPress,
+  onBypassRelease,
   dock,
 }: {
   activePresetIdx: number | null;
@@ -23,7 +24,8 @@ export function TopBar({
   statusLabel: string;
   live: boolean;
   cleanOn: boolean;
-  onMonitorClean: () => void;
+  onBypassPress: () => void;
+  onBypassRelease: () => void;
   dock?: ReactNode;
 }) {
   return (
@@ -72,26 +74,41 @@ export function TopBar({
       </div>
 
       <button
-        onClick={onMonitorClean}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          onBypassPress();
+        }}
+        onPointerUp={onBypassRelease}
+        onPointerLeave={onBypassRelease}
+        onPointerCancel={onBypassRelease}
         aria-pressed={cleanOn}
-        title={
-          cleanOn
-            ? "Stop monitoring, silence the input"
-            : "Hear your guitar clean, with the pedal off"
-        }
-        className="font-[var(--font-mono)] uppercase shrink-0"
+        title="Tap to bypass the pedal, hold to compare (B)"
+        className="font-[var(--font-mono)] uppercase shrink-0 flex items-center transition-all active:scale-95"
         style={{
+          gap: 7,
           padding: "6px 11px",
           borderRadius: 999,
-          border: `1px solid ${cleanOn ? accent + "55" : "rgba(231,228,220,0.1)"}`,
-          background: cleanOn ? `${accent}14` : "rgba(255,255,255,0.02)",
+          border: `1px solid ${cleanOn ? accent + "66" : "rgba(231,228,220,0.1)"}`,
+          background: cleanOn ? `${accent}18` : "rgba(255,255,255,0.02)",
           fontSize: 8.5,
           letterSpacing: "0.18em",
           color: cleanOn ? accent : "rgba(231,228,220,0.55)",
           cursor: "pointer",
+          touchAction: "none",
+          userSelect: "none",
         }}
       >
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: cleanOn ? accent : "rgba(231,228,220,0.22)",
+            boxShadow: cleanOn ? `0 0 7px ${accent}` : "none",
+          }}
+        />
         Clean
+        <span style={{ opacity: 0.4, letterSpacing: "0.06em" }}>B</span>
       </button>
 
       <div

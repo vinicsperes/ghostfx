@@ -5,6 +5,7 @@ import { useTuner } from "./hooks/useTuner";
 import { useSynth, NOTE_KEYS } from "./hooks/useSynth";
 import { useTrack } from "./hooks/useTrack";
 import { useArrangement } from "./hooks/useArrangement";
+import { useBypass } from "./hooks/useBypass";
 import { useColorTransition } from "./hooks/useColorTransition";
 import type { ToolId } from "./components/Console";
 import type { Source } from "./components/Deck";
@@ -248,12 +249,19 @@ export default function App() {
   }, [fx.getLevel]);
 
   const handleTap = useCallback(() => {
-    fx.toggle();
+    if (fx.feedbackBlocked) {
+      fx.resumeFromFeedback();
+      return;
+    }
+    void fx.setBypass(fx.state !== "bypass");
   }, [fx]);
 
-  const handleMonitorClean = useCallback(() => {
-    void fx.monitorClean();
-  }, [fx]);
+  const { setBypass } = fx;
+  const bypass = useBypass({
+    enabled: warningDone,
+    isBypassed: fx.state === "bypass",
+    setBypass,
+  });
 
   const handleStomp = useCallback(() => {
     setStompCount((c) => c + 1);
@@ -376,7 +384,8 @@ export default function App() {
         }
         live={isActive}
         cleanOn={fx.state === "bypass"}
-        onMonitorClean={handleMonitorClean}
+        onBypassPress={bypass.press}
+        onBypassRelease={bypass.release}
         dock={
           <ToolDock
             tools={[
@@ -430,11 +439,18 @@ export default function App() {
           leading={
             <div className="flex items-center" style={{ gap: 8 }}>
               <button
-                onClick={handleMonitorClean}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  bypass.press();
+                }}
+                onPointerUp={bypass.release}
+                onPointerCancel={bypass.release}
                 aria-pressed={fx.state === "bypass"}
-                title="Hear your guitar clean, with the pedal off"
+                title="Tap to bypass, hold to compare"
                 className="font-[var(--font-mono)] uppercase shrink-0"
                 style={{
+                  touchAction: "none",
+                  userSelect: "none",
                   padding: "4px 8px",
                   borderRadius: 999,
                   border: `1px solid ${fx.state === "bypass" ? themeColor + "55" : "rgba(231,228,220,0.12)"}`,

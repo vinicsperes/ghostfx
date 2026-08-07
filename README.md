@@ -105,6 +105,7 @@ guard that mutes the chain before a howl gets loose.
 | Drag a knob up or down | Turn it. Double-click resets, scroll fine-tunes   |
 | Drag around the pedal  | Orbit the camera. Scroll zooms                    |
 | Keys <kbd>1</kbd> to <kbd>6</kbd> | Switch presets                         |
+| <kbd>B</kbd>           | Bypass the pedal. Hold it to compare              |
 | <kbd>Space</kbd>       | Start or stop recording a take                    |
 
 There is also a built-in keyboard synth for when no guitar is around, a tuner

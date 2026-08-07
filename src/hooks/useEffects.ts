@@ -20,7 +20,7 @@ type EffectsApi = {
   error: string | null;
   micBlocked: boolean;
   toggle: () => Promise<void>;
-  monitorClean: () => Promise<void>;
+  setBypass: (on: boolean) => Promise<void>;
   ctxRef: React.RefObject<AudioContext | null>;
   tapRef: React.RefObject<AudioNode | null>;
   ensureAudio: () => Promise<void>;
@@ -645,42 +645,32 @@ export function useEffects({
     }
   }, [state, init, resumeFromFeedback, masterVolume]);
 
-  const monitorClean = useCallback(async () => {
-    if (feedbackLatchRef.current) {
-      resumeFromFeedback();
-      return;
-    }
-    if (!ctxRef.current) await init();
-    const ctx = ctxRef.current;
-    if (!ctx) return;
-    if (ctx.state === "suspended") await ctx.resume();
+  const setBypass = useCallback(
+    async (on: boolean) => {
+      if (feedbackLatchRef.current) return;
+      if (!ctxRef.current) await init();
+      const ctx = ctxRef.current;
+      if (!ctx) return;
+      if (ctx.state === "suspended") await ctx.resume();
 
-    const t = ctx.currentTime;
-    const { bypass, effects, masterGain } = nodesRef.current;
-
-    if (state === "bypass") {
-      masterGain?.gain.setTargetAtTime(0, t, 0.05);
+      const t = ctx.currentTime;
+      const { bypass, effects, masterGain } = nodesRef.current;
       streamRef.current?.getAudioTracks().forEach((tr) => {
-        tr.enabled = false;
+        tr.enabled = true;
       });
-      setState("idle");
-      return;
-    }
-
-    setError(null);
-    streamRef.current?.getAudioTracks().forEach((tr) => {
-      tr.enabled = true;
-    });
-    bypass?.gain.setTargetAtTime(1, t, 0.02);
-    effects?.gain.setTargetAtTime(0, t, 0.02);
-    masterGain?.gain.setTargetAtTime(
-      masterGainFromKnob(masterVolume),
-      t,
-      armedOnceRef.current ? 0.1 : 0.45,
-    );
-    armedOnceRef.current = true;
-    setState("bypass");
-  }, [state, init, masterVolume, resumeFromFeedback]);
+      masterGain?.gain.setTargetAtTime(
+        masterGainFromKnob(masterVolume),
+        t,
+        armedOnceRef.current ? 0.1 : 0.45,
+      );
+      armedOnceRef.current = true;
+      bypass?.gain.setTargetAtTime(on ? 1 : 0, t, 0.015);
+      effects?.gain.setTargetAtTime(on ? 0 : 1, t, 0.015);
+      setError(null);
+      setState(on ? "bypass" : "active");
+    },
+    [init, masterVolume],
+  );
 
   useEffect(() => {
     return () => {
@@ -737,7 +727,7 @@ export function useEffects({
     error: error ?? recorder.error,
     micBlocked,
     toggle,
-    monitorClean,
+    setBypass,
     getLevel,
     getWaveform,
     feedbackBlocked,

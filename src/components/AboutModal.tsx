@@ -5,6 +5,7 @@ import { PresetCurve } from "./PresetCurve";
 
 const SHORTCUTS: [string, string][] = [
   ["1 to 6", "switch rigs"],
+  ["B", "bypass, hold to compare"],
   ["Space", "record a take"],
   ["Drag a knob", "turn it, shift for fine"],
   ["Drag the scene", "orbit, scroll to zoom"],
