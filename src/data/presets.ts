@@ -59,8 +59,8 @@ export const PRESET_INFO = [
   },
   {
     blurb:
-      "Shoegaze weather system. Smooth drive drowned in long saturating echoes, deep wide chorus and a reverb that never quite ends.",
-    circuit: "smooth drive → tape wash delay → wide chorus → cathedral reverb",
+      "Shoegaze weather system. Smooth drive under a wash of echoes, wide chorus, and a cathedral that answers an octave above every note you play.",
+    circuit: "smooth drive → tape wash delay → wide chorus → octave shimmer → cathedral",
   },
   {
     blurb:
@@ -101,7 +101,7 @@ export const DELAYS: DelayProfile[] = [
   { timeMin: 0.08, timeMax: 0.16, fbMin: 0.1, fbMax: 0.45, loopHp: 150, loopLp: 2200, sat: 1.5 },
   { timeMin: 0.12, timeMax: 0.3, fbMin: 0.15, fbMax: 0.5, loopHp: 200, loopLp: 5500, sat: 1.1 },
   { timeMin: 0.1, timeMax: 0.35, fbMin: 0.1, fbMax: 0.4, loopHp: 220, loopLp: 3000, sat: 1.2 },
-  { timeMin: 0.35, timeMax: 0.75, fbMin: 0.35, fbMax: 0.8, loopHp: 160, loopLp: 1800, sat: 1.7 },
+  { timeMin: 0.3, timeMax: 0.62, fbMin: 0.3, fbMax: 0.62, loopHp: 300, loopLp: 2400, sat: 1.7 },
   { timeMin: 0.22, timeMax: 0.5, fbMin: 0.2, fbMax: 0.6, loopHp: 220, loopLp: 2600, sat: 1.4 },
 ];
 
@@ -196,4 +196,19 @@ export const REVERBS: ReverbProfile[] = [
   { decay: 1.4, predelay: 0.012, tone: 4000, width: 0.65 },
   { decay: 3.8, predelay: 0.04, tone: 3600, width: 1.0 },
   { decay: 2.6, predelay: 0.018, tone: 4500, width: 1.0 },
+];
+
+export type ShimmerProfile = {
+  semitones: number;
+  mix: number;
+  lowCut: number;
+};
+
+export const SHIMMERS: ShimmerProfile[] = [
+  { semitones: 0, mix: 0, lowCut: 190 },
+  { semitones: 0, mix: 0, lowCut: 150 },
+  { semitones: 0, mix: 0, lowCut: 120 },
+  { semitones: 0, mix: 0, lowCut: 120 },
+  { semitones: 12, mix: 0.75, lowCut: 330 },
+  { semitones: 0, mix: 0, lowCut: 190 },
 ];

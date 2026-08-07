@@ -1,11 +1,12 @@
 import {
   createDistortionCurve,
+  createPitchShifter,
   createReverbIR,
   createTapeCurve,
   driveOversample,
   mapDrivePreGain,
 } from "./dsp";
-import { CABS, DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
+import { CABS, DELAYS, DRIVES, MODS, REVERBS, SHIMMERS } from "../data/presets";
 
 export type SignalParams = {
   drive: number;
@@ -42,7 +43,9 @@ export type ChainNodes = {
   modDamp: BiquadFilterNode;
   modFb: GainNode;
   modWet: GainNode;
+  reverbHP: BiquadFilterNode;
   reverbPre: DelayNode;
+  shimmer: GainNode | null;
   convolverA: ConvolverNode;
   convolverB: ConvolverNode;
   reverbWetA: GainNode;
@@ -98,6 +101,7 @@ export function applyChainParams(
   nodes.wet.gain.setTargetAtTime(p.echo * 0.5, t, ramp);
 
   nodes.reverbWet.gain.setTargetAtTime(p.reverb * 0.5, t, ramp);
+  nodes.shimmer?.gain.setTargetAtTime(SHIMMERS[idx].mix * p.reverb, t, ramp);
 
   nodes.modDepth.gain.setTargetAtTime(mp.depthMin + p.mod * (mp.depthMax - mp.depthMin), t, ramp);
   nodes.modFb.gain.setTargetAtTime(p.mod * mp.fbMax, t, ramp);
@@ -208,8 +212,25 @@ export function buildChain(
   const modWet = ctx.createGain();
   modWet.gain.value = p.mod * mp.mixMax;
 
+  const sh = SHIMMERS[idx] ?? SHIMMERS[0];
+
+  const reverbHP = ctx.createBiquadFilter();
+  reverbHP.type = "highpass";
+  reverbHP.frequency.value = sh.lowCut;
+  reverbHP.Q.value = 0.707;
+
   const reverbPre = ctx.createDelay(0.2);
   reverbPre.delayTime.value = REVERBS[idx].predelay;
+
+  let shimmer: GainNode | null = null;
+  if (sh.mix > 0) {
+    shimmer = ctx.createGain();
+    shimmer.gain.value = sh.mix * p.reverb;
+    const shifter = createPitchShifter(ctx, sh.semitones);
+    reverbHP.connect(shifter.input);
+    shifter.output.connect(shimmer);
+    shimmer.connect(reverbPre);
+  }
 
   const convolverA = ctx.createConvolver();
   convolverA.normalize = true;
@@ -261,7 +282,8 @@ export function buildChain(
   modDamp.connect(modWet);
   modWet.connect(mix);
 
-  toneFilter.connect(reverbPre);
+  toneFilter.connect(reverbHP);
+  reverbHP.connect(reverbPre);
   reverbPre.connect(convolverA);
   reverbPre.connect(convolverB);
   convolverA.connect(reverbWetA);
@@ -298,7 +320,9 @@ export function buildChain(
       modDamp,
       modFb,
       modWet,
+      reverbHP,
       reverbPre,
+      shimmer,
       convolverA,
       convolverB,
       reverbWetA,

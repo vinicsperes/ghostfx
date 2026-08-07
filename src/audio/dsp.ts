@@ -161,3 +161,51 @@ export function createTapeCurve(drive = 1.3): Float32Array<ArrayBuffer> {
   }
   return curve;
 }
+
+export function createPitchShifter(
+  ctx: BaseAudioContext,
+  semitones: number,
+  windowS = 0.11,
+): { input: GainNode; output: GainNode } {
+  const ratio = Math.pow(2, semitones / 12);
+  const slope = ratio - 1;
+  const rate = Math.abs(slope) / windowS;
+  const start = ctx.currentTime;
+
+  const input = ctx.createGain();
+  const output = ctx.createGain();
+  output.gain.value = 0.7;
+
+  for (const phase of [0, 0.5]) {
+    const delay = ctx.createDelay(1);
+    delay.delayTime.value = windowS / 2;
+
+    const ramp = ctx.createOscillator();
+    ramp.type = "sawtooth";
+    ramp.frequency.value = rate;
+    const rampDepth = ctx.createGain();
+    rampDepth.gain.value = (slope > 0 ? -1 : 1) * (windowS / 2);
+    ramp.connect(rampDepth);
+    rampDepth.connect(delay.delayTime);
+
+    const window = ctx.createGain();
+    window.gain.value = 0.5;
+    const shape = ctx.createOscillator();
+    shape.type = "triangle";
+    shape.frequency.value = rate;
+    const shapeDepth = ctx.createGain();
+    shapeDepth.gain.value = phase === 0 ? 0.5 : -0.5;
+    shape.connect(shapeDepth);
+    shapeDepth.connect(window.gain);
+
+    input.connect(delay);
+    delay.connect(window);
+    window.connect(output);
+
+    const at = start + phase / rate;
+    ramp.start(at);
+    shape.start(at);
+  }
+
+  return { input, output };
+}
