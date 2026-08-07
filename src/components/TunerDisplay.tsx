@@ -1,11 +1,12 @@
 import { GUITAR_STRINGS } from "../audio/pitch";
 import type { TunerReading } from "../hooks/useTuner";
+import { isPt } from "../lib/locale";
 
 const IN_TUNE_CENTS = 5;
 const IN_TUNE = "#4ade80";
 const OFF_TUNE = "#f5a33e";
 
-const T = navigator.language.toLowerCase().startsWith("pt")
+const T = isPt
   ? { hint: "Toque uma corda solta", flat: "GRAVE", sharp: "AGUDO" }
   : { hint: "Play one open string", flat: "FLAT", sharp: "SHARP" };
 

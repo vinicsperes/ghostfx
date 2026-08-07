@@ -1,4 +1,5 @@
-const MIC_T = navigator.language.toLowerCase().startsWith("pt")
+import { isPt } from "../lib/locale";
+const MIC_T = isPt
   ? {
       badge: "MICROFONE",
       title: "MICROFONE BLOQUEADO",

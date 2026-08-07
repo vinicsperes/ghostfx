@@ -1,12 +1,18 @@
 import { useEffect } from "react";
 import { PRESETS, PRESET_INFO, PRESET_META } from "../data/presets";
+import { lang, setLang } from "../lib/locale";
 import { PresetCurve } from "./PresetCurve";
 
 const SHORTCUTS: [string, string][] = [
   ["1 to 6", "switch rigs"],
-  ["Space", "record"],
+  ["Space", "record a take"],
   ["Drag a knob", "turn it, shift for fine"],
   ["Drag the scene", "orbit, scroll to zoom"],
+];
+
+const LANGS: { id: "en" | "pt"; label: string }[] = [
+  { id: "en", label: "EN" },
+  { id: "pt", label: "PT" },
 ];
 
 export function AboutModal({
@@ -182,6 +188,38 @@ export function AboutModal({
                 </span>
               </div>
             ))}
+          </div>
+
+          <div className="flex items-center justify-between" style={{ marginTop: 16, gap: 10 }}>
+            <span
+              className="font-[var(--font-mono)] uppercase"
+              style={{ fontSize: 8.5, letterSpacing: "0.3em", color: `${accent}99` }}
+            >
+              Language
+            </span>
+            <div className="flex" style={{ gap: 4 }}>
+              {LANGS.map((entry) => (
+                <button
+                  key={entry.id}
+                  onClick={() => entry.id !== lang && setLang(entry.id)}
+                  aria-pressed={entry.id === lang}
+                  title={entry.id === lang ? "Current language" : "Switch and reload"}
+                  className="font-[var(--font-mono)]"
+                  style={{
+                    padding: "3px 9px",
+                    borderRadius: 5,
+                    border: `1px solid ${entry.id === lang ? accent + "55" : "rgba(231,228,220,0.12)"}`,
+                    background: entry.id === lang ? `${accent}14` : "transparent",
+                    fontSize: 9.5,
+                    letterSpacing: "0.14em",
+                    color: entry.id === lang ? accent : "rgba(231,228,220,0.5)",
+                    cursor: entry.id === lang ? "default" : "pointer",
+                  }}
+                >
+                  {entry.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
-const FEEDBACK_T = navigator.language.toLowerCase().startsWith("pt")
+import { isPt } from "../lib/locale";
+const FEEDBACK_T = isPt
   ? {
       badge: "ÁUDIO",
       title: "MICROFONIA DETECTADA",

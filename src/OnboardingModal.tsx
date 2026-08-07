@@ -1,4 +1,5 @@
 import GhostMark from "./GhostMark";
+import { isPt } from "./lib/locale";
 
 const GREEN = "#20f040";
 
@@ -56,7 +57,7 @@ const en = {
   cta: "HEADPHONES ON · START →",
 };
 
-const T = navigator.language.toLowerCase().startsWith("pt") ? pt : en;
+const T = isPt ? pt : en;
 
 const ICONS = [IconInterface, IconJack, IconHeadphones, IconFootswitch];
 
@@ -270,7 +271,7 @@ export default function OnboardingModal({ onDismiss }: { onDismiss: () => void }
             marginTop: 14,
           }}
         >
-          GHOST FX MK.I · OPEN SOURCE
+          GHOST FX STUDIO MK.II · OPEN SOURCE
         </p>
       </div>
     </div>
