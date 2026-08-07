@@ -48,8 +48,14 @@ export type ChainNodes = {
   reverbWetA: GainNode;
   reverbWetB: GainNode;
   reverbWet: GainNode;
+  mix: GainNode;
   effects: GainNode;
 };
+
+function mixNorm(p: SignalParams, mixMax: number): number {
+  const wet = p.echo * 0.5 + p.reverb * 0.5 + p.mod * mixMax;
+  return 1 / (1 + 0.55 * wet);
+}
 
 const irCache = new Map<number, [Float32Array<ArrayBuffer>, Float32Array<ArrayBuffer>][]>();
 
@@ -96,6 +102,8 @@ export function applyChainParams(
   nodes.modDepth.gain.setTargetAtTime(mp.depthMin + p.mod * (mp.depthMax - mp.depthMin), t, ramp);
   nodes.modFb.gain.setTargetAtTime(p.mod * mp.fbMax, t, ramp);
   nodes.modWet.gain.setTargetAtTime(p.mod * mp.mixMax, t, ramp);
+
+  nodes.mix.gain.setTargetAtTime(mixNorm(p, mp.mixMax), t, ramp);
 }
 
 export function buildChain(
@@ -217,6 +225,9 @@ export function buildChain(
   const reverbWet = ctx.createGain();
   reverbWet.gain.value = p.reverb * 0.5;
 
+  const mix = ctx.createGain();
+  mix.gain.value = mixNorm(p, mp.mixMax);
+
   const effects = ctx.createGain();
   effects.gain.value = 1;
 
@@ -230,7 +241,9 @@ export function buildChain(
   cabPres.connect(cabLP);
   cabLP.connect(toneFilter);
 
-  toneFilter.connect(effects);
+  mix.connect(effects);
+
+  toneFilter.connect(mix);
 
   toneFilter.connect(delay);
   delay.connect(delayLoopHP);
@@ -239,14 +252,14 @@ export function buildChain(
   delaySat.connect(feedback);
   feedback.connect(delay);
   delaySat.connect(wet);
-  wet.connect(effects);
+  wet.connect(mix);
 
   toneFilter.connect(modDelay);
   modDelay.connect(modDamp);
   modDamp.connect(modFb);
   modFb.connect(modDelay);
   modDamp.connect(modWet);
-  modWet.connect(effects);
+  modWet.connect(mix);
 
   toneFilter.connect(reverbPre);
   reverbPre.connect(convolverA);
@@ -255,7 +268,7 @@ export function buildChain(
   convolverB.connect(reverbWetB);
   reverbWetA.connect(reverbWet);
   reverbWetB.connect(reverbWet);
-  reverbWet.connect(effects);
+  reverbWet.connect(mix);
 
   return {
     input: preFilter,
@@ -291,6 +304,7 @@ export function buildChain(
       reverbWetA,
       reverbWetB,
       reverbWet,
+      mix,
       effects,
     },
   };

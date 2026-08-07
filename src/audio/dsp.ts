@@ -9,10 +9,10 @@ function shapeScreamer(x: number, a: number): number {
 }
 
 function shapeFuzz(x: number, a: number): number {
-  const kp = 4 + 30 * Math.pow(a, 1.3);
-  const kn = kp * 1.7;
-  const makeup = 1 / (1.8 + a * 0.2);
-  const y = x > 0 ? Math.tanh(kp * x) : Math.tanh(kn * x) * 0.9;
+  const kp = 2 + 11 * Math.pow(a, 1.45);
+  const kn = kp * 1.55;
+  const makeup = 1 / (1.25 + a * 0.5);
+  const y = x > 0 ? Math.tanh(kp * x) : Math.tanh(kn * x) * 0.92;
   return y * makeup;
 }
 
@@ -43,8 +43,8 @@ function shapeSmooth(x: number, a: number): number {
 }
 
 function shapeStarved(x: number, a: number): number {
-  const b = 0.5 * a;
-  return (softClip((2 + 22 * a) * x + b, 2.5) - softClip(b, 2.5)) * 0.45;
+  const b = 0.4 * a;
+  return (softClip((1.6 + 9 * a) * x + b, 2.2) - softClip(b, 2.2)) * 0.5;
 }
 
 const DRIVE_SHAPES: Record<DriveShape, (x: number, a: number) => number> = {
