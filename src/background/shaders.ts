@@ -84,32 +84,40 @@ void main(){
 export const HAZE_FS = `
 precision mediump float;
 uniform float u_t; uniform vec2 u_res; uniform float u_blend;
+float grain(vec2 p, float seed){
+  return fract(sin(dot(p, vec2(12.9898, 78.233)) + seed) * 43758.5453);
+}
 void main(){
   vec2 uv=gl_FragCoord.xy/u_res;
   float a=u_res.x/u_res.y;
   float kx=a<1.0?a:1.0;
-  float nx=.5+(uv.x-.5)*kx,ny=1.-uv.y,cx=nx-.5,cy=ny-.5;
-  float r=sqrt(cx*cx+cy*cy);
-  float v=sin(nx*8.+u_t*.50)*1.1
-         +sin(ny*6.-u_t*.40)*1.1
-         +sin(r*16.-u_t*1.20)*1.5
-         +sin((cx*9.-cy*7.)+u_t*.30)*.9
-         +sin((cx*5.+cy*11.)-u_t*.22)*.7;
-  float c1=abs(cos(v*3.14159265));
-  float c2=abs(cos(v*3.14159265*.5+.9));
-  float t1=mix(1.0,0.78,u_blend);
-  float t2=mix(1.0,0.85,u_blend);
+  float nx=.5+(uv.x-.5)*kx, ny=1.-uv.y;
+  float t=u_t*.07;
+  float ca=.966, sa=.259;
+  vec2 p=vec2(nx*ca-ny*sa, nx*sa+ny*ca);
+
+  float w1=sin(p.x*26.+t)*.5+.5;
+  float w2=sin(p.y*26.-t*.8)*.5+.5;
+  float b1=sin(p.x*6.5-t*.5)*.5+.5;
+  float b2=sin(p.y*5.5+t*.4)*.5+.5;
+  float weave=b1*b2*1.15 + w1*w2*.45 + (b1+b2)*.22;
+
+  float g=grain(gl_FragCoord.xy, floor(u_t*9.));
+  float wear=grain(floor(gl_FragCoord.xy*.06), 3.7);
+  float v=weave*(.82+wear*.32)+g*.09;
+
+  float t1=mix(1.6,1.02,u_blend);
+  float t2=mix(1.6,.72,u_blend);
   vec4 col;
-  if(c1>t1){
-    float b=pow((c1-.78)/.22,.55);
-    float violet=sin(v*1.4+u_t*.15)*.5+.5;
-    col=vec4(b*(212.-violet*58.)/255.,b*(106.-violet*14.)/255.,b*(159.+violet*49.)/255.,b*248./255.);
-  } else if(c2>t2){
-    float b=pow((c2-.85)/.15,.5)*.42;
-    col=vec4(b*130./255.,b*70./255.,b*180./255.,b*160./255.);
+  if(v>t1){
+    float b=pow((v-1.02)/.62,.7)*(.72+g*.28);
+    col=vec4(b*206./255., b*150./255., b*58./255., b*250./255.);
+  } else if(v>t2){
+    float b=pow((v-.72)/.30,.85)*.4*(.8+g*.2);
+    col=vec4(b*138./255., b*88./255., b*32./255., b*180./255.);
   } else {
-    float depth=(sin(v*.4)+1.)*.5;
-    col=vec4(depth*24./255.,depth*6./255.,depth*28./255.,1.);
+    float depth=(sin(v*2.2)+1.)*.5;
+    col=vec4(depth*26./255.+g*.012, depth*17./255.+g*.010, depth*7./255., 1.);
   }
   gl_FragColor=col;
 }`;
@@ -179,7 +187,7 @@ void main(){
 }`;
 
 export const PRESET_FS = [GHOST_FS, CLEAN_FS, FROST_FS, HEAVY_FS, HAZE_FS, FEVER_FS];
-export const PRESET_OPACITY = [0.7, 0.65, 0.74, 0.82, 0.88, 0.82];
+export const PRESET_OPACITY = [0.7, 0.65, 0.74, 0.82, 0.8, 0.82];
 
 export type GlState = {
   tLoc: WebGLUniformLocation;

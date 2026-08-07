@@ -23,7 +23,7 @@ export const PRESET_META = [
   { color: "#7d22c4", word: "OCCULT", chassis: "#0d0518" },
   { color: "#a8c4dc", word: "GLACIER", chassis: "#0a1018" },
   { color: "#e02828", word: "HOLLOW", chassis: "#120404" },
-  { color: "#d46a9f", word: "SEATTLE", chassis: "#140812" },
+  { color: "#c8922f", word: "FADED", chassis: "#150e05" },
   { color: "#f02a96", word: "DELIRIUM", chassis: "#150618" },
 ] as const;
 
