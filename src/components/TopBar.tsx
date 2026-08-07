@@ -11,6 +11,8 @@ export function TopBar({
   ledColor,
   statusLabel,
   live,
+  cleanOn,
+  onMonitorClean,
   dock,
 }: {
   activePresetIdx: number | null;
@@ -20,6 +22,8 @@ export function TopBar({
   ledColor: string;
   statusLabel: string;
   live: boolean;
+  cleanOn: boolean;
+  onMonitorClean: () => void;
   dock?: ReactNode;
 }) {
   return (
@@ -66,6 +70,29 @@ export function TopBar({
           />
         ))}
       </div>
+
+      <button
+        onClick={onMonitorClean}
+        aria-pressed={cleanOn}
+        title={
+          cleanOn
+            ? "Stop monitoring, silence the input"
+            : "Hear your guitar clean, with the pedal off"
+        }
+        className="font-[var(--font-mono)] uppercase shrink-0"
+        style={{
+          padding: "6px 11px",
+          borderRadius: 999,
+          border: `1px solid ${cleanOn ? accent + "55" : "rgba(231,228,220,0.1)"}`,
+          background: cleanOn ? `${accent}14` : "rgba(255,255,255,0.02)",
+          fontSize: 8.5,
+          letterSpacing: "0.18em",
+          color: cleanOn ? accent : "rgba(231,228,220,0.55)",
+          cursor: "pointer",
+        }}
+      >
+        Clean
+      </button>
 
       <div
         className="flex items-center shrink-0"

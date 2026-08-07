@@ -3,8 +3,13 @@ import { useEffects } from "./hooks/useEffects";
 import { useMetronome } from "./hooks/useMetronome";
 import { useTuner } from "./hooks/useTuner";
 import { useSynth, NOTE_KEYS } from "./hooks/useSynth";
+import { useTrack } from "./hooks/useTrack";
+import { useArrangement } from "./hooks/useArrangement";
 import { useColorTransition } from "./hooks/useColorTransition";
 import type { ToolId } from "./components/Console";
+import type { Source } from "./components/Deck";
+import type { StudioTool } from "./components/StudioView";
+import type { Backing } from "./audio/render";
 import Pedal3D from "./Pedal3D";
 import LoadingScreen from "./LoadingScreen";
 import OnboardingModal from "./OnboardingModal";
@@ -12,16 +17,15 @@ import GhostMark from "./GhostMark";
 import PresetBg from "./background/PresetBg";
 import { PRESETS, PALETTE, PRESET_META } from "./data/presets";
 import {
-  RecorderControls,
+  Deck,
   Console,
   MobileSheet,
+  StudioView,
   ToolDock,
   FaderIcon,
   ForkIcon,
   KeysIcon,
-  TempoIcon,
   TunerDisplay,
-  Metronome,
   TopBar,
   AboutModal,
   MicBlockedModal,
@@ -44,25 +48,18 @@ const WEBGL_OK = (() => {
 
 const WARNING_ACK_KEY = "ghostfx.onboardAck";
 
-const SHEET_TABS = [{ key: "rec", label: "Recorder" }] as const;
+const SHEET_TABS = [{ key: "deck", label: "Deck" }] as const;
 
 const TOOL_LABEL: Record<string, string> = {
   mix: "Signal",
   tune: "Tuner",
   synth: "Keyboard synth",
-  tempo: "Tempo",
 };
 
-const MOBILE_TOOLS = (bpm: number, running: boolean) => [
+const MOBILE_TOOLS = [
   { id: "mix" as const, label: "MIX", icon: <FaderIcon />, title: "Signal faders" },
   { id: "tune" as const, label: "TUNE", icon: <ForkIcon />, title: "Tuner" },
   { id: "synth" as const, label: "KEYS", icon: <KeysIcon />, title: "Keyboard synth" },
-  {
-    id: "tempo" as const,
-    label: String(bpm),
-    icon: <TempoIcon running={running} />,
-    title: "Tempo",
-  },
 ];
 
 const EXPLODE_MS = 2400;
@@ -78,7 +75,7 @@ export default function App() {
     }
   });
   const [micDismissed, setMicDismissed] = useState(false);
-  const [sheetTab, setSheetTab] = useState<"rec">("rec");
+  const [sheetTab, setSheetTab] = useState<(typeof SHEET_TABS)[number]["key"]>("deck");
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [stompCount, setStompCount] = useState(0);
   const [presetIdx, setPresetIdx] = useState<number | null>(0);
@@ -91,7 +88,7 @@ export default function App() {
   const [tone, setTone] = useState<number>(PRESETS[0].tone);
   const [reverb, setReverb] = useState<number>(PRESETS[0].reverb);
   const [mod, setMod] = useState<number>(PRESETS[0].mod);
-  const [masterVolume, setMasterVolume] = useState<number>(0);
+  const [masterVolume, setMasterVolume] = useState<number>(PRESETS[0].master);
 
   const applyPreset = useCallback((preset: (typeof PRESETS)[number]) => {
     setDrive(preset.drive);
@@ -111,21 +108,69 @@ export default function App() {
     [applyPreset],
   );
 
-  const fx = useEffects({ drive, echo, tone, reverb, mod, masterVolume, presetIdx });
+  const backingRef = useRef<(() => Backing | null) | null>(null);
+  const fx = useEffects({ drive, echo, tone, reverb, mod, masterVolume, presetIdx, backingRef });
   const { toggleRecording, isRecording } = fx.recorder;
   useEffect(() => {
     if (!fx.micBlocked) setMicDismissed(false);
   }, [fx.micBlocked]);
 
   const metronome = useMetronome({ ctxRef: fx.ctxRef, ensureAudio: fx.ensureAudio });
+  const track = useTrack({ ctxRef: fx.ctxRef, ensureAudio: fx.ensureAudio });
+  const arrangement = useArrangement({ ctxRef: fx.ctxRef });
+  const [source, setSource] = useState<Source>("take");
+
+  const { snapshot: trackSnapshot } = track;
+  const { snapshot: takeSnapshot } = fx.recorder;
+  useEffect(() => {
+    backingRef.current = () => trackSnapshot() ?? takeSnapshot();
+  }, [trackSnapshot, takeSnapshot]);
+
+  const { pause: pauseTake } = fx.recorder;
+  const { pause: pauseTrack, track: loadedTrack } = track;
+  const selectSource = useCallback(
+    (next: Source) => {
+      if (next === "track") pauseTake();
+      else if (next === "take") pauseTrack();
+      setSource(next);
+    },
+    [pauseTake, pauseTrack],
+  );
+
+  useEffect(() => {
+    if (loadedTrack) {
+      pauseTake();
+      setSource("track");
+    } else {
+      setSource("take");
+    }
+  }, [loadedTrack, pauseTake]);
+
+  const { activeTakeId, playingId } = fx.recorder;
+  useEffect(() => {
+    if (activeTakeId) selectSource("take");
+  }, [activeTakeId, selectSource]);
+
+  useEffect(() => {
+    if (playingId) pauseTrack();
+  }, [playingId, pauseTrack]);
+
+  const [studioOpen, setStudioOpen] = useState(false);
+  const [studioTool, setStudioTool] = useState<StudioTool>("mix");
   const [countInEnabled, setCountInEnabled] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
+  const tunerOn = activeTool === "tune" || (studioOpen && studioTool === "tune");
   const tuning = useTuner({
-    enabled: activeTool === "tune",
+    enabled: tunerOn,
     getMicWaveform: fx.getMicWaveform,
     getSampleRate: fx.getSampleRate,
   });
+
+  const { ensureAudio } = fx;
+  useEffect(() => {
+    if (tunerOn) void ensureAudio();
+  }, [tunerOn, ensureAudio]);
 
   const { countIn } = metronome;
   const { countingIn } = metronome;
@@ -204,6 +249,10 @@ export default function App() {
 
   const handleTap = useCallback(() => {
     fx.toggle();
+  }, [fx]);
+
+  const handleMonitorClean = useCallback(() => {
+    void fx.monitorClean();
   }, [fx]);
 
   const handleStomp = useCallback(() => {
@@ -299,6 +348,9 @@ export default function App() {
             metronome={metronome}
             synth={synth}
             tuning={tuning}
+            track={track}
+            source={source}
+            onSourceChange={selectSource}
             levels={{ drive, echo, tone, reverb, mod, master: masterVolume }}
             onKnobChange={handleKnobChange}
             activeTool={activeTool}
@@ -306,6 +358,7 @@ export default function App() {
             countInEnabled={countInEnabled}
             onToggleCountIn={() => setCountInEnabled((v) => !v)}
             onRecord={() => void handleRecord()}
+            onOpenStudio={() => setStudioOpen(true)}
             getLevelRef={getLevelRef}
             accent={themeColor}
           />
@@ -318,8 +371,12 @@ export default function App() {
         onOpenAbout={() => setAboutOpen(true)}
         accent={themeColor}
         ledColor={ledColor}
-        statusLabel={isActive ? "Active" : fx.ready ? "Ready" : "Idle"}
+        statusLabel={
+          isActive ? "Active" : fx.state === "bypass" ? "Clean" : fx.ready ? "Ready" : "Idle"
+        }
         live={isActive}
+        cleanOn={fx.state === "bypass"}
+        onMonitorClean={handleMonitorClean}
         dock={
           <ToolDock
             tools={[
@@ -330,12 +387,6 @@ export default function App() {
                 label: "SYNTH",
                 icon: <KeysIcon />,
                 title: "Play the built-in synth with your keyboard",
-              },
-              {
-                id: "tempo",
-                label: String(metronome.bpm),
-                icon: <TempoIcon running={metronome.isRunning} />,
-                title: "Tempo and count-in",
               },
             ]}
             activeTool={activeTool}
@@ -377,29 +428,48 @@ export default function App() {
           onExpandedChange={setSheetExpanded}
           accent={themeColor}
           leading={
-            <button
-              onClick={() => setAboutOpen(true)}
-              className="flex items-center"
-              style={{ gap: 6 }}
-              aria-label="About GHOSTFX"
-            >
-              <GhostMark variant="solid" size={17} color="#e7e4dc" ledColor={themeColor} />
-              <span
+            <div className="flex items-center" style={{ gap: 8 }}>
+              <button
+                onClick={handleMonitorClean}
+                aria-pressed={fx.state === "bypass"}
+                title="Hear your guitar clean, with the pedal off"
+                className="font-[var(--font-mono)] uppercase shrink-0"
                 style={{
-                  fontFamily: "'Saira', sans-serif",
-                  fontWeight: 800,
-                  fontSize: 12,
-                  letterSpacing: "-0.02em",
-                  color: "rgba(231,228,220,0.75)",
+                  padding: "4px 8px",
+                  borderRadius: 999,
+                  border: `1px solid ${fx.state === "bypass" ? themeColor + "55" : "rgba(231,228,220,0.12)"}`,
+                  background: fx.state === "bypass" ? `${themeColor}14` : "transparent",
+                  fontSize: 8,
+                  letterSpacing: "0.16em",
+                  color: fx.state === "bypass" ? themeColor : "rgba(231,228,220,0.5)",
                 }}
               >
-                GHOST<span style={{ color: themeColor }}>FX</span>
-              </span>
-            </button>
+                Clean
+              </button>
+              <button
+                onClick={() => setAboutOpen(true)}
+                className="flex items-center"
+                style={{ gap: 6 }}
+                aria-label="About GHOSTFX"
+              >
+                <GhostMark variant="solid" size={17} color="#e7e4dc" ledColor={themeColor} />
+                <span
+                  style={{
+                    fontFamily: "'Saira', sans-serif",
+                    fontWeight: 800,
+                    fontSize: 12,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(231,228,220,0.75)",
+                  }}
+                >
+                  GHOST<span style={{ color: themeColor }}>FX</span>
+                </span>
+              </button>
+            </div>
           }
           trailing={
             <ToolDock
-              tools={MOBILE_TOOLS(metronome.bpm, metronome.isRunning)}
+              tools={MOBILE_TOOLS}
               activeTool={activeTool}
               onToolChange={(tool) => {
                 setActiveTool(tool);
@@ -427,30 +497,27 @@ export default function App() {
               }}
             >
               <span style={{ fontSize: 12, lineHeight: 1, color: themeColor }}>‹</span>
-              Recorder
+              Deck
               <span style={{ opacity: 0.4 }}>·</span>
               <span style={{ color: themeColor }}>{TOOL_LABEL[activeTool]}</span>
             </button>
           )}
 
           {activeTool === null && warningDone && (
-            <RecorderControls
+            <Deck
               recorder={fx.recorder}
-              onRecord={() => void handleRecord()}
-              getLevelRef={getLevelRef}
-              accent={themeColor}
-              scopeHeight={54}
-              countingIn={metronome.countingIn}
-            />
-          )}
-
-          {activeTool === "tempo" && (
-            <Metronome
+              track={track}
               metronome={metronome}
               countInEnabled={countInEnabled}
               onToggleCountIn={() => setCountInEnabled((v) => !v)}
+              source={source}
+              onSourceChange={selectSource}
+              onRecord={() => void handleRecord()}
+              onOpenStudio={() => setStudioOpen(true)}
+              getLevelRef={getLevelRef}
               accent={themeColor}
-              compact
+              countingIn={metronome.countingIn}
+              height={54}
             />
           )}
 
@@ -571,6 +638,27 @@ export default function App() {
 
       {aboutOpen && (
         <AboutModal presetIdx={presetIdx} accent={themeColor} onClose={() => setAboutOpen(false)} />
+      )}
+
+      {studioOpen && (
+        <StudioView
+          recorder={fx.recorder}
+          track={track}
+          arrangement={arrangement}
+          metronome={metronome}
+          tuning={tuning}
+          countInEnabled={countInEnabled}
+          onToggleCountIn={() => setCountInEnabled((v) => !v)}
+          tool={studioTool}
+          onToolChange={setStudioTool}
+          presetIdx={presetIdx}
+          getLevelRef={getLevelRef}
+          onRecord={() => void handleRecord()}
+          source={source}
+          onSourceChange={selectSource}
+          accent={themeColor}
+          onClose={() => setStudioOpen(false)}
+        />
       )}
 
       {fx.feedbackBlocked && <FeedbackModal onResume={() => fx.resumeFromFeedback()} />}
