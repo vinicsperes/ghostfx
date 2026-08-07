@@ -1,17 +1,17 @@
-import { RecorderControls } from "./RecorderControls";
+import { Deck, type Source } from "./Deck";
 import { PanelLabel } from "./PanelLabel";
 import { ToolTray } from "./ToolTray";
 import { Surface } from "./Surface";
 import { ChannelStrip } from "./ChannelStrip";
-import { Metronome } from "./Metronome";
 import { TunerDisplay } from "./TunerDisplay";
 import { KeyboardDisplay } from "./KeyboardDisplay";
 import type { useMetronome } from "../hooks/useMetronome";
 import type { useRecorder } from "../hooks/useRecorder";
 import type { useSynth } from "../hooks/useSynth";
+import type { useTrack } from "../hooks/useTrack";
 import type { TunerReading } from "../hooks/useTuner";
 
-export type ToolId = "mix" | "tune" | "synth" | "tempo";
+export type ToolId = "mix" | "tune" | "synth";
 export type KnobId = "drive" | "echo" | "tone" | "reverb" | "mod" | "master";
 
 const STRIPS: { id: KnobId; label: string }[] = [
@@ -27,7 +27,6 @@ const TITLES: Record<ToolId, string> = {
   mix: "Signal",
   tune: "Tuner",
   synth: "Keyboard synth",
-  tempo: "Tempo",
 };
 
 export function Console({
@@ -35,6 +34,9 @@ export function Console({
   metronome,
   synth,
   tuning,
+  track,
+  source,
+  onSourceChange,
   levels,
   onKnobChange,
   activeTool,
@@ -42,6 +44,7 @@ export function Console({
   countInEnabled,
   onToggleCountIn,
   onRecord,
+  onOpenStudio,
   getLevelRef,
   accent,
 }: {
@@ -49,6 +52,9 @@ export function Console({
   metronome: ReturnType<typeof useMetronome>;
   synth: ReturnType<typeof useSynth>;
   tuning: TunerReading;
+  track: ReturnType<typeof useTrack>;
+  source: Source;
+  onSourceChange: (next: Source) => void;
   levels: Record<KnobId, number>;
   onKnobChange: (id: KnobId, value: number) => void;
   activeTool: ToolId | null;
@@ -56,9 +62,16 @@ export function Console({
   countInEnabled: boolean;
   onToggleCountIn: () => void;
   onRecord: () => void;
+  onOpenStudio: () => void;
   getLevelRef: { current: (() => number) | null };
   accent: string;
 }) {
+  const label = metronome.countingIn
+    ? "Counting in"
+    : source === "track" && track.track
+      ? "Track"
+      : "Take";
+
   return (
     <div className="flex flex-col w-full pointer-events-none" style={{ gap: 10 }}>
       {activeTool && (
@@ -84,16 +97,6 @@ export function Console({
                 <TunerDisplay reading={tuning} accent={accent} size="sm" />
               </div>
             )}
-            {activeTool === "tempo" && (
-              <div className="w-full">
-                <Metronome
-                  metronome={metronome}
-                  countInEnabled={countInEnabled}
-                  onToggleCountIn={onToggleCountIn}
-                  accent={accent}
-                />
-              </div>
-            )}
             {activeTool === "synth" && (
               <div className="self-center w-full" style={{ maxWidth: 620 }}>
                 <KeyboardDisplay
@@ -110,12 +113,23 @@ export function Console({
       )}
 
       <div className="flex items-stretch w-full" style={{ gap: 10 }}>
-        <Surface grow lit={recorder.isRecording || metronome.countingIn} accent={accent}>
+        <Surface
+          grow
+          lit={recorder.isRecording || metronome.countingIn || track.isPlaying}
+          accent={accent}
+        >
           <div className="flex flex-col" style={{ gap: 9, minWidth: 0 }}>
-            <PanelLabel>{metronome.countingIn ? "Counting in" : "Recorder"}</PanelLabel>
-            <RecorderControls
+            <PanelLabel>{label}</PanelLabel>
+            <Deck
               recorder={recorder}
+              track={track}
+              metronome={metronome}
+              countInEnabled={countInEnabled}
+              onToggleCountIn={onToggleCountIn}
+              source={source}
+              onSourceChange={onSourceChange}
               onRecord={onRecord}
+              onOpenStudio={onOpenStudio}
               getLevelRef={getLevelRef}
               accent={accent}
               countingIn={metronome.countingIn}

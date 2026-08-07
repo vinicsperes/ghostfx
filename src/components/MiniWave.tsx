@@ -5,11 +5,13 @@ export function MiniWave({
   color,
   width = 96,
   height = 20,
+  stretch = false,
 }: {
   peaks: Float32Array;
   color: string;
   width?: number;
   height?: number;
+  stretch?: boolean;
 }) {
   if (!peaks.length) return null;
   let max = 0;
@@ -29,7 +31,15 @@ export function MiniWave({
   });
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} fill="none" aria-hidden>
+    <svg
+      width={stretch ? "100%" : width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio={stretch ? "none" : undefined}
+      style={stretch ? { display: "block" } : undefined}
+      fill="none"
+      aria-hidden
+    >
       {bars.map(({ x, h }, i) => (
         <rect
           key={i}
