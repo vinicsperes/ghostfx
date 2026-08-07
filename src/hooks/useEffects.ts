@@ -76,6 +76,11 @@ export function useEffects({
   const notchAtRef = useRef<number[]>([0, 0, 0, 0]);
   const armedOnceRef = useRef(false);
 
+  const masterVolumeRef = useRef(masterVolume);
+  useEffect(() => {
+    masterVolumeRef.current = masterVolume;
+  }, [masterVolume]);
+
   const irBuffersRef = useRef<AudioBuffer[]>([]);
   const activeConvRef = useRef<"A" | "B">("A");
   const convUnloadRef = useRef<number | null>(null);
@@ -632,7 +637,7 @@ export function useEffects({
         tr.enabled = true;
       });
       masterGain?.gain.setTargetAtTime(
-        masterGainFromKnob(masterVolume),
+        masterGainFromKnob(masterVolumeRef.current),
         t,
         armedOnceRef.current ? 0.1 : 0.45,
       );
@@ -645,7 +650,7 @@ export function useEffects({
       effects?.gain.setTargetAtTime(0, t, 0.02);
       setState("bypass");
     }
-  }, [state, init, resumeFromFeedback, masterVolume]);
+  }, [state, init, resumeFromFeedback]);
 
   const setBypass = useCallback(
     async (on: boolean) => {
@@ -661,7 +666,7 @@ export function useEffects({
         tr.enabled = true;
       });
       masterGain?.gain.setTargetAtTime(
-        masterGainFromKnob(masterVolume),
+        masterGainFromKnob(masterVolumeRef.current),
         t,
         armedOnceRef.current ? 0.1 : 0.45,
       );
@@ -671,7 +676,7 @@ export function useEffects({
       setError(null);
       setState(on ? "bypass" : "active");
     },
-    [init, masterVolume],
+    [init],
   );
 
   useEffect(() => {

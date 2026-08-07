@@ -6,15 +6,18 @@ export function useBypass({
   enabled,
   isBypassed,
   setBypass,
+  onArm,
 }: {
   enabled: boolean;
   isBypassed: boolean;
   setBypass: (on: boolean) => Promise<void>;
+  onArm?: () => void;
 }) {
   const heldRef = useRef(false);
   const timerRef = useRef<number | null>(null);
   const bypassedRef = useRef(isBypassed);
   const setBypassRef = useRef(setBypass);
+  const armRef = useRef(onArm);
 
   useEffect(() => {
     bypassedRef.current = isBypassed;
@@ -22,6 +25,9 @@ export function useBypass({
   useEffect(() => {
     setBypassRef.current = setBypass;
   }, [setBypass]);
+  useEffect(() => {
+    armRef.current = onArm;
+  }, [onArm]);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -33,6 +39,7 @@ export function useBypass({
   const press = useCallback(() => {
     if (heldRef.current) return;
     heldRef.current = true;
+    armRef.current?.();
     const wasBypassed = bypassedRef.current;
     void setBypassRef.current(!wasBypassed);
     clearTimer();

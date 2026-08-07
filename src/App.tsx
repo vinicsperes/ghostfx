@@ -89,7 +89,7 @@ export default function App() {
   const [tone, setTone] = useState<number>(PRESETS[0].tone);
   const [reverb, setReverb] = useState<number>(PRESETS[0].reverb);
   const [mod, setMod] = useState<number>(PRESETS[0].mod);
-  const [masterVolume, setMasterVolume] = useState<number>(PRESETS[0].master);
+  const [masterVolume, setMasterVolume] = useState<number>(0);
 
   const applyPreset = useCallback((preset: (typeof PRESETS)[number]) => {
     setDrive(preset.drive);
@@ -248,15 +248,22 @@ export default function App() {
     getLevelRef.current = fx.getLevel;
   }, [fx.getLevel]);
 
+  const wake = useCallback(() => {
+    if (fx.state !== "idle") return;
+    setMasterVolume((v) => (v > 0 ? v : PRESETS[presetIdxRef.current ?? 0].master));
+  }, [fx.state]);
+
   const handleTap = useCallback(() => {
+    wake();
     void fx.toggle();
-  }, [fx]);
+  }, [fx, wake]);
 
   const { setBypass } = fx;
   const bypass = useBypass({
     enabled: warningDone,
     isBypassed: fx.state === "bypass",
     setBypass,
+    onArm: wake,
   });
 
   const handleStomp = useCallback(() => {
