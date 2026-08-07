@@ -76,7 +76,7 @@ export default function LoadingScreen({ onComplete }: { onComplete?: () => void 
               className="font-[var(--font-mono)] uppercase"
               style={{ fontSize: 8, letterSpacing: "0.3em", color: "rgba(231,228,220,0.32)" }}
             >
-              Signal Processor MK.I
+              Studio MK.II
             </span>
           </div>
         </div>

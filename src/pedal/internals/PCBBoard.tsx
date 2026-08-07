@@ -261,7 +261,7 @@ export function PCBBoard({ w, l }: { w: number; l: number }) {
         letterSpacing={0.05}
         renderOrder={6}
       >
-        GHOST FX MK.I
+        GHOST FX MK.II
       </Text>
       <GhostSilk x={0.6} z={1.0} y={silkY} size={0.1} />
 

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/hero.png" alt="GHOSTFX Signal Processor MK.I" width="100%" />
+<img src="assets/hero.png" alt="GHOSTFX Studio MK.II" width="100%" />
 
 <br/><br/>
 
@@ -12,11 +12,15 @@
 
 <br/>
 
-**A guitar effects pedal that lives in your browser.**
+**A guitar effects pedal that lives in your browser, with a studio behind it.**
+
+<sub><b>STUDIO · MK.II</b></sub>
 
 Plug in, stomp to arm, and shape your tone with drive, echo, modulation and reverb
-on a real-time 3D pedal whose knobs you actually turn. No install, no plugins,
-no native app: the entire signal chain is hand-built on the Web Audio API.
+on a real-time 3D pedal whose knobs you actually turn. Then record it: takes, a
+layered looper, a backing track you drop in, all trimmed and mixed down to MP3
+without leaving the tab. No install, no plugins, no native app: the entire signal
+chain is hand-built on the Web Audio API.
 
 <br/>
 
@@ -60,6 +64,26 @@ live through the chain.
 
 <br clear="right"/>
 
+## The studio
+
+Everything you record lives in one deck under the pedal, and opens into a
+full-screen studio when it needs room.
+
+- **Takes.** Hit record and the take lands in the rack. Play it back through a
+  different rig and it re-amps live, because the dry signal is captured
+  alongside the wet one and runs through the real chain on playback. The five
+  signal faders move that take while it plays, and the export follows what you
+  hear.
+- **Repeat.** Any take or imported file can be left repeating in the background,
+  trimmed to the part you want, so you can solo over your own phrase. Record
+  again and the new take carries what was playing under it.
+- **Backing track.** Drop an audio file on the deck, up to three minutes. It is
+  decoded and played locally, never uploaded, and it never touches the recording
+  tap: takes stay guitar-only while the export mixes the backing back in.
+- **Trim and export.** Drag the edges of any waveform to keep only what matters,
+  take, loop or imported file, then export it as MP3. Trimming is
+  non-destructive.
+
 ## Signal chain
 
 ```
@@ -81,10 +105,10 @@ guard that mutes the chain before a howl gets loose.
 | Drag a knob up or down | Turn it. Double-click resets, scroll fine-tunes   |
 | Drag around the pedal  | Orbit the camera. Scroll zooms                    |
 | Keys <kbd>1</kbd> to <kbd>6</kbd> | Switch presets                         |
-| <kbd>Space</kbd>       | Start or stop recording                           |
+| <kbd>Space</kbd>       | Start or stop recording a take                    |
 
-There is also a built-in keyboard synth for when no guitar is around, and a
-recorder that captures a take and exports it as MP3.
+There is also a built-in keyboard synth for when no guitar is around, a tuner
+and a metronome with count-in.
 
 ## Stack
 
