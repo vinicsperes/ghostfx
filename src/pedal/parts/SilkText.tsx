@@ -1,5 +1,5 @@
 import { Text } from "@react-three/drei";
-import { SILK } from "../constants";
+import { PEDAL_FONT, SILK } from "../constants";
 
 export function SilkText({
   x,
@@ -18,6 +18,7 @@ export function SilkText({
     <Text
       position={[x, y, z]}
       rotation={[-Math.PI / 2, 0, 0]}
+      font={PEDAL_FONT}
       fontSize={size}
       color={SILK}
       anchorX="center"

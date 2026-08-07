@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Text } from "@react-three/drei";
 import * as THREE from "three";
-import { PCB_BH, PCB_CU, SILK } from "../constants";
+import { PCB_BH, PCB_CU, PEDAL_FONT, SILK } from "../constants";
 import {
   ElCap,
   ICDip,
@@ -252,6 +252,7 @@ export function PCBBoard({ w, l }: { w: number; l: number }) {
         REG
       </SilkText>
       <Text
+        font={PEDAL_FONT}
         position={[0.245, silkY, 1.0]}
         rotation={[-Math.PI / 2, 0, 0]}
         fontSize={0.036}

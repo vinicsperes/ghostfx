@@ -1,6 +1,6 @@
 import { DoubleSide } from "three";
 import { Text } from "@react-three/drei";
-import { PCB_BH } from "../constants";
+import { PCB_BH, PEDAL_FONT } from "../constants";
 
 export function ElCap({
   x,
@@ -34,6 +34,7 @@ export function ElCap({
         <meshBasicMaterial color="#16161c" />
       </mesh>
       <Text
+        font={PEDAL_FONT}
         position={[0, baseY + h * 0.45, r + 0.006]}
         rotation={[0, 0, -Math.PI / 2]}
         fontSize={Math.min(0.032, r * 0.42)}

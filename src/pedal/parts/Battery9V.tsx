@@ -1,4 +1,5 @@
 import { RoundedBox, Text } from "@react-three/drei";
+import { PEDAL_FONT } from "../constants";
 
 export function Battery9V() {
   const cx = -0.2,
@@ -14,6 +15,7 @@ export function Battery9V() {
         <meshStandardMaterial color="#c9a23c" roughness={0.45} metalness={0.35} />
       </mesh>
       <Text
+        font={PEDAL_FONT}
         position={[-0.16, 0.174, -0.07]}
         rotation={[-Math.PI / 2, 0, 0]}
         fontSize={0.082}
@@ -26,6 +28,7 @@ export function Battery9V() {
         GHOSTVOLT
       </Text>
       <Text
+        font={PEDAL_FONT}
         position={[-0.16, 0.174, 0.1]}
         rotation={[-Math.PI / 2, 0, 0]}
         fontSize={0.048}
@@ -38,6 +41,7 @@ export function Battery9V() {
         9V ALKALINE
       </Text>
       <Text
+        font={PEDAL_FONT}
         position={[0.24, 0.174, 0]}
         rotation={[-Math.PI / 2, 0, Math.PI / 2]}
         fontSize={0.06}

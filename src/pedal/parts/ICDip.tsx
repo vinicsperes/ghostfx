@@ -1,5 +1,5 @@
 import { Text } from "@react-three/drei";
-import { PCB_BH } from "../constants";
+import { PCB_BH, PEDAL_FONT } from "../constants";
 
 export function ICDip({
   x,
@@ -39,6 +39,7 @@ export function ICDip({
       </mesh>
       {label && (
         <Text
+          font={PEDAL_FONT}
           position={[0, topY + chipH / 2 + 0.002, 0.012]}
           rotation={[-Math.PI / 2, 0, -Math.PI / 2]}
           fontSize={0.046}
