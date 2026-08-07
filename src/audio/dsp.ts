@@ -181,7 +181,7 @@ export function createTapeCurve(drive = 1.3): Float32Array<ArrayBuffer> {
 export function createPitchShifter(
   ctx: BaseAudioContext,
   semitones: number,
-  windowS = 0.11,
+  windowS = semitones < 0 ? 0.17 : 0.11,
 ): { input: GainNode; output: GainNode } {
   const ratio = Math.pow(2, semitones / 12);
   const slope = ratio - 1;

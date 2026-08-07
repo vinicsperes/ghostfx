@@ -1,12 +1,12 @@
 import type { DriveShape } from "../audio/dsp";
 
 export const PRESETS = [
-  { name: "GHOST", drive: 0.35, echo: 0.58, tone: 0.62, reverb: 0.78, mod: 0.3, master: 0.85 },
-  { name: "DOOM", drive: 0.75, echo: 0.25, tone: 0.42, reverb: 0.35, mod: 0.1, master: 0.82 },
+  { name: "GHOST", drive: 0.52, echo: 0.3, tone: 0.58, reverb: 0.35, mod: 0.18, master: 0.85 },
+  { name: "DOOM", drive: 0.62, echo: 0.2, tone: 0.4, reverb: 0.45, mod: 0.05, master: 0.82 },
   { name: "FROST", drive: 0.25, echo: 0.35, tone: 0.8, reverb: 0.4, mod: 0.65, master: 0.95 },
   { name: "HEAVY", drive: 0.88, echo: 0.08, tone: 0.6, reverb: 0.15, mod: 0.0, master: 0.8 },
   { name: "HAZE", drive: 0.62, echo: 0.12, tone: 0.56, reverb: 0.24, mod: 0.78, master: 0.8 },
-  { name: "FEVER", drive: 0.68, echo: 0.35, tone: 0.55, reverb: 0.38, mod: 0.32, master: 0.8 },
+  { name: "FEVER", drive: 0.58, echo: 0.42, tone: 0.6, reverb: 0.4, mod: 0.15, master: 0.8 },
 ] as const;
 
 export const PALETTE = {
@@ -28,24 +28,24 @@ export const PRESET_META = [
 ] as const;
 
 export const PRESET_TAGS = [
-  "haunted",
-  "abyssal",
+  "crunchy",
+  "subterranean",
   "glacial",
   "brutal",
   "grungy",
-  "feverish",
+  "soaring",
 ] as const;
 
 export const PRESET_INFO = [
   {
     blurb:
-      "The house voice. Mid-pushed screamer drive into slow tape echoes, a hint of chorus and a wide haunted hall. Rolls back clean with your guitar volume.",
-    circuit: "screamer drive → tape echo → slow chorus → hall reverb",
+      "The house voice, and the one to reach for first. A mid-pushed screamer sitting right at the edge of breakup: dig in and it bites, roll the guitar volume back and it goes clean under your hands.",
+    circuit: "screamer drive → tape echo → hall reverb",
   },
   {
     blurb:
-      "Low-tuned fuzz wall with a short, dark slapback and a cavern behind it. Chords collapse into sludge; single notes stay huge and heavy.",
-    circuit: "vintage fuzz → dark slap delay → cavern reverb",
+      "Sludge with a floor under it. A vintage fuzz with the bottom left open, tracked an octave below by a pitch shifter, into a cavern. Riffs land like something heavy being dragged.",
+    circuit: "vintage fuzz → octave down → dark slap → cavern reverb",
   },
   {
     blurb:
@@ -64,8 +64,8 @@ export const PRESET_INFO = [
   },
   {
     blurb:
-      "Bright, tight fuzz into a clean open platform. The low end is cut before the clipping, so chords stay readable instead of collapsing, and a hard upper mid bump puts the sparkle back. Sustains forever without turning to mud.",
-    circuit: "tight fuzz → bright delay → wobble → open plate",
+      "The lead voice. A hard upper-mid bump so single notes cut through anything, a curve that sings instead of squashing, and an octave rising out of the reverb behind every sustained note.",
+    circuit: "singing drive → mid bump → repeats → octave shimmer → open plate",
   },
 ] as const;
 
@@ -78,12 +78,12 @@ export type DriveProfile = {
 };
 
 export const DRIVES: DriveProfile[] = [
-  { shape: "screamer", preHp: 140, midHz: 700, midGain: 2, trim: 2.7 },
-  { shape: "fuzz", preHp: 80, midHz: 450, midGain: 3, trim: 0.34 },
+  { shape: "screamer", preHp: 145, midHz: 800, midGain: 3, trim: 1.3 },
+  { shape: "fuzz", preHp: 62, midHz: 420, midGain: 2, trim: 0.46 },
   { shape: "clean", preHp: 120, midHz: 2200, midGain: 2.5, trim: 3.8 },
   { shape: "rectifier", preHp: 125, midHz: 700, midGain: 3.5, trim: 0.32 },
   { shape: "grunge", preHp: 125, midHz: 700, midGain: 1.5, trim: 0.47 },
-  { shape: "starved", preHp: 180, midHz: 1200, midGain: 3, trim: 0.48 },
+  { shape: "smooth", preHp: 130, midHz: 1100, midGain: 5, trim: 0.63 },
 ];
 
 export type DelayProfile = {
@@ -97,12 +97,12 @@ export type DelayProfile = {
 };
 
 export const DELAYS: DelayProfile[] = [
-  { timeMin: 0.3, timeMax: 0.6, fbMin: 0.25, fbMax: 0.7, loopHp: 180, loopLp: 2800, sat: 1.3 },
+  { timeMin: 0.25, timeMax: 0.5, fbMin: 0.15, fbMax: 0.5, loopHp: 240, loopLp: 3200, sat: 1.3 },
   { timeMin: 0.08, timeMax: 0.16, fbMin: 0.1, fbMax: 0.45, loopHp: 150, loopLp: 2200, sat: 1.5 },
   { timeMin: 0.12, timeMax: 0.3, fbMin: 0.15, fbMax: 0.5, loopHp: 200, loopLp: 5500, sat: 1.1 },
   { timeMin: 0.1, timeMax: 0.35, fbMin: 0.1, fbMax: 0.4, loopHp: 220, loopLp: 3000, sat: 1.2 },
   { timeMin: 0.11, timeMax: 0.3, fbMin: 0.04, fbMax: 0.26, loopHp: 260, loopLp: 3000, sat: 1.3 },
-  { timeMin: 0.22, timeMax: 0.5, fbMin: 0.2, fbMax: 0.6, loopHp: 220, loopLp: 2600, sat: 1.4 },
+  { timeMin: 0.28, timeMax: 0.56, fbMin: 0.25, fbMax: 0.62, loopHp: 260, loopLp: 3400, sat: 1.25 },
 ];
 
 export type ModProfile = {
@@ -182,12 +182,12 @@ export type CabProfile = {
 };
 
 export const CABS: CabProfile[] = [
-  { lowCut: 90, bodyHz: 110, bodyGain: 1.5, presHz: 2600, presGain: 3.0, topCut: 5500 },
-  { lowCut: 80, bodyHz: 120, bodyGain: 3.0, presHz: 1500, presGain: 2.5, topCut: 4800 },
+  { lowCut: 88, bodyHz: 125, bodyGain: 2.2, presHz: 2800, presGain: 3.0, topCut: 6000 },
+  { lowCut: 68, bodyHz: 92, bodyGain: 4.5, presHz: 1400, presGain: 1.5, topCut: 4200 },
   { lowCut: 95, bodyHz: 100, bodyGain: 0.0, presHz: 3200, presGain: 3.0, topCut: 8500 },
   { lowCut: 85, bodyHz: 170, bodyGain: 4.5, presHz: 2600, presGain: 4.0, topCut: 5400 },
   { lowCut: 92, bodyHz: 165, bodyGain: 3.2, presHz: 3000, presGain: 3.2, topCut: 6300 },
-  { lowCut: 105, bodyHz: 200, bodyGain: 1.5, presHz: 2800, presGain: 4.5, topCut: 5000 },
+  { lowCut: 110, bodyHz: 210, bodyGain: 1.0, presHz: 2400, presGain: 3.5, topCut: 5400 },
 ];
 
 export type ReverbProfile = {
@@ -203,20 +203,21 @@ export const REVERBS: ReverbProfile[] = [
   { decay: 2.4, predelay: 0.012, tone: 8000, width: 1.0 },
   { decay: 1.4, predelay: 0.012, tone: 4000, width: 0.65 },
   { decay: 1.5, predelay: 0.014, tone: 4200, width: 0.7 },
-  { decay: 2.6, predelay: 0.018, tone: 4500, width: 1.0 },
+  { decay: 2.8, predelay: 0.022, tone: 5200, width: 1.0 },
 ];
 
 export type ShimmerProfile = {
   semitones: number;
   mix: number;
   lowCut: number;
+  direct?: boolean;
 };
 
 export const SHIMMERS: ShimmerProfile[] = [
-  { semitones: 0, mix: 0, lowCut: 190 },
-  { semitones: 0, mix: 0, lowCut: 150 },
+  { semitones: 0, mix: 0, lowCut: 170 },
+  { semitones: -12, mix: 0.32, lowCut: 90, direct: true },
   { semitones: 0, mix: 0, lowCut: 120 },
   { semitones: 0, mix: 0, lowCut: 120 },
   { semitones: 0, mix: 0, lowCut: 150 },
-  { semitones: 12, mix: 0.45, lowCut: 260 },
+  { semitones: 12, mix: 0.4, lowCut: 300 },
 ];

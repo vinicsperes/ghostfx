@@ -101,7 +101,8 @@ export function applyChainParams(
   nodes.wet.gain.setTargetAtTime(p.echo * 0.5, t, ramp);
 
   nodes.reverbWet.gain.setTargetAtTime(p.reverb * 0.5, t, ramp);
-  nodes.shimmer?.gain.setTargetAtTime(SHIMMERS[idx].mix * p.reverb, t, ramp);
+  const sh = SHIMMERS[idx] ?? SHIMMERS[0];
+  nodes.shimmer?.gain.setTargetAtTime(sh.direct ? sh.mix : sh.mix * p.reverb, t, ramp);
 
   nodes.modDepth.gain.setTargetAtTime(mp.depthMin + p.mod * (mp.depthMax - mp.depthMin), t, ramp);
   nodes.modFb.gain.setTargetAtTime(p.mod * mp.fbMax, t, ramp);
@@ -223,13 +224,18 @@ export function buildChain(
   reverbPre.delayTime.value = REVERBS[idx].predelay;
 
   let shimmer: GainNode | null = null;
+  let shimmerIn: BiquadFilterNode | null = null;
   if (sh.mix > 0) {
+    shimmerIn = ctx.createBiquadFilter();
+    shimmerIn.type = "highpass";
+    shimmerIn.frequency.value = sh.lowCut;
+    shimmerIn.Q.value = 0.707;
+
     shimmer = ctx.createGain();
-    shimmer.gain.value = sh.mix * p.reverb;
+    shimmer.gain.value = sh.direct ? sh.mix : sh.mix * p.reverb;
     const shifter = createPitchShifter(ctx, sh.semitones);
-    reverbHP.connect(shifter.input);
+    shimmerIn.connect(shifter.input);
     shifter.output.connect(shimmer);
-    shimmer.connect(reverbPre);
   }
 
   const convolverA = ctx.createConvolver();
@@ -284,6 +290,11 @@ export function buildChain(
 
   toneFilter.connect(reverbHP);
   reverbHP.connect(reverbPre);
+
+  if (shimmerIn && shimmer) {
+    toneFilter.connect(shimmerIn);
+    shimmer.connect(sh.direct ? mix : reverbPre);
+  }
   reverbPre.connect(convolverA);
   reverbPre.connect(convolverB);
   convolverA.connect(reverbWetA);
