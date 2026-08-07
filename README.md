@@ -43,8 +43,8 @@ even the chassis tint.
 | **DOOM**  | Low-tuned fuzz wall. Chords collapse into sludge, single notes stay huge. | vintage fuzz → dark slap delay → cavern reverb              |
 | **FROST** | Glassy clean platform with lush chorus. Every note stays articulate.      | clean boost → chorus → crystal delay → plate reverb         |
 | **HEAVY** | Scooped high gain, tight and nearly dry. Palm mutes hit like a wall.      | rectifier drive → tight slap delay → room reverb            |
-| **HAZE**  | Shoegaze wash with an octave shimmer rising out of the reverb.            | smooth drive → wash delay → chorus → octave shimmer → cathedral |
-| **FEVER** | Octave-up fuzz that rings like a circuit about to give up.                | octave fuzz → mid delay → fast wobble → dark reverb         |
+| **HAZE**  | Seattle, 1991. Gritty silicon into a watery chorus, almost no tail.       | silicon distortion → watery chorus → short slap → small room |
+| **FEVER** | Octave-up fuzz that rings like a circuit about to give up.                | octave fuzz → pitch shifter → mid delay → wobble → dark reverb |
 
 ## A real pedal, not a picture of one
 

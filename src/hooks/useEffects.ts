@@ -237,8 +237,10 @@ export function useEffects({
       setReady(true);
       setMicBlocked(false);
       setError(null);
-      setState("bypass");
-      masterGain.gain.setTargetAtTime(masterGainFromKnob(masterVolume), ctx.currentTime, 0.5);
+      setState("idle");
+      streamRef.current?.getAudioTracks().forEach((tr) => {
+        tr.enabled = false;
+      });
     } catch (e) {
       try {
         await ctxRef.current?.close();
@@ -256,7 +258,7 @@ export function useEffects({
         setError(e instanceof Error ? e.message : "could not access microphone");
       }
     }
-  }, [drive, echo, tone, reverb, mod, masterVolume, presetIdx]);
+  }, [drive, echo, tone, reverb, mod, presetIdx]);
 
   const liveParams = useMemo(
     () => ({ drive, echo, tone, reverb, mod }),

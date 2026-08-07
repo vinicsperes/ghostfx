@@ -1,4 +1,11 @@
-export type DriveShape = "screamer" | "fuzz" | "clean" | "rectifier" | "smooth" | "starved";
+export type DriveShape =
+  | "screamer"
+  | "fuzz"
+  | "clean"
+  | "rectifier"
+  | "smooth"
+  | "starved"
+  | "grunge";
 
 function shapeScreamer(x: number, a: number): number {
   const k = Math.pow(a, 2.2) * 9;
@@ -47,6 +54,13 @@ function shapeStarved(x: number, a: number): number {
   return (softClip((1.6 + 9 * a) * x + b, 2.2) - softClip(b, 2.2)) * 0.5;
 }
 
+function shapeGrunge(x: number, a: number): number {
+  const g = 2 + 20 * Math.pow(a, 1.25);
+  const y = softClip(g * x, 3.4);
+  const asym = x < 0 ? 0.94 : 1;
+  return y * asym * (0.78 / (1 + a * 0.55));
+}
+
 const DRIVE_SHAPES: Record<DriveShape, (x: number, a: number) => number> = {
   screamer: shapeScreamer,
   fuzz: shapeFuzz,
@@ -54,6 +68,7 @@ const DRIVE_SHAPES: Record<DriveShape, (x: number, a: number) => number> = {
   rectifier: shapeRectifier,
   smooth: shapeSmooth,
   starved: shapeStarved,
+  grunge: shapeGrunge,
 };
 
 export function createDistortionCurve(
@@ -73,7 +88,8 @@ export function createDistortionCurve(
 export function driveOversample(amount: number, shape: DriveShape = "screamer"): OverSampleType {
   if (shape === "clean") return "none";
   if (shape === "starved") return amount >= 0.25 ? "2x" : "none";
-  if (shape === "fuzz" || shape === "rectifier") return amount >= 0.4 ? "2x" : "none";
+  if (shape === "fuzz" || shape === "rectifier" || shape === "grunge")
+    return amount >= 0.4 ? "2x" : "none";
   return amount >= 0.6 ? "2x" : "none";
 }
 

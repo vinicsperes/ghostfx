@@ -249,11 +249,7 @@ export default function App() {
   }, [fx.getLevel]);
 
   const handleTap = useCallback(() => {
-    if (fx.feedbackBlocked) {
-      fx.resumeFromFeedback();
-      return;
-    }
-    void fx.setBypass(fx.state !== "bypass");
+    void fx.toggle();
   }, [fx]);
 
   const { setBypass } = fx;
