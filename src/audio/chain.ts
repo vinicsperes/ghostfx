@@ -7,14 +7,15 @@ import {
 } from "./dsp";
 import { CABS, DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
 
-export type ChainParams = {
+export type SignalParams = {
   drive: number;
   echo: number;
   tone: number;
   reverb: number;
   mod: number;
-  presetIdx: number | null;
 };
+
+export type ChainParams = SignalParams & { presetIdx: number | null };
 
 export type ChainNodes = {
   preFilter: BiquadFilterNode;
@@ -28,6 +29,7 @@ export type ChainNodes = {
   cabLP: BiquadFilterNode;
   toneFilter: BiquadFilterNode;
   delay: DelayNode;
+  lfo: OscillatorNode;
   lfoGain: GainNode;
   feedback: GainNode;
   delayLoopHP: BiquadFilterNode;
@@ -64,6 +66,36 @@ export function reverbBuffers(ctx: BaseAudioContext): AudioBuffer[] {
     buf.copyToChannel(right, 1);
     return buf;
   });
+}
+
+export function applyChainParams(
+  ctx: BaseAudioContext,
+  nodes: ChainNodes,
+  p: ChainParams,
+  ramp = 0.04,
+): void {
+  const idx = p.presetIdx ?? 0;
+  const dp = DRIVES[idx] ?? DRIVES[0];
+  const dl = DELAYS[idx] ?? DELAYS[0];
+  const mp = MODS[idx] ?? MODS[0];
+  const t = ctx.currentTime;
+
+  nodes.drive.curve = createDistortionCurve(p.drive, dp.shape);
+  nodes.drive.oversample = driveOversample(p.drive, dp.shape);
+  nodes.preGain.gain.setTargetAtTime(mapDrivePreGain(p.drive), t, ramp);
+
+  nodes.toneFilter.frequency.setTargetAtTime(600 * Math.pow(20, p.tone), t, ramp);
+
+  nodes.delay.delayTime.setTargetAtTime(dl.timeMin + p.echo * (dl.timeMax - dl.timeMin), t, ramp);
+  nodes.lfoGain.gain.setTargetAtTime(0.003 * p.echo, t, ramp);
+  nodes.feedback.gain.setTargetAtTime(dl.fbMin + p.echo * (dl.fbMax - dl.fbMin), t, ramp);
+  nodes.wet.gain.setTargetAtTime(p.echo * 0.5, t, ramp);
+
+  nodes.reverbWet.gain.setTargetAtTime(p.reverb * 0.5, t, ramp);
+
+  nodes.modDepth.gain.setTargetAtTime(mp.depthMin + p.mod * (mp.depthMax - mp.depthMin), t, ramp);
+  nodes.modFb.gain.setTargetAtTime(p.mod * mp.fbMax, t, ramp);
+  nodes.modWet.gain.setTargetAtTime(p.mod * mp.mixMax, t, ramp);
 }
 
 export function buildChain(
@@ -240,6 +272,7 @@ export function buildChain(
       cabLP,
       toneFilter,
       delay,
+      lfo,
       lfoGain,
       feedback,
       delayLoopHP,
