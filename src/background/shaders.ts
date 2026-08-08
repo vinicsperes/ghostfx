@@ -84,42 +84,43 @@ void main(){
 export const HAZE_FS = `
 precision mediump float;
 uniform float u_t; uniform vec2 u_res; uniform float u_blend;
-float grain(vec2 p, float seed){
-  return fract(sin(dot(p, vec2(12.9898, 78.233)) + seed) * 43758.5453);
+float stripe(float x, float f, float sharp){
+  return pow(max(sin(x*f), 0.0), sharp);
 }
 void main(){
   vec2 uv=gl_FragCoord.xy/u_res;
   float a=u_res.x/u_res.y;
   float kx=a<1.0?a:1.0;
   float nx=.5+(uv.x-.5)*kx, ny=1.-uv.y;
-  float t=u_t*.07;
+  float t=u_t*.05;
+
   float ca=.966, sa=.259;
-  vec2 p=vec2(nx*ca-ny*sa, nx*sa+ny*ca);
+  vec2 p=vec2(nx*ca-ny*sa, nx*sa+ny*ca)*9.0;
+  p.x+=sin(t*.7)*.35;
+  p.y-=t*.30;
 
-  float w1=sin(p.x*26.+t)*.5+.5;
-  float w2=sin(p.y*26.-t*.8)*.5+.5;
-  float b1=sin(p.x*6.5-t*.5)*.5+.5;
-  float b2=sin(p.y*5.5+t*.4)*.5+.5;
-  float weave=b1*b2*1.15 + w1*w2*.45 + (b1+b2)*.22;
+  float vx=stripe(p.x, 1.0, 5.0)*.85 + stripe(p.x*2.2+1.7, 1.0, 15.0)*.45;
+  float vy=stripe(p.y, 1.0, 5.0)*.85 + stripe(p.y*2.2+1.7, 1.0, 15.0)*.45;
+  float plaid=vx+vy+vx*vy*1.5;
 
-  float g=grain(gl_FragCoord.xy, floor(u_t*9.));
-  float wear=grain(floor(gl_FragCoord.xy*.06), 3.7);
-  float v=weave*(.82+wear*.32)+g*.09;
+  float drift=sin(p.x*.42+t*.9)*sin(p.y*.35-t*.6)*.5+.5;
+  float shade=plaid/(plaid+1.15)*(.55+drift*.45);
 
-  float t1=mix(1.6,1.02,u_blend);
-  float t2=mix(1.6,.72,u_blend);
-  vec4 col;
-  if(v>t1){
-    float b=pow((v-1.02)/.62,.7)*(.72+g*.28);
-    col=vec4(b*206./255., b*150./255., b*58./255., b*250./255.);
-  } else if(v>t2){
-    float b=pow((v-.72)/.30,.85)*.4*(.8+g*.2);
-    col=vec4(b*138./255., b*88./255., b*32./255., b*180./255.);
-  } else {
-    float depth=(sin(v*2.2)+1.)*.5;
-    col=vec4(depth*26./255.+g*.012, depth*17./255.+g*.010, depth*7./255., 1.);
-  }
-  gl_FragColor=col;
+  float g=fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233))+floor(u_t*10.))*43758.5453);
+
+  float cx=nx-.5, cy=ny-.5;
+  float vig=1.0-smoothstep(.28,.86,sqrt(cx*cx+cy*cy));
+
+  vec3 base=vec3(21.,15.,7.)/255.;
+  vec3 warm=vec3(126.,84.,30.)/255.;
+  vec3 hot=vec3(214.,158.,64.)/255.;
+
+  vec3 col=base
+    + warm*shade*1.15*u_blend*(.5+vig*.5)
+    + hot*pow(shade, 2.6)*1.5*u_blend*(.35+vig*.65);
+  col+=(g-.5)*.030*u_blend;
+
+  gl_FragColor=vec4(col, 1.0);
 }`;
 
 export const GHOST_FS = `
