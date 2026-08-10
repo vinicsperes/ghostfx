@@ -10,6 +10,7 @@ export function WaveEditor({
   color,
   accent,
   height = 180,
+  fill = false,
   getPosition,
   onSeek,
   onRegion,
@@ -20,6 +21,7 @@ export function WaveEditor({
   color: string;
   accent: string;
   height?: number;
+  fill?: boolean;
   getPosition: () => number;
   onSeek?: (seconds: number) => void;
   onRegion?: (start: number, end: number) => void;
@@ -176,7 +178,9 @@ export function WaveEditor({
       style={{
         position: "relative",
         width: "100%",
-        height,
+        flex: fill ? 1 : undefined,
+        minHeight: fill ? 0 : undefined,
+        height: fill ? undefined : height,
         borderRadius: 10,
         overflow: "hidden",
         background: "rgba(0,0,0,0.6)",

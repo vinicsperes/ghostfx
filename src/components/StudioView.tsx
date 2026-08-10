@@ -59,56 +59,155 @@ function Action({
 
 export type StudioTool = "tune" | "mix";
 
-function SkipStart({
-  onClick,
-  accent,
-  disabled,
-  title,
-  size = 38,
+function Panel({
+  label,
+  right,
+  grow = false,
+  children,
 }: {
-  onClick: () => void;
-  accent: string;
-  disabled: boolean;
-  title: string;
-  size?: number;
+  label: string;
+  right?: React.ReactNode;
+  grow?: boolean;
+  children: React.ReactNode;
 }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      aria-label={title}
-      className="flex items-center justify-center transition-all active:scale-90 shrink-0"
+    <section
+      className="flex flex-col min-h-0 min-w-0"
       style={{
-        width: size,
-        height: size - 8,
-        borderRadius: 7,
-        background: "rgba(10,10,16,0.9)",
-        border: `1px solid ${accent}30`,
-        color: disabled ? "rgba(255,255,255,0.25)" : accent,
-        cursor: disabled ? "not-allowed" : "pointer",
+        flex: grow ? 1 : undefined,
+        borderRadius: 12,
+        border: "1px solid rgba(231,228,220,0.09)",
+        background: "rgba(9,11,14,0.92)",
+        overflow: "hidden",
       }}
     >
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
-        <rect x="2.4" y="2.6" width="2.2" height="10.8" rx="1" />
-        <path d="M13.6 3.3v9.4a.7.7 0 0 1-1.08.59l-7-4.7a.7.7 0 0 1 0-1.18l7-4.7a.7.7 0 0 1 1.08.59Z" />
-      </svg>
-    </button>
+      <header
+        className="flex items-center shrink-0"
+        style={{
+          gap: 10,
+          padding: "8px 12px",
+          borderBottom: "1px solid rgba(231,228,220,0.07)",
+          background: "rgba(255,255,255,0.015)",
+        }}
+      >
+        <PanelLabel>{label}</PanelLabel>
+        <div style={{ flex: 1 }} />
+        {right}
+      </header>
+      <div
+        className="flex flex-col min-h-0"
+        style={{ flex: grow ? 1 : undefined, padding: 12, gap: 10 }}
+      >
+        {children}
+      </div>
+    </section>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col" style={{ gap: 3 }}>
+    <div
+      className="flex items-center justify-center font-[var(--font-mono)]"
+      style={{
+        height: 48,
+        borderRadius: 8,
+        border: "1px dashed rgba(231,228,220,0.12)",
+        fontSize: 9.5,
+        letterSpacing: "0.1em",
+        color: "rgba(231,228,220,0.3)",
+        textAlign: "center",
+        padding: "0 12px",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Transport({
+  playing,
+  disabled,
+  accent,
+  onToStart,
+  onToggle,
+  size = 34,
+}: {
+  playing: boolean;
+  disabled: boolean;
+  accent: string;
+  onToStart: () => void;
+  onToggle: () => void;
+  size?: number;
+}) {
+  return (
+    <div
+      className="flex items-center shrink-0"
+      style={{
+        borderRadius: 8,
+        border: "1px solid rgba(231,228,220,0.1)",
+        background: "rgba(10,10,16,0.9)",
+        overflow: "hidden",
+      }}
+    >
+      <button
+        onClick={onToStart}
+        disabled={disabled}
+        title="Back to the start"
+        aria-label="Back to the start"
+        className="flex items-center justify-center transition-all active:scale-90"
+        style={{
+          width: size + 6,
+          height: size,
+          color: disabled ? "rgba(255,255,255,0.22)" : "rgba(231,228,220,0.7)",
+          cursor: disabled ? "not-allowed" : "pointer",
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+          <rect x="2.4" y="2.6" width="2.2" height="10.8" rx="1" />
+          <path d="M13.6 3.3v9.4a.7.7 0 0 1-1.08.59l-7-4.7a.7.7 0 0 1 0-1.18l7-4.7a.7.7 0 0 1 1.08.59Z" />
+        </svg>
+      </button>
+      <div style={{ width: 1, alignSelf: "stretch", background: "rgba(231,228,220,0.08)" }} />
+      <button
+        onClick={onToggle}
+        disabled={disabled}
+        title={playing ? "Pause" : "Play"}
+        aria-label={playing ? "Pause" : "Play"}
+        className="flex items-center justify-center transition-all active:scale-90"
+        style={{
+          width: size + 10,
+          height: size,
+          color: disabled ? "rgba(255,255,255,0.22)" : accent,
+          cursor: disabled ? "not-allowed" : "pointer",
+        }}
+      >
+        {playing ? (
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+            <rect x="3" y="2.5" width="3.6" height="11" rx="1" />
+            <rect x="9.4" y="2.5" width="3.6" height="11" rx="1" />
+          </svg>
+        ) : (
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4 2.6v10.8a.7.7 0 0 0 1.07.6l8.4-5.4a.7.7 0 0 0 0-1.2l-8.4-5.4A.7.7 0 0 0 4 2.6Z" />
+          </svg>
+        )}
+      </button>
+    </div>
+  );
+}
+
+function Readout({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline shrink-0" style={{ gap: 5 }}>
       <span
         className="font-[var(--font-mono)] uppercase"
-        style={{ fontSize: 8, letterSpacing: "0.18em", color: "rgba(231,228,220,0.35)" }}
+        style={{ fontSize: 8, letterSpacing: "0.16em", color: "rgba(231,228,220,0.32)" }}
       >
         {label}
       </span>
       <span
         className="font-[var(--font-mono)]"
-        style={{ fontSize: 12, fontVariantNumeric: "tabular-nums", color: "#e7e4dc" }}
+        style={{ fontSize: 11, fontVariantNumeric: "tabular-nums", color: "rgba(231,228,220,0.8)" }}
       >
         {value}
       </span>
@@ -245,6 +344,8 @@ export function StudioView({
     }
   };
 
+  const hasClips = arrangement.clips.length > 0;
+
   return createPortal(
     <div
       className="fixed inset-0 flex flex-col"
@@ -255,12 +356,12 @@ export function StudioView({
         backdropFilter: "blur(5px) saturate(0.7)",
       }}
     >
-      <div
+      <header
         className="flex items-center shrink-0"
         style={{
-          padding: "12px max(18px,2vw)",
+          padding: "10px max(14px,1.6vw)",
           borderBottom: "1px solid rgba(231,228,220,0.08)",
-          gap: 12,
+          gap: 10,
         }}
       >
         <span
@@ -269,23 +370,17 @@ export function StudioView({
         >
           STUDIO
         </span>
-        <span
-          className="font-[var(--font-mono)] hidden xl:block"
-          style={{ fontSize: 9.5, color: "rgba(231,228,220,0.4)" }}
-        >
-          build the track up top, shape the pieces below
-        </span>
 
         <div style={{ flex: 1 }} />
 
         <div
           className="flex items-center shrink-0"
           style={{
-            gap: 9,
-            padding: "5px 11px 5px 9px",
-            borderRadius: 999,
-            border: "1px solid rgba(231,228,220,0.08)",
-            background: "rgba(9,11,14,0.7)",
+            gap: 8,
+            padding: "5px 10px 5px 8px",
+            borderRadius: 8,
+            border: "1px solid rgba(231,228,220,0.09)",
+            background: "rgba(10,12,16,0.9)",
           }}
           title="The pedal is still live behind the studio"
         >
@@ -299,301 +394,232 @@ export function StudioView({
             }}
           />
           <span
-            className="font-[var(--font-mono)]"
-            style={{ fontSize: 9.5, letterSpacing: "0.14em", color: "rgba(231,228,220,0.7)" }}
+            className="font-[var(--font-mono)] hidden sm:block"
+            style={{ fontSize: 9.5, letterSpacing: "0.14em", color: "rgba(231,228,220,0.72)" }}
           >
             {PRESETS[presetIdx ?? 0].name}
           </span>
           <InputMeter getLevelRef={getLevelRef} accent={accent} height={16} />
-        </div>
-
-        <TempoChip
-          metronome={metronome}
-          countInEnabled={countInEnabled}
-          onToggleCountIn={onToggleCountIn}
-          accent={accent}
-          height={32}
-        />
-
-        <TunerChip
-          reading={tuning}
-          open={tool === "tune"}
-          onOpenChange={(next) => onToolChange(next ? "tune" : "mix")}
-          accent={accent}
-          height={32}
-        />
-
-        <button
-          onClick={onRecord}
-          title={recorder.isRecording ? "Stop (Space)" : "Record your guitar (Space)"}
-          aria-label={recorder.isRecording ? "Stop recording" : "Record your guitar"}
-          className="flex items-center justify-center transition-all active:scale-90 shrink-0"
-          style={{
-            width: 40,
-            height: 32,
-            borderRadius: 7,
-            background: "rgba(10,10,16,0.9)",
-            border: `1px solid ${recorder.isRecording ? "#f53e3e" : accent + "30"}`,
-            cursor: "pointer",
-          }}
-        >
-          <span
-            className={recorder.isRecording ? "animate-pulse" : ""}
-            style={{
-              width: 12,
-              height: 12,
-              borderRadius: recorder.isRecording ? 3 : "50%",
-              background: "#f53e3e",
-              boxShadow: "0 0 7px #f53e3e",
-            }}
+          <div style={{ width: 1, height: 18, background: "rgba(231,228,220,0.09)" }} />
+          <TempoChip
+            metronome={metronome}
+            countInEnabled={countInEnabled}
+            onToggleCountIn={onToggleCountIn}
+            accent={accent}
+            height={26}
           />
-        </button>
-
-        <Action label="CLOSE (ESC)" onClick={onClose} accent={accent} />
-      </div>
-
-      <div
-        className="shrink-0 flex flex-col xl:flex-row"
-        style={{ padding: "12px max(18px,2vw) 0", gap: 14 }}
-      >
-        <div className="flex-1 min-w-0 flex flex-col" style={{ gap: 8 }}>
-          <div className="flex items-center flex-wrap" style={{ gap: 10 }}>
-            <PanelLabel>Track</PanelLabel>
-            <SkipStart
-              onClick={() => arrangement.seek(0)}
-              accent={accent}
-              disabled={!arrangement.clips.length}
-              title="Back to the top of the track"
-              size={34}
-            />
-            <button
-              onClick={arrangement.toggle}
-              disabled={!arrangement.clips.length}
-              title={arrangement.isPlaying ? "Pause the track" : "Play the track"}
-              aria-label={arrangement.isPlaying ? "Pause the track" : "Play the track"}
-              className="flex items-center justify-center transition-all active:scale-90 shrink-0"
+          <TunerChip
+            reading={tuning}
+            open={tool === "tune"}
+            onOpenChange={(next) => onToolChange(next ? "tune" : "mix")}
+            accent={accent}
+            height={26}
+          />
+          <button
+            onClick={onRecord}
+            title={recorder.isRecording ? "Stop (Space)" : "Record your guitar (Space)"}
+            aria-label={recorder.isRecording ? "Stop recording" : "Record your guitar"}
+            className="flex items-center justify-center transition-all active:scale-90 shrink-0"
+            style={{
+              width: 34,
+              height: 26,
+              borderRadius: 6,
+              background: "rgba(4,4,8,0.9)",
+              border: `1px solid ${recorder.isRecording ? "#f53e3e" : "rgba(231,228,220,0.12)"}`,
+              cursor: "pointer",
+            }}
+          >
+            <span
+              className={recorder.isRecording ? "animate-pulse" : ""}
               style={{
-                width: 34,
-                height: 28,
-                borderRadius: 6,
-                background: "rgba(10,10,16,0.9)",
-                border: `1px solid ${accent}40`,
-                color: arrangement.clips.length ? accent : "rgba(255,255,255,0.25)",
-                cursor: arrangement.clips.length ? "pointer" : "not-allowed",
+                width: 10,
+                height: 10,
+                borderRadius: recorder.isRecording ? 2 : "50%",
+                background: "#f53e3e",
+                boxShadow: "0 0 6px #f53e3e",
               }}
-            >
-              {arrangement.isPlaying ? (
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-                  <rect x="3" y="2.5" width="3.6" height="11" rx="1" />
-                  <rect x="9.4" y="2.5" width="3.6" height="11" rx="1" />
-                </svg>
-              ) : (
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M4 2.6v10.8a.7.7 0 0 0 1.07.6l8.4-5.4a.7.7 0 0 0 0-1.2l-8.4-5.4A.7.7 0 0 0 4 2.6Z" />
-                </svg>
-              )}
-            </button>
-            <Stat label="length" value={clock(arrangement.length)} />
-            <Stat label="clips" value={String(arrangement.clips.length)} />
-            {arrangement.clips.length > 0 && (
-              <div className="flex items-center" style={{ gap: 4 }}>
-                <Action
-                  label="−"
-                  onClick={() => setPps((v) => Math.max(18, v - 10))}
-                  accent={accent}
-                  title="Zoom out"
-                />
-                <Action
-                  label="+"
-                  onClick={() => setPps((v) => Math.min(110, v + 10))}
-                  accent={accent}
-                  title="Zoom in"
-                />
-              </div>
-            )}
-            <div style={{ flex: 1 }} />
-            <Action
-              label="CLEAR"
-              onClick={arrangement.clear}
-              accent={accent}
-              disabled={!arrangement.clips.length}
             />
-            <Action
-              label={arrangement.isExporting ? "MIXING..." : "DOWNLOAD TRACK"}
-              onClick={() => void arrangement.download()}
-              accent={accent}
-              strong
-              disabled={!arrangement.clips.length || arrangement.isExporting}
-              title="Mix every clip down to one MP3"
-            />
-          </div>
-
-          {arrangement.clips.length > 0 ? (
-            <Timeline arrangement={arrangement} accent={accent} pps={pps} />
-          ) : (
-            <div
-              className="flex items-center justify-center font-[var(--font-mono)]"
-              style={{
-                height: 54,
-                borderRadius: 10,
-                border: "1px dashed rgba(231,228,220,0.12)",
-                fontSize: 9.5,
-                letterSpacing: "0.1em",
-                color: "rgba(231,228,220,0.32)",
-              }}
-            >
-              PICK SOMETHING BELOW AND SEND IT UP HERE
-            </div>
-          )}
+          </button>
         </div>
 
-        <div
-          className="shrink-0 overflow-y-auto"
-          style={{
-            width: "100%",
-            maxWidth: 280,
-            maxHeight: 232,
-            padding: 10,
-            borderRadius: 12,
-            border: "1px solid rgba(231,228,220,0.08)",
-            background: "rgba(9,11,14,0.92)",
-          }}
-        >
-          <div style={{ marginBottom: 8 }}>
-            <PanelLabel>Track mix</PanelLabel>
-          </div>
-          <TrackMixer arrangement={arrangement} accent={accent} />
-        </div>
-      </div>
+        <Action label="CLOSE" onClick={onClose} accent={accent} title="Close the studio (Esc)" />
+      </header>
 
       <div
-        className="flex-1 flex flex-col lg:flex-row min-h-0"
+        className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-y-auto lg:overflow-hidden"
         style={{
-          padding: "12px max(18px,2vw) max(14px,env(safe-area-inset-bottom,14px))",
-          gap: 14,
+          padding: "12px max(14px,1.6vw) max(14px,env(safe-area-inset-bottom,14px))",
+          gap: 12,
         }}
       >
-        <div
-          className="shrink-0 overflow-y-auto"
-          style={{
-            width: "100%",
-            maxWidth: 320,
-            padding: 10,
-            borderRadius: 12,
-            border: "1px solid rgba(231,228,220,0.08)",
-            background: "rgba(9,11,14,0.92)",
-          }}
-        >
-          <SourceMenu
-            recorder={recorder}
-            track={track}
-            source={source}
-            accent={accent}
-            onPickTake={(id) => {
-              selectTake(id);
-              onSourceChange("take");
-            }}
-            onPickTrack={() => onSourceChange("track")}
-            editable
-          />
+        <div className="shrink-0 flex flex-col min-h-0" style={{ width: "100%", maxWidth: 300 }}>
+          <Panel label="Library" grow>
+            <div className="overflow-y-auto" style={{ margin: -4, padding: 4 }}>
+              <SourceMenu
+                recorder={recorder}
+                track={track}
+                source={source}
+                accent={accent}
+                onPickTake={(id) => {
+                  selectTake(id);
+                  onSourceChange("take");
+                }}
+                onPickTrack={() => onSourceChange("track")}
+                editable
+              />
+            </div>
+          </Panel>
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto" style={{ gap: 10 }}>
-          <div className="flex items-center justify-between" style={{ gap: 12 }}>
-            <div className="flex items-center min-w-0" style={{ gap: 9 }}>
-              <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  flexShrink: 0,
-                  borderRadius: onTrack ? "50%" : 2,
-                  background: color,
-                }}
-              />
-              <span
-                className="font-[var(--font-mono)] truncate"
-                style={{ fontSize: 12, letterSpacing: "0.1em", color: "#e7e4dc" }}
-              >
-                {title}
-              </span>
-            </div>
-            {duration > 0 && (
-              <div className="flex items-center" style={{ gap: 22 }}>
-                <Stat label="in" value={clock(region.start)} />
-                <Stat label="out" value={clock(region.end)} />
-                <Stat label="keeps" value={clock(span)} />
-              </div>
-            )}
-          </div>
-
-          <div className="shrink-0" style={{ position: "relative" }}>
-            {duration <= 0 && (
-              <span
-                className="font-[var(--font-mono)]"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 10,
-                  letterSpacing: "0.12em",
-                  color: "rgba(231,228,220,0.28)",
-                  pointerEvents: "none",
-                }}
-              >
-                RECORD A TAKE OR DROP AN AUDIO FILE
-              </span>
-            )}
-            <WaveEditor
-              lanes={lanes}
-              duration={duration}
-              region={region}
-              color={color}
-              accent={accent}
-              height={150}
-              getPosition={position}
-              onSeek={onSeek}
-              onRegion={duration > 0 ? onRegion : undefined}
-            />
-          </div>
-
-          <div className="flex items-end flex-wrap" style={{ gap: 12 }}>
-            <div className="flex items-center" style={{ gap: 10, paddingBottom: 2 }}>
-              <SkipStart
-                onClick={toStart}
-                accent={accent}
-                disabled={duration <= 0}
-                title="Back to the start of what you kept"
-                size={44}
-              />
-              <button
-                onClick={onToggle}
-                disabled={duration <= 0}
-                title={playing ? "Pause" : "Play"}
-                aria-label={playing ? "Pause" : "Play"}
-                className="flex items-center justify-center transition-all active:scale-90 shrink-0"
-                style={{
-                  width: 44,
-                  height: 36,
-                  borderRadius: 8,
-                  background: "rgba(10,10,16,0.9)",
-                  border: `1px solid ${accent}40`,
-                  color: duration > 0 ? accent : "rgba(255,255,255,0.25)",
-                  cursor: duration > 0 ? "pointer" : "not-allowed",
-                }}
-              >
-                {playing ? (
-                  <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
-                    <rect x="3" y="2.5" width="3.6" height="11" rx="1" />
-                    <rect x="9.4" y="2.5" width="3.6" height="11" rx="1" />
-                  </svg>
-                ) : (
-                  <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M4 2.6v10.8a.7.7 0 0 0 1.07.6l8.4-5.4a.7.7 0 0 0 0-1.2l-8.4-5.4A.7.7 0 0 0 4 2.6Z" />
-                  </svg>
+        <div className="flex-1 flex flex-col min-w-0 min-h-0" style={{ gap: 12 }}>
+          <Panel
+            label="Track"
+            right={
+              <div className="flex items-center" style={{ gap: 10 }}>
+                <Readout label="length" value={clock(arrangement.length)} />
+                <Readout label="clips" value={String(arrangement.clips.length)} />
+                {hasClips && (
+                  <>
+                    <Action
+                      label="−"
+                      onClick={() => setPps((v) => Math.max(18, v - 10))}
+                      accent={accent}
+                      title="Zoom out"
+                    />
+                    <Action
+                      label="+"
+                      onClick={() => setPps((v) => Math.min(110, v + 10))}
+                      accent={accent}
+                      title="Zoom in"
+                    />
+                  </>
                 )}
-              </button>
+                <Action
+                  label="CLEAR"
+                  onClick={arrangement.clear}
+                  accent={accent}
+                  disabled={!hasClips}
+                />
+                <Action
+                  label={arrangement.isExporting ? "MIXING..." : "DOWNLOAD"}
+                  onClick={() => void arrangement.download()}
+                  accent={accent}
+                  strong
+                  disabled={!hasClips || arrangement.isExporting}
+                  title="Mix every clip down to one MP3"
+                />
+              </div>
+            }
+          >
+            {hasClips ? (
+              <div className="flex flex-col xl:flex-row min-w-0" style={{ gap: 12 }}>
+                <div className="flex items-start shrink-0 order-1" style={{ paddingTop: 2 }}>
+                  <Transport
+                    playing={arrangement.isPlaying}
+                    disabled={false}
+                    accent={accent}
+                    onToStart={() => arrangement.seek(0)}
+                    onToggle={arrangement.toggle}
+                  />
+                </div>
+                <div className="flex-1 min-w-0 order-2">
+                  <Timeline arrangement={arrangement} accent={accent} pps={pps} />
+                </div>
+                <div
+                  className="shrink-0 overflow-y-auto order-3 w-full xl:w-auto"
+                  style={{ maxWidth: 240, maxHeight: 210 }}
+                >
+                  <TrackMixer arrangement={arrangement} accent={accent} />
+                </div>
+              </div>
+            ) : (
+              <Empty>PICK SOMETHING BELOW AND SEND IT UP HERE</Empty>
+            )}
+          </Panel>
+
+          <Panel
+            label={title}
+            grow
+            right={
+              duration > 0 ? (
+                <div className="flex items-center" style={{ gap: 12 }}>
+                  <Readout label="in" value={clock(region.start)} />
+                  <Readout label="out" value={clock(region.end)} />
+                  <Readout label="keeps" value={clock(span)} />
+                </div>
+              ) : undefined
+            }
+          >
+            <div className="flex-1 flex min-h-0 min-w-0" style={{ gap: 12 }}>
+              <div
+                className="flex-1 flex flex-col min-w-0 min-h-0"
+                style={{ position: "relative" }}
+              >
+                {duration <= 0 && (
+                  <span
+                    className="font-[var(--font-mono)]"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 10,
+                      letterSpacing: "0.12em",
+                      color: "rgba(231,228,220,0.28)",
+                      pointerEvents: "none",
+                      zIndex: 1,
+                    }}
+                  >
+                    RECORD A TAKE OR DROP AN AUDIO FILE
+                  </span>
+                )}
+                <WaveEditor
+                  lanes={lanes}
+                  duration={duration}
+                  region={region}
+                  color={color}
+                  accent={accent}
+                  fill
+                  getPosition={position}
+                  onSeek={onSeek}
+                  onRegion={duration > 0 ? onRegion : undefined}
+                />
+              </div>
+
+              {!onTrack && activeTake && (
+                <div
+                  className="shrink-0 hidden md:flex flex-col"
+                  style={{
+                    gap: 8,
+                    padding: "8px 10px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(231,228,220,0.08)",
+                    background: "rgba(255,255,255,0.015)",
+                  }}
+                >
+                  <PanelLabel>Signal</PanelLabel>
+                  <TakeSignal recorder={recorder} height={88} />
+                </div>
+              )}
+            </div>
+
+            <div
+              className="flex items-center flex-wrap shrink-0"
+              style={{
+                gap: 10,
+                paddingTop: 10,
+                borderTop: "1px solid rgba(231,228,220,0.07)",
+              }}
+            >
+              <Transport
+                playing={playing}
+                disabled={duration <= 0}
+                accent={accent}
+                onToStart={toStart}
+                onToggle={onToggle}
+                size={36}
+              />
               <Action
                 label="FULL"
                 onClick={reset}
@@ -609,15 +635,8 @@ export function StudioView({
                 disabled={duration <= 0}
                 title="Keep it repeating in the background while you play over it"
               />
-            </div>
-
-            {!onTrack && activeTake && <TakeSignal recorder={recorder} height={88} />}
-
-            <div style={{ flex: 1 }} />
-
-            <div className="flex items-center" style={{ gap: 10, paddingBottom: 2 }}>
               {onTrack && (
-                <div style={{ width: 170 }}>
+                <div style={{ width: 150 }}>
                   <Fader
                     label="LEVEL"
                     value={track.level}
@@ -626,6 +645,9 @@ export function StudioView({
                   />
                 </div>
               )}
+
+              <div style={{ flex: 1 }} />
+
               <Action
                 label={sending ? "BOUNCING..." : "SEND TO TRACK"}
                 onClick={() => void sendToTrack()}
@@ -648,7 +670,7 @@ export function StudioView({
                 />
               )}
             </div>
-          </div>
+          </Panel>
         </div>
       </div>
     </div>,
