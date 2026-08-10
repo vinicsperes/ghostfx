@@ -605,7 +605,15 @@ export function StudioView({
                 </div>
                 <div
                   className="shrink-0 overflow-y-auto order-3 w-full xl:w-auto"
-                  style={{ maxWidth: 240, maxHeight: 210 }}
+                  style={{
+                    maxWidth: 272,
+                    minWidth: 236,
+                    maxHeight: 210,
+                    padding: "8px 8px 10px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(231,228,220,0.08)",
+                    background: "rgba(255,255,255,0.015)",
+                  }}
                 >
                   <TrackMixer arrangement={arrangement} accent={accent} />
                 </div>
