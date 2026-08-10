@@ -126,6 +126,61 @@ function Panel({
   );
 }
 
+function IconAction({
+  onClick,
+  disabled,
+  busy,
+  title,
+  label,
+  color,
+}: {
+  onClick: () => void;
+  disabled: boolean;
+  busy: boolean;
+  title: string;
+  label: string;
+  color: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled || busy}
+      title={busy ? "Mixing down..." : title}
+      aria-label={label}
+      className="flex items-center justify-center shrink-0 transition-all active:scale-90"
+      style={{
+        width: 38,
+        height: 34,
+        borderRadius: 7,
+        border: `1px solid ${disabled ? "rgba(231,228,220,0.1)" : color + "55"}`,
+        background: disabled ? "rgba(255,255,255,0.02)" : `${color}14`,
+        color: disabled ? "rgba(231,228,220,0.25)" : color,
+        cursor: disabled ? "not-allowed" : busy ? "wait" : "pointer",
+      }}
+    >
+      {busy ? (
+        <span
+          className="animate-pulse font-[var(--font-mono)]"
+          style={{ fontSize: 8.5, letterSpacing: "0.06em" }}
+        >
+          MIX
+        </span>
+      ) : (
+        <svg width="15" height="15" viewBox="0 0 18 18" fill="none">
+          <path
+            d="M9 2v9M9 11l-3.4-3.4M9 11l3.4-3.4"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path d="M3 14.8h12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 function Empty({ children }: { children: React.ReactNode }) {
   return (
     <div
@@ -660,19 +715,6 @@ export function StudioView({
 
               <div style={{ flex: 1 }} />
 
-              {!onTrack && (
-                <Action
-                  label={busy ? "MIXING..." : "DOWNLOAD MP3"}
-                  onClick={() => void downloadTake()}
-                  accent={accent}
-                  disabled={busy || !activeTake}
-                  title={
-                    activeTake?.backing
-                      ? "Export the take with its backing, trimmed"
-                      : "Export the take, trimmed"
-                  }
-                />
-              )}
               <Action
                 label={sending ? "BOUNCING..." : "SEND TO TRACK"}
                 onClick={() => void sendToTrack()}
@@ -692,6 +734,20 @@ export function StudioView({
                   </svg>
                 }
               />
+              {!onTrack && (
+                <IconAction
+                  onClick={() => void downloadTake()}
+                  disabled={!activeTake}
+                  busy={busy}
+                  label="Download this take"
+                  color={PALETTE.cream}
+                  title={
+                    activeTake?.backing
+                      ? "Download this take as MP3, backing mixed in"
+                      : "Download this take as MP3"
+                  }
+                />
+              )}
             </div>
           </Panel>
         </div>
