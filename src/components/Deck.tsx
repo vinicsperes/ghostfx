@@ -409,27 +409,39 @@ export function Deck({
 
         <button
           onClick={onOpenStudio}
-          title="Open the studio, room to trim and mix"
+          title="Open the studio: trim, arrange and mix"
           aria-label="Open the studio"
-          className="font-[var(--font-mono)] flex items-center shrink-0"
+          className="font-[var(--font-mono)] flex items-center shrink-0 transition-all active:scale-95"
           style={{
-            gap: 6,
-            padding: "6px 10px",
+            gap: 7,
+            padding: "6px 12px",
             borderRadius: 6,
-            border: "1px solid rgba(231,228,220,0.1)",
-            background: "rgba(255,255,255,0.02)",
+            border: `1px solid ${accent}77`,
+            background: `linear-gradient(180deg, ${accent}22, ${accent}0d)`,
             fontSize: 10.5,
-            color: "rgba(231,228,220,0.62)",
+            fontWeight: 700,
+            letterSpacing: "0.1em",
+            color: accent,
+            boxShadow: `0 0 14px ${accent}22`,
             cursor: "pointer",
           }}
         >
-          <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+            <rect
+              x="1.6"
+              y="2.4"
+              width="12.8"
+              height="11.2"
+              rx="1.6"
+              stroke="currentColor"
+              strokeWidth="1.3"
+            />
+            <path d="M1.6 6.1h12.8" stroke="currentColor" strokeWidth="1.3" />
             <path
-              d="M5.4 1.6H1.6v3.8M8.6 1.6h3.8v3.8M5.4 12.4H1.6V8.6M8.6 12.4h3.8V8.6"
+              d="M4.4 8.6v2.6M7 8.1v3.6M9.6 9.2v1.4M12.2 8.4v2.8"
               stroke="currentColor"
               strokeWidth="1.4"
               strokeLinecap="round"
-              strokeLinejoin="round"
             />
           </svg>
           STUDIO

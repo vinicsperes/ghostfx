@@ -301,7 +301,6 @@ export default function App() {
   const chassisTarget = presetIdx !== null ? PRESET_META[presetIdx].chassis : PALETTE.pedal;
   const themeColor = useColorTransition(themeTarget);
   const chassisColor = useColorTransition(chassisTarget);
-  const ledColor = isActive ? "#f53e3e" : themeColor;
 
   const handleKnobChange = useCallback(
     (knob: "drive" | "echo" | "tone" | "reverb" | "mod" | "master", value: number) => {
@@ -382,11 +381,6 @@ export default function App() {
         onPresetSelect={handlePresetSelect}
         onOpenAbout={() => setAboutOpen(true)}
         accent={themeColor}
-        ledColor={ledColor}
-        statusLabel={
-          isActive ? "Active" : fx.state === "bypass" ? "Clean" : fx.ready ? "Ready" : "Idle"
-        }
-        live={isActive}
         cleanOn={fx.state === "bypass"}
         onBypassPress={bypass.press}
         onBypassRelease={bypass.release}
@@ -672,6 +666,7 @@ export default function App() {
           tool={studioTool}
           onToolChange={setStudioTool}
           presetIdx={presetIdx}
+          onPresetSelect={handlePresetSelect}
           getLevelRef={getLevelRef}
           onRecord={() => void handleRecord()}
           source={source}

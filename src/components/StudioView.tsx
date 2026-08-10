@@ -13,6 +13,7 @@ import { PanelLabel } from "./PanelLabel";
 import { SourceMenu } from "./SourceMenu";
 import { InputMeter } from "./Deck";
 import { Timeline } from "./Timeline";
+import { RigChip } from "./RigChip";
 import { TempoChip } from "./TempoChip";
 import { TrackMixer } from "./TrackMixer";
 import { TunerChip } from "./TunerChip";
@@ -83,11 +84,13 @@ export type StudioTool = "tune" | "mix";
 
 function Panel({
   label,
+  left,
   right,
   grow = false,
   children,
 }: {
   label: string;
+  left?: React.ReactNode;
   right?: React.ReactNode;
   grow?: boolean;
   children: React.ReactNode;
@@ -113,6 +116,7 @@ function Panel({
         }}
       >
         <PanelLabel>{label}</PanelLabel>
+        {left}
         <div style={{ flex: 1 }} />
         {right}
       </header>
@@ -303,6 +307,7 @@ export function StudioView({
   tool,
   onToolChange,
   presetIdx,
+  onPresetSelect,
   getLevelRef,
   onRecord,
   source,
@@ -320,6 +325,7 @@ export function StudioView({
   tool: StudioTool;
   onToolChange: (next: StudioTool) => void;
   presetIdx: number | null;
+  onPresetSelect: (idx: number) => void;
   getLevelRef: { current: (() => number) | null };
   onRecord: () => void;
   source: Source;
@@ -461,21 +467,7 @@ export function StudioView({
           }}
           title="The pedal is still live behind the studio"
         >
-          <span
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: 2,
-              background: PRESET_META[presetIdx ?? 0].color,
-              boxShadow: `0 0 6px ${PRESET_META[presetIdx ?? 0].color}`,
-            }}
-          />
-          <span
-            className="font-[var(--font-mono)] hidden sm:block"
-            style={{ fontSize: 9.5, letterSpacing: "0.14em", color: "rgba(231,228,220,0.72)" }}
-          >
-            {PRESETS[presetIdx ?? 0].name}
-          </span>
+          <RigChip presetIdx={presetIdx} onSelect={onPresetSelect} height={26} />
           <InputMeter getLevelRef={getLevelRef} accent={accent} height={16} />
           <div style={{ width: 1, height: 18, background: "rgba(231,228,220,0.09)" }} />
           <TempoChip
@@ -552,6 +544,16 @@ export function StudioView({
           <Panel
             label="Track"
             grow
+            left={
+              <Transport
+                playing={arrangement.isPlaying}
+                disabled={!hasClips}
+                accent={accent}
+                onToStart={() => arrangement.seek(0)}
+                onToggle={arrangement.toggle}
+                size={26}
+              />
+            }
             right={
               <div className="flex items-center" style={{ gap: 10 }}>
                 <Readout label="length" value={clock(arrangement.length)} />
@@ -591,20 +593,8 @@ export function StudioView({
           >
             {hasClips ? (
               <div className="flex flex-col xl:flex-row min-w-0" style={{ gap: 12 }}>
-                <div className="flex items-start shrink-0 order-1" style={{ paddingTop: 2 }}>
-                  <Transport
-                    playing={arrangement.isPlaying}
-                    disabled={false}
-                    accent={accent}
-                    onToStart={() => arrangement.seek(0)}
-                    onToggle={arrangement.toggle}
-                  />
-                </div>
-                <div className="flex-1 min-w-0 order-2">
-                  <Timeline arrangement={arrangement} accent={accent} pps={pps} />
-                </div>
                 <div
-                  className="shrink-0 overflow-y-auto order-3 w-full xl:w-auto"
+                  className="shrink-0 overflow-y-auto w-full xl:w-auto"
                   style={{
                     maxWidth: 272,
                     minWidth: 236,
@@ -616,6 +606,9 @@ export function StudioView({
                   }}
                 >
                   <TrackMixer arrangement={arrangement} accent={accent} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <Timeline arrangement={arrangement} accent={accent} pps={pps} />
                 </div>
               </div>
             ) : (

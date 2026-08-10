@@ -8,9 +8,6 @@ export function TopBar({
   onPresetSelect,
   onOpenAbout,
   accent,
-  ledColor,
-  statusLabel,
-  live,
   cleanOn,
   onBypassPress,
   onBypassRelease,
@@ -20,9 +17,6 @@ export function TopBar({
   onPresetSelect: (i: number) => void;
   onOpenAbout: () => void;
   accent: string;
-  ledColor: string;
-  statusLabel: string;
-  live: boolean;
   cleanOn: boolean;
   onBypassPress: () => void;
   onBypassRelease: () => void;
@@ -110,34 +104,6 @@ export function TopBar({
         Clean
         <span style={{ opacity: 0.4, letterSpacing: "0.06em" }}>B</span>
       </button>
-
-      <div
-        className="flex items-center shrink-0"
-        style={{
-          gap: 7,
-          padding: "5px 11px",
-          borderRadius: 999,
-          border: "1px solid rgba(231,228,220,0.08)",
-          background: "rgba(255,255,255,0.02)",
-        }}
-      >
-        <span
-          className={live ? "animate-pulse" : ""}
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            background: ledColor,
-            boxShadow: live ? `0 0 8px ${ledColor}` : "none",
-          }}
-        />
-        <span
-          className="font-[var(--font-mono)] uppercase"
-          style={{ fontSize: 8.5, letterSpacing: "0.18em", color: "rgba(231,228,220,0.55)" }}
-        >
-          {statusLabel}
-        </span>
-      </div>
 
       {dock}
     </div>
