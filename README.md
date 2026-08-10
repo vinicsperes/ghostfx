@@ -40,11 +40,11 @@ even the chassis tint.
 | Preset    | Character                                                                | Circuit                                                    |
 | --------- | ------------------------------------------------------------------------ | ---------------------------------------------------------- |
 | **GHOST** | The house voice. Edge of breakup, cleans up under your hands.             | screamer drive → tape echo → hall reverb                    |
-| **DOOM**  | Sludge tracked an octave below itself, dragged through a cavern.          | vintage fuzz → octave down → dark slap → cavern reverb      |
+| **DOOM**  | Sludge with the bottom left open, dragged through a cavern.               | vintage fuzz → dark slap → cavern reverb                    |
 | **FROST** | Glassy clean platform with lush chorus. Every note stays articulate.      | clean boost → chorus → crystal delay → plate reverb         |
 | **HEAVY** | Scooped high gain, tight and nearly dry. Palm mutes hit like a wall.      | rectifier drive → tight slap delay → room reverb            |
 | **HAZE**  | Seattle, 1991. Gritty silicon into a watery chorus, almost no tail.       | silicon distortion → watery chorus → short slap → small room |
-| **FEVER** | The lead voice. Cuts through anything, with an octave behind the tail.    | singing drive → mid bump → repeats → octave shimmer → plate |
+| **FEVER** | The lead voice. Cuts through anything, with repeats to lean on.           | singing drive → mid bump → repeats → open plate             |
 
 ## A real pedal, not a picture of one
 

@@ -23,7 +23,7 @@ export const PRESET_META = [
   { color: "#7d22c4", word: "OCCULT", chassis: "#0d0518" },
   { color: "#a8c4dc", word: "GLACIER", chassis: "#0a1018" },
   { color: "#e02828", word: "HOLLOW", chassis: "#120404" },
-  { color: "#c8922f", word: "FADED", chassis: "#150e05" },
+  { color: "#d46a9f", word: "FADED", chassis: "#140812" },
   { color: "#f02a96", word: "DELIRIUM", chassis: "#150618" },
 ] as const;
 
@@ -44,8 +44,8 @@ export const PRESET_INFO = [
   },
   {
     blurb:
-      "Sludge with a floor under it. A vintage fuzz with the bottom left open, tracked an octave below by a pitch shifter, into a cavern. Riffs land like something heavy being dragged.",
-    circuit: "vintage fuzz → octave down → dark slap → cavern reverb",
+      "Sludge with a floor under it. A vintage fuzz with the bottom left open where the other rigs cut it, into a cavern. Riffs land like something heavy being dragged.",
+    circuit: "vintage fuzz → dark slap → cavern reverb",
   },
   {
     blurb:
@@ -64,8 +64,8 @@ export const PRESET_INFO = [
   },
   {
     blurb:
-      "The lead voice. A hard upper-mid bump so single notes cut through anything, a curve that sings instead of squashing, and an octave rising out of the reverb behind every sustained note.",
-    circuit: "singing drive → mid bump → repeats → octave shimmer → open plate",
+      "The lead voice. A hard upper-mid bump so single notes cut through anything and a curve that sings instead of squashing, over repeats long enough to lean on.",
+    circuit: "singing drive → mid bump → repeats → open plate",
   },
 ] as const;
 
@@ -206,18 +206,15 @@ export const REVERBS: ReverbProfile[] = [
   { decay: 2.8, predelay: 0.022, tone: 5200, width: 1.0 },
 ];
 
-export type ShimmerProfile = {
-  semitones: number;
-  mix: number;
+export type SendProfile = {
   lowCut: number;
-  direct?: boolean;
 };
 
-export const SHIMMERS: ShimmerProfile[] = [
-  { semitones: 0, mix: 0, lowCut: 170 },
-  { semitones: -12, mix: 0.32, lowCut: 90, direct: true },
-  { semitones: 0, mix: 0, lowCut: 120 },
-  { semitones: 0, mix: 0, lowCut: 120 },
-  { semitones: 0, mix: 0, lowCut: 150 },
-  { semitones: 12, mix: 0.4, lowCut: 300 },
+export const SENDS: SendProfile[] = [
+  { lowCut: 170 },
+  { lowCut: 90 },
+  { lowCut: 120 },
+  { lowCut: 120 },
+  { lowCut: 150 },
+  { lowCut: 300 },
 ];

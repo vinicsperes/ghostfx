@@ -72,11 +72,11 @@ const PRESET_VISUALS: PresetVisual[] = [
     showArc: false,
   },
   {
-    pickguard: { top: "#100c05", mid: "#1d160a", base: "#080602", screw: "#3a2c14" },
+    pickguard: { top: "#0e0810", mid: "#1e0a1a", base: "#070409", screw: "#3a1830" },
     knobTheme: "dark",
-    silk: "#c8922f",
-    ink: "#efdcb4",
-    knobAccent: "#c8922f",
+    silk: "#d46a9f",
+    ink: "#f4d2e6",
+    knobAccent: "#d46a9f",
     showArc: false,
   },
   {

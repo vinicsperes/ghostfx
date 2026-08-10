@@ -1,12 +1,11 @@
 import {
   createDistortionCurve,
-  createPitchShifter,
   createReverbIR,
   createTapeCurve,
   driveOversample,
   mapDrivePreGain,
 } from "./dsp";
-import { CABS, DELAYS, DRIVES, MODS, REVERBS, SHIMMERS } from "../data/presets";
+import { CABS, DELAYS, DRIVES, MODS, REVERBS, SENDS } from "../data/presets";
 
 export type SignalParams = {
   drive: number;
@@ -45,7 +44,6 @@ export type ChainNodes = {
   modWet: GainNode;
   reverbHP: BiquadFilterNode;
   reverbPre: DelayNode;
-  shimmer: GainNode | null;
   convolverA: ConvolverNode;
   convolverB: ConvolverNode;
   reverbWetA: GainNode;
@@ -101,8 +99,6 @@ export function applyChainParams(
   nodes.wet.gain.setTargetAtTime(p.echo * 0.5, t, ramp);
 
   nodes.reverbWet.gain.setTargetAtTime(p.reverb * 0.5, t, ramp);
-  const sh = SHIMMERS[idx] ?? SHIMMERS[0];
-  nodes.shimmer?.gain.setTargetAtTime(sh.direct ? sh.mix : sh.mix * p.reverb, t, ramp);
 
   nodes.modDepth.gain.setTargetAtTime(mp.depthMin + p.mod * (mp.depthMax - mp.depthMin), t, ramp);
   nodes.modFb.gain.setTargetAtTime(p.mod * mp.fbMax, t, ramp);
@@ -213,30 +209,15 @@ export function buildChain(
   const modWet = ctx.createGain();
   modWet.gain.value = p.mod * mp.mixMax;
 
-  const sh = SHIMMERS[idx] ?? SHIMMERS[0];
+  const send = SENDS[idx] ?? SENDS[0];
 
   const reverbHP = ctx.createBiquadFilter();
   reverbHP.type = "highpass";
-  reverbHP.frequency.value = sh.lowCut;
+  reverbHP.frequency.value = send.lowCut;
   reverbHP.Q.value = 0.707;
 
   const reverbPre = ctx.createDelay(0.2);
   reverbPre.delayTime.value = REVERBS[idx].predelay;
-
-  let shimmer: GainNode | null = null;
-  let shimmerIn: BiquadFilterNode | null = null;
-  if (sh.mix > 0) {
-    shimmerIn = ctx.createBiquadFilter();
-    shimmerIn.type = "highpass";
-    shimmerIn.frequency.value = sh.lowCut;
-    shimmerIn.Q.value = 0.707;
-
-    shimmer = ctx.createGain();
-    shimmer.gain.value = sh.direct ? sh.mix : sh.mix * p.reverb;
-    const shifter = createPitchShifter(ctx, sh.semitones);
-    shimmerIn.connect(shifter.input);
-    shifter.output.connect(shimmer);
-  }
 
   const convolverA = ctx.createConvolver();
   convolverA.normalize = true;
@@ -291,10 +272,6 @@ export function buildChain(
   toneFilter.connect(reverbHP);
   reverbHP.connect(reverbPre);
 
-  if (shimmerIn && shimmer) {
-    toneFilter.connect(shimmerIn);
-    shimmer.connect(sh.direct ? mix : reverbPre);
-  }
   reverbPre.connect(convolverA);
   reverbPre.connect(convolverB);
   convolverA.connect(reverbWetA);
@@ -333,7 +310,6 @@ export function buildChain(
       modWet,
       reverbHP,
       reverbPre,
-      shimmer,
       convolverA,
       convolverB,
       reverbWetA,
