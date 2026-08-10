@@ -7,19 +7,10 @@ import { clock, stamp } from "../lib/format";
 import { MiniWave } from "./MiniWave";
 import { PanelLabel } from "./PanelLabel";
 
-function RowButton({
-  onClick,
-  onPointerDown,
-  children,
-}: {
-  onClick: () => void;
-  onPointerDown?: (e: React.PointerEvent) => void;
-  children: React.ReactNode;
-}) {
+function RowButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       onClick={onClick}
-      onPointerDown={onPointerDown}
       className="flex items-center flex-1 min-w-0"
       style={{ gap: 8, cursor: "pointer" }}
     >
@@ -160,10 +151,6 @@ function Meta({ children, width }: { children: React.ReactNode; width?: number }
   );
 }
 
-export type DragSource =
-  | { kind: "take"; id: string; name: string; color: string }
-  | { kind: "track"; name: string; color: string };
-
 export function SourceMenu({
   recorder,
   track,
@@ -171,7 +158,6 @@ export function SourceMenu({
   accent,
   onPickTake,
   onPickTrack,
-  onDragSource,
   editable = false,
 }: {
   recorder: ReturnType<typeof useRecorder>;
@@ -180,7 +166,6 @@ export function SourceMenu({
   accent: string;
   onPickTake: (id: string) => void;
   onPickTrack: () => void;
-  onDragSource?: (source: DragSource, e: React.PointerEvent) => void;
   editable?: boolean;
 }) {
   const {
@@ -322,15 +307,7 @@ export function SourceMenu({
                     width={editable ? undefined : 58}
                     onCommit={(next) => renameTake(take.id, next)}
                   />
-                  <RowButton
-                    onClick={() => onPickTake(take.id)}
-                    onPointerDown={(e) =>
-                      onDragSource?.(
-                        { kind: "take", id: take.id, name: nameOf(take, rig), color },
-                        e,
-                      )
-                    }
-                  >
+                  <RowButton onClick={() => onPickTake(take.id)}>
                     <span className="flex-1 min-w-0">
                       <MiniWave peaks={take.peaks} color={color} width={104} height={18} stretch />
                     </span>
@@ -375,12 +352,7 @@ export function SourceMenu({
             onRemove={clear}
             removeLabel="Remove track"
           >
-            <RowButton
-              onClick={onPickTrack}
-              onPointerDown={(e) =>
-                onDragSource?.({ kind: "track", name: loaded.name, color: PALETTE.cream }, e)
-              }
-            >
+            <RowButton onClick={onPickTrack}>
               <span
                 style={{
                   width: 6,
