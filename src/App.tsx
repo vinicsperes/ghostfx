@@ -123,9 +123,10 @@ export default function App() {
 
   const { snapshot: trackSnapshot } = track;
   const { snapshot: takeSnapshot } = fx.recorder;
+  const { snapshot: arrangementSnapshot } = arrangement;
   useEffect(() => {
-    backingRef.current = () => trackSnapshot() ?? takeSnapshot();
-  }, [trackSnapshot, takeSnapshot]);
+    backingRef.current = () => arrangementSnapshot() ?? trackSnapshot() ?? takeSnapshot();
+  }, [arrangementSnapshot, trackSnapshot, takeSnapshot]);
 
   const { pause: pauseTake } = fx.recorder;
   const { pause: pauseTrack, track: loadedTrack } = track;

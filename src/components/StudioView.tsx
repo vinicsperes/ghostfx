@@ -25,6 +25,8 @@ function Action({
   accent,
   disabled = false,
   strong = false,
+  primary = false,
+  icon,
   title,
 }: {
   label: string;
@@ -32,6 +34,8 @@ function Action({
   accent: string;
   disabled?: boolean;
   strong?: boolean;
+  primary?: boolean;
+  icon?: React.ReactNode;
   title?: string;
 }) {
   return (
@@ -39,19 +43,37 @@ function Action({
       onClick={onClick}
       disabled={disabled}
       title={title ?? label}
-      className="font-[var(--font-mono)] shrink-0"
+      className="font-[var(--font-mono)] shrink-0 flex items-center transition-all active:scale-95"
       style={{
-        padding: "7px 12px",
+        gap: 7,
+        padding: primary ? "8px 15px" : "7px 12px",
         borderRadius: 7,
-        border: `1px solid ${strong ? accent + "66" : "rgba(231,228,220,0.12)"}`,
-        background: strong ? `${accent}14` : "rgba(255,255,255,0.02)",
-        fontSize: 10,
+        border: `1px solid ${primary ? accent : strong ? accent + "66" : "rgba(231,228,220,0.12)"}`,
+        background: primary
+          ? disabled
+            ? `${accent}22`
+            : accent
+          : strong
+            ? `${accent}14`
+            : "rgba(255,255,255,0.02)",
+        fontSize: primary ? 10.5 : 10,
+        fontWeight: primary ? 700 : 400,
         letterSpacing: "0.12em",
-        color: disabled ? "rgba(231,228,220,0.3)" : strong ? accent : "rgba(231,228,220,0.7)",
+        color: disabled
+          ? primary
+            ? "rgba(6,8,10,0.45)"
+            : "rgba(231,228,220,0.3)"
+          : primary
+            ? "#06080a"
+            : strong
+              ? accent
+              : "rgba(231,228,220,0.7)",
+        boxShadow: primary && !disabled ? `0 0 18px ${accent}44` : "none",
         cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.5 : 1,
+        opacity: disabled ? 0.45 : 1,
       }}
     >
+      {icon}
       {label}
     </button>
   );
@@ -588,18 +610,8 @@ export function StudioView({
               </div>
 
               {!onTrack && activeTake && (
-                <div
-                  className="shrink-0 hidden md:flex flex-col"
-                  style={{
-                    gap: 8,
-                    padding: "8px 10px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(231,228,220,0.08)",
-                    background: "rgba(255,255,255,0.015)",
-                  }}
-                >
-                  <PanelLabel>Signal</PanelLabel>
-                  <TakeSignal recorder={recorder} height={88} />
+                <div className="hidden md:block">
+                  <TakeSignal recorder={recorder} height={82} />
                 </div>
               )}
             </div>
@@ -648,19 +660,11 @@ export function StudioView({
 
               <div style={{ flex: 1 }} />
 
-              <Action
-                label={sending ? "BOUNCING..." : "SEND TO TRACK"}
-                onClick={() => void sendToTrack()}
-                accent={accent}
-                disabled={sending || duration <= 0}
-                title="Bounce this, trimmed and re-amped, up into the track"
-              />
               {!onTrack && (
                 <Action
                   label={busy ? "MIXING..." : "DOWNLOAD MP3"}
                   onClick={() => void downloadTake()}
                   accent={accent}
-                  strong
                   disabled={busy || !activeTake}
                   title={
                     activeTake?.backing
@@ -669,6 +673,25 @@ export function StudioView({
                   }
                 />
               )}
+              <Action
+                label={sending ? "BOUNCING..." : "SEND TO TRACK"}
+                onClick={() => void sendToTrack()}
+                accent={accent}
+                primary
+                disabled={sending || duration <= 0}
+                title="Bounce this, trimmed and re-amped, up into the track"
+                icon={
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                    <path
+                      d="M8 13V3.6M8 3.6 4.2 7.4M8 3.6l3.8 3.8"
+                      stroke="currentColor"
+                      strokeWidth="1.9"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                }
+              />
             </div>
           </Panel>
         </div>

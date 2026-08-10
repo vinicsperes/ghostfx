@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { computePeaks, encodeMp3, encodeWav } from "../audio/encode";
-import { renderArrangement } from "../audio/render";
+import { renderArrangement, type Backing } from "../audio/render";
 import { LANES } from "../lib/timeline";
 
 export type Clip = {
@@ -37,6 +37,7 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
   const sourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const gainRef = useRef<GainNode | null>(null);
   const masterRef = useRef(0.9);
+  const mixRef = useRef<{ buffer: AudioBuffer; length: number } | null>(null);
   const originRef = useRef(0);
   const phaseRef = useRef(0);
   const timerRef = useRef<number | null>(null);
@@ -107,6 +108,26 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
 
     phaseRef.current = phase;
     setIsPlaying(true);
+
+    if (mixRef.current?.length !== total) {
+      mixRef.current = null;
+      void renderArrangement(
+        list
+          .filter((clip) => !clip.muted)
+          .map((clip) => ({
+            buffer: clip.buffer,
+            at: clip.at,
+            from: clip.in,
+            span: clipLength(clip),
+            level: clip.level,
+          })),
+        ctx.sampleRate,
+        masterRef.current,
+      ).then((buffer) => {
+        mixRef.current = { buffer, length: total };
+      });
+    }
+
     timerRef.current = window.setTimeout(
       () => {
         stopSources();
@@ -132,8 +153,25 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
 
   const commit = useCallback((next: Clip[]) => {
     clipsRef.current = next;
+    mixRef.current = null;
     setClips(next);
   }, []);
+
+  const snapshot = useCallback((): Backing | null => {
+    const ctx = ctxRef.current;
+    const mix = mixRef.current;
+    if (!ctx || !mix || !sourcesRef.current.length) return null;
+    const latency = ctx.baseLatency + (ctx.outputLatency || 0);
+    return {
+      buffer: mix.buffer,
+      name: "track",
+      level: 1,
+      loop: false,
+      start: 0,
+      end: mix.buffer.duration,
+      offset: Math.max(0, ctx.currentTime - originRef.current) - latency,
+    };
+  }, [ctxRef]);
 
   const add = useCallback(
     (clip: { name: string; color: string; buffer: AudioBuffer; lane?: number; at?: number }) => {
@@ -326,6 +364,7 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
     toggle,
     seek,
     getPosition,
+    snapshot,
     download,
   };
 }
