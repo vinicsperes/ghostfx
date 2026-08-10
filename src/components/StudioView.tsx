@@ -107,9 +107,9 @@ function Panel({
 function Empty({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="flex items-center justify-center font-[var(--font-mono)]"
+      className="flex flex-1 items-center justify-center font-[var(--font-mono)]"
       style={{
-        height: 48,
+        minHeight: 64,
         borderRadius: 8,
         border: "1px dashed rgba(231,228,220,0.12)",
         fontSize: 9.5,
@@ -474,6 +474,7 @@ export function StudioView({
         <div className="flex-1 flex flex-col min-w-0 min-h-0" style={{ gap: 12 }}>
           <Panel
             label="Track"
+            grow
             right={
               <div className="flex items-center" style={{ gap: 10 }}>
                 <Readout label="length" value={clock(arrangement.length)} />
@@ -539,7 +540,6 @@ export function StudioView({
 
           <Panel
             label={title}
-            grow
             right={
               duration > 0 ? (
                 <div className="flex items-center" style={{ gap: 12 }}>
@@ -550,7 +550,7 @@ export function StudioView({
               ) : undefined
             }
           >
-            <div className="flex-1 flex min-h-0 min-w-0" style={{ gap: 12 }}>
+            <div className="flex min-h-0 min-w-0" style={{ gap: 12, height: 168 }}>
               <div
                 className="flex-1 flex flex-col min-w-0 min-h-0"
                 style={{ position: "relative" }}
