@@ -97,9 +97,8 @@ function Panel({
 }) {
   return (
     <section
-      className="flex flex-col min-h-0 min-w-0"
+      className={`flex flex-col min-h-0 min-w-0${grow ? " lg:flex-1" : ""}`}
       style={{
-        flex: grow ? 1 : undefined,
         borderRadius: 12,
         border: "1px solid rgba(231,228,220,0.09)",
         background: "rgba(9,11,14,0.92)",
@@ -431,7 +430,7 @@ export function StudioView({
 
   return createPortal(
     <div
-      className="fixed inset-0 flex flex-col"
+      className="fixed inset-0 flex flex-col overflow-x-hidden"
       style={{
         zIndex: 300,
         background:
@@ -440,7 +439,7 @@ export function StudioView({
       }}
     >
       <header
-        className="flex items-center shrink-0"
+        className="flex items-center flex-wrap shrink-0"
         style={{
           padding: "10px max(14px,1.6vw)",
           borderBottom: "1px solid rgba(231,228,220,0.08)",
@@ -457,7 +456,7 @@ export function StudioView({
         <div style={{ flex: 1 }} />
 
         <div
-          className="flex items-center shrink-0"
+          className="flex items-center flex-wrap"
           style={{
             gap: 8,
             padding: "5px 10px 5px 8px",
@@ -594,10 +593,9 @@ export function StudioView({
             {hasClips ? (
               <div className="flex flex-col xl:flex-row min-w-0" style={{ gap: 12 }}>
                 <div
-                  className="shrink-0 overflow-y-auto w-full xl:w-auto"
+                  className="shrink-0 overflow-y-auto w-full xl:w-[252px]"
                   style={{
                     maxWidth: 272,
-                    minWidth: 236,
                     maxHeight: 210,
                     padding: "8px 8px 10px",
                     borderRadius: 10,
@@ -628,7 +626,10 @@ export function StudioView({
               ) : undefined
             }
           >
-            <div className="flex min-h-0 min-w-0" style={{ gap: 12, height: 168 }}>
+            <div
+              className="flex flex-col md:flex-row min-h-0 min-w-0"
+              style={{ gap: 12, minHeight: 168 }}
+            >
               <div
                 className="flex-1 flex flex-col min-w-0 min-h-0"
                 style={{ position: "relative" }}
@@ -666,7 +667,7 @@ export function StudioView({
               </div>
 
               {!onTrack && activeTake && (
-                <div className="hidden md:block">
+                <div className="overflow-x-auto">
                   <TakeSignal recorder={recorder} height={82} />
                 </div>
               )}
