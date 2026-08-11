@@ -49,10 +49,18 @@ function Action({
         gap: 7,
         padding: primary ? "8px 15px" : "7px 12px",
         borderRadius: 7,
-        border: `1px solid ${primary ? accent : strong ? accent + "66" : "rgba(231,228,220,0.12)"}`,
+        border: `1px solid ${
+          primary
+            ? disabled
+              ? "rgba(231,228,220,0.12)"
+              : accent
+            : strong
+              ? accent + "66"
+              : "rgba(231,228,220,0.12)"
+        }`,
         background: primary
           ? disabled
-            ? `${accent}22`
+            ? "rgba(255,255,255,0.03)"
             : accent
           : strong
             ? `${accent}14`
@@ -62,7 +70,7 @@ function Action({
         letterSpacing: "0.12em",
         color: disabled
           ? primary
-            ? "rgba(6,8,10,0.45)"
+            ? "rgba(231,228,220,0.35)"
             : "rgba(231,228,220,0.3)"
           : primary
             ? "#06080a"
@@ -97,7 +105,7 @@ function Panel({
 }) {
   return (
     <section
-      className={`flex flex-col min-h-0 min-w-0${grow ? " lg:flex-1" : ""}`}
+      className={`flex flex-col min-w-0 shrink-0 lg:shrink lg:min-h-0${grow ? " lg:flex-1" : ""}`}
       style={{
         borderRadius: 12,
         border: "1px solid rgba(231,228,220,0.09)",
@@ -106,7 +114,7 @@ function Panel({
       }}
     >
       <header
-        className="flex items-center shrink-0"
+        className="flex items-center flex-wrap shrink-0"
         style={{
           gap: 10,
           padding: "8px 12px",
@@ -520,7 +528,7 @@ export function StudioView({
           gap: 12,
         }}
       >
-        <div className="shrink-0 flex flex-col min-h-0" style={{ width: "100%", maxWidth: 300 }}>
+        <div className="shrink-0 flex flex-col lg:min-h-0 w-full lg:max-w-[300px]">
           <Panel label="Library" grow>
             <div className="overflow-y-auto" style={{ margin: -4, padding: 4 }}>
               <SourceMenu
@@ -539,7 +547,7 @@ export function StudioView({
           </Panel>
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0 min-h-0" style={{ gap: 12 }}>
+        <div className="flex flex-col min-w-0 lg:flex-1 lg:min-h-0" style={{ gap: 12 }}>
           <Panel
             label="Track"
             grow
