@@ -105,7 +105,7 @@ function Panel({
 }) {
   return (
     <section
-      className={`flex flex-col min-w-0 shrink-0 lg:shrink lg:min-h-0${grow ? " lg:flex-1" : ""}`}
+      className={`flex flex-col min-w-0 shrink-0${grow ? " lg:flex-1 lg:min-h-0" : ""}`}
       style={{
         borderRadius: 12,
         border: "1px solid rgba(231,228,220,0.09)",
@@ -562,7 +562,7 @@ export function StudioView({
               />
             }
             right={
-              <div className="flex items-center" style={{ gap: 10 }}>
+              <div className="flex items-center flex-wrap" style={{ gap: 10 }}>
                 <Readout label="length" value={clock(arrangement.length)} />
                 <Readout label="clips" value={String(arrangement.clips.length)} />
                 {hasClips && (
@@ -626,7 +626,7 @@ export function StudioView({
             label={title}
             right={
               duration > 0 ? (
-                <div className="flex items-center" style={{ gap: 12 }}>
+                <div className="flex items-center flex-wrap" style={{ gap: 12 }}>
                   <Readout label="in" value={clock(region.start)} />
                   <Readout label="out" value={clock(region.end)} />
                   <Readout label="keeps" value={clock(span)} />
@@ -635,8 +635,8 @@ export function StudioView({
             }
           >
             <div
-              className="flex flex-col md:flex-row min-h-0 min-w-0"
-              style={{ gap: 12, minHeight: 168 }}
+              className="flex flex-col md:flex-row md:h-[168px] min-h-0 min-w-0"
+              style={{ gap: 12 }}
             >
               <div
                 className="flex-1 flex flex-col min-w-0 min-h-0"
