@@ -8,7 +8,14 @@ import {
   masterGainFromKnob,
 } from "../audio/dsp";
 import { CABS, DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
-import { buildChain, chorusOf, reverbBuffers, tremoloDepth, type ChainNodes } from "../audio/chain";
+import {
+  buildChain,
+  chorusOf,
+  mixNorm,
+  reverbBuffers,
+  tremoloDepth,
+  type ChainNodes,
+} from "../audio/chain";
 import type { Backing } from "../audio/render";
 import { useRecorder } from "./useRecorder";
 
@@ -389,6 +396,14 @@ export function useEffects({
     tremDepth?.gain.setTargetAtTime(throb, t, 0.08);
     trem?.gain.setTargetAtTime(1 - throb, t, 0.08);
   }, [mod, presetIdx]);
+
+  useEffect(() => {
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    const { mix } = nodesRef.current;
+    const mp = MODS[presetIdx ?? 0] ?? MODS[0];
+    mix?.gain.setTargetAtTime(mixNorm({ echo, reverb, mod }, mp), ctx.currentTime, 0.05);
+  }, [echo, reverb, mod, presetIdx]);
 
   useEffect(() => {
     if (feedbackLatchRef.current) return;
