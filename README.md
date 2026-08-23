@@ -43,7 +43,7 @@ even the chassis tint.
 | **DOOM**  | Sludge with the bottom left open, dragged through a cavern.               | vintage fuzz → dark slap → cavern reverb                    |
 | **FROST** | Glassy clean platform with lush chorus. Every note stays articulate.      | clean boost → chorus → crystal delay → plate reverb         |
 | **HEAVY** | Scooped high gain, tight and nearly dry. Palm mutes hit like a wall.      | rectifier drive → tight slap delay → room reverb            |
-| **HAZE**  | Seattle, 1991. Gritty silicon into a watery chorus, almost no tail.       | silicon distortion → watery chorus → short slap → small room |
+| **SMOKE** | A small valve amp on the edge of breakup. Soft it stays clean, dug in it growls. | tube drive → slapback → amp tremolo → spring                 |
 | **FEVER** | The lead voice. Cuts through anything, with repeats to lean on.           | singing drive → mid bump → repeats → open plate             |
 
 ## A real pedal, not a picture of one

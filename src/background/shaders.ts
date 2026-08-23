@@ -81,35 +81,36 @@ void main(){
   gl_FragColor=col;
 }`;
 
-export const HAZE_FS = `
+export const SMOKE_FS = `
 precision mediump float;
 uniform float u_t; uniform vec2 u_res; uniform float u_blend;
 void main(){
   vec2 uv=gl_FragCoord.xy/u_res;
-  float a=u_res.x/u_res.y;
-  float kx=a<1.0?a:1.0;
-  float nx=.5+(uv.x-.5)*kx,ny=1.-uv.y,cx=nx-.5,cy=ny-.5;
-  float r=sqrt(cx*cx+cy*cy);
-  float v=sin(nx*8.+u_t*.50)*1.1
-         +sin(ny*6.-u_t*.40)*1.1
-         +sin(r*16.-u_t*1.20)*1.5
-         +sin((cx*9.-cy*7.)+u_t*.30)*.9
-         +sin((cx*5.+cy*11.)-u_t*.22)*.7;
-  float c1=abs(cos(v*3.14159265));
-  float c2=abs(cos(v*3.14159265*.5+.9));
-  float t1=mix(1.0,0.78,u_blend);
-  float t2=mix(1.0,0.85,u_blend);
+  vec2 p=(uv-0.5)*vec2(u_res.x/u_res.y,1.0);
+  float drift=u_t*0.07;
+  vec2 q=vec2(sin(p.x*2.1+drift)+sin(p.y*1.7-drift*0.8),
+              sin(p.x*1.5-drift*0.7)+sin(p.y*2.4+drift*0.9));
+  vec2 g=p+0.34*q+vec2(0.0,u_t*0.02);
+  float v=sin(g.y*3.6+sin(g.x*2.2+drift)*1.6-u_t*0.11)*1.2
+         +sin(g.x*2.9-g.y*1.7+u_t*0.08)*0.9
+         +sin(length(g)*4.2-u_t*0.05)*0.7;
+  float band=abs(cos(v*2.4));
+  float wisp=abs(cos(v*1.2+1.1));
+  float t1=mix(1.0,0.70,u_blend);
+  float t2=mix(1.0,0.88,u_blend);
+  float depth=(sin(v*0.8)+1.)*.5;
   vec4 col;
-  if(c1>t1){
-    float b=pow((c1-.78)/.22,.55);
-    float violet=sin(v*1.4+u_t*.15)*.5+.5;
-    col=vec4(b*(212.-violet*58.)/255.,b*(106.-violet*14.)/255.,b*(159.+violet*49.)/255.,b*248./255.);
-  } else if(c2>t2){
-    float b=pow((c2-.85)/.15,.5)*.42;
-    col=vec4(b*130./255.,b*70./255.,b*180./255.,b*160./255.);
+  if(band>t1){
+    float b=pow((band-.70)/.30,.6);
+    float wash=sin(v*1.1+u_t*.09)*.5+.5;
+    vec3 glow=vec3(122.,140.,240.)/255.;
+    vec3 deep=vec3(44.,58.,158.)/255.;
+    col=vec4(mix(deep,glow,wash)*b,b*.70);
+  } else if(wisp>t2){
+    float b=pow((wisp-.88)/.12,.5)*.34;
+    col=vec4(b*60./255.,b*72./255.,b*180./255.,b*150./255.);
   } else {
-    float depth=(sin(v*.4)+1.)*.5;
-    col=vec4(depth*24./255.,depth*6./255.,depth*28./255.,1.);
+    col=vec4((6.+depth*4.)/255.,(8.+depth*6.)/255.,(28.+depth*12.)/255.,1.);
   }
   gl_FragColor=col;
 }`;
@@ -178,8 +179,8 @@ void main(){
   gl_FragColor=col;
 }`;
 
-export const PRESET_FS = [GHOST_FS, CLEAN_FS, FROST_FS, HEAVY_FS, HAZE_FS, FEVER_FS];
-export const PRESET_OPACITY = [0.7, 0.65, 0.74, 0.82, 0.88, 0.82];
+export const PRESET_FS = [GHOST_FS, CLEAN_FS, FROST_FS, HEAVY_FS, SMOKE_FS, FEVER_FS];
+export const PRESET_OPACITY = [0.7, 0.65, 0.74, 0.82, 0.8, 0.82];
 
 export type GlState = {
   tLoc: WebGLUniformLocation;

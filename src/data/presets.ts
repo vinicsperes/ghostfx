@@ -5,7 +5,7 @@ export const PRESETS = [
   { name: "DOOM", drive: 0.62, echo: 0.2, tone: 0.4, reverb: 0.45, mod: 0.05, master: 0.82 },
   { name: "FROST", drive: 0.25, echo: 0.35, tone: 0.8, reverb: 0.4, mod: 0.65, master: 0.95 },
   { name: "HEAVY", drive: 0.88, echo: 0.08, tone: 0.6, reverb: 0.15, mod: 0.0, master: 0.8 },
-  { name: "HAZE", drive: 0.48, echo: 0.12, tone: 0.56, reverb: 0.24, mod: 0.82, master: 0.8 },
+  { name: "SMOKE", drive: 0.42, echo: 0.2, tone: 0.55, reverb: 0.32, mod: 0.3, master: 0.86 },
   { name: "FEVER", drive: 0.58, echo: 0.42, tone: 0.6, reverb: 0.4, mod: 0.15, master: 0.8 },
 ] as const;
 
@@ -23,7 +23,7 @@ export const PRESET_META = [
   { color: "#7d22c4", word: "OCCULT", chassis: "#0d0518" },
   { color: "#a8c4dc", word: "GLACIER", chassis: "#0a1018" },
   { color: "#e02828", word: "HOLLOW", chassis: "#120404" },
-  { color: "#d46a9f", word: "FADED", chassis: "#140812" },
+  { color: "#5468e0", word: "JUKE", chassis: "#06081c" },
   { color: "#f02a96", word: "DELIRIUM", chassis: "#150618" },
 ] as const;
 
@@ -32,7 +32,7 @@ export const PRESET_TAGS = [
   "subterranean",
   "glacial",
   "brutal",
-  "grungy",
+  "smoky",
   "soaring",
 ] as const;
 
@@ -59,8 +59,8 @@ export const PRESET_INFO = [
   },
   {
     blurb:
-      "Seattle, 1991. Gritty silicon distortion through a watery chorus, barely any tail behind it. Rolls back to a haunted clean on the guitar volume, then bites the moment you dig in.",
-    circuit: "silicon distortion → watery chorus → short slap → small room",
+      "A small valve amp on the edge of breakup, mic'd up close in a back room. Plays soft and it stays clean, dig in and it growls with a warm second harmonic. Slapback and a slow throb behind it.",
+    circuit: "tube drive → slapback → amp tremolo → spring",
   },
   {
     blurb:
@@ -82,7 +82,7 @@ export const DRIVES: DriveProfile[] = [
   { shape: "fuzz", preHp: 62, midHz: 420, midGain: 2, trim: 0.46 },
   { shape: "clean", preHp: 120, midHz: 2200, midGain: 2.5, trim: 3.8 },
   { shape: "rectifier", preHp: 125, midHz: 700, midGain: 3.5, trim: 0.32 },
-  { shape: "grunge", preHp: 118, midHz: 720, midGain: 2, trim: 0.59 },
+  { shape: "tube", preHp: 100, midHz: 620, midGain: 2.5, trim: 0.75 },
   { shape: "smooth", preHp: 130, midHz: 1100, midGain: 5, trim: 0.63 },
 ];
 
@@ -101,7 +101,7 @@ export const DELAYS: DelayProfile[] = [
   { timeMin: 0.08, timeMax: 0.16, fbMin: 0.1, fbMax: 0.45, loopHp: 150, loopLp: 2200, sat: 1.5 },
   { timeMin: 0.12, timeMax: 0.3, fbMin: 0.15, fbMax: 0.5, loopHp: 200, loopLp: 5500, sat: 1.1 },
   { timeMin: 0.1, timeMax: 0.35, fbMin: 0.1, fbMax: 0.4, loopHp: 220, loopLp: 3000, sat: 1.2 },
-  { timeMin: 0.11, timeMax: 0.3, fbMin: 0.04, fbMax: 0.26, loopHp: 260, loopLp: 3000, sat: 1.3 },
+  { timeMin: 0.075, timeMax: 0.19, fbMin: 0.03, fbMax: 0.28, loopHp: 220, loopLp: 2800, sat: 1.35 },
   { timeMin: 0.28, timeMax: 0.56, fbMin: 0.25, fbMax: 0.62, loopHp: 260, loopLp: 3400, sat: 1.25 },
 ];
 
@@ -166,14 +166,9 @@ export const MODS: ModProfile[] = [
     damp: 3500,
   },
   {
-    kind: "chorus",
-    rate: 0.72,
-    base: 0.0085,
-    depthMin: 0.0016,
-    depthMax: 0.0052,
-    fbMax: 0,
-    mixMax: 0.62,
-    damp: 2600,
+    kind: "tremolo",
+    rate: 4.6,
+    depth: 0.45,
   },
   {
     kind: "chorus",
@@ -201,7 +196,7 @@ export const CABS: CabProfile[] = [
   { lowCut: 68, bodyHz: 92, bodyGain: 4.5, presHz: 1400, presGain: 1.5, topCut: 4200 },
   { lowCut: 95, bodyHz: 100, bodyGain: 0.0, presHz: 3200, presGain: 3.0, topCut: 8500 },
   { lowCut: 85, bodyHz: 170, bodyGain: 4.5, presHz: 2600, presGain: 4.0, topCut: 5400 },
-  { lowCut: 92, bodyHz: 165, bodyGain: 3.2, presHz: 3000, presGain: 3.2, topCut: 6300 },
+  { lowCut: 78, bodyHz: 145, bodyGain: 3.2, presHz: 2200, presGain: 2.2, topCut: 5200 },
   { lowCut: 110, bodyHz: 210, bodyGain: 1.0, presHz: 2400, presGain: 3.5, topCut: 5400 },
 ];
 
@@ -217,7 +212,7 @@ export const REVERBS: ReverbProfile[] = [
   { decay: 4.2, predelay: 0.05, tone: 2400, width: 0.85 },
   { decay: 2.4, predelay: 0.012, tone: 8000, width: 1.0 },
   { decay: 1.4, predelay: 0.012, tone: 4000, width: 0.65 },
-  { decay: 1.5, predelay: 0.014, tone: 4200, width: 0.7 },
+  { decay: 1.9, predelay: 0.016, tone: 4600, width: 0.55 },
   { decay: 2.8, predelay: 0.022, tone: 5200, width: 1.0 },
 ];
 
@@ -230,6 +225,6 @@ export const SENDS: SendProfile[] = [
   { lowCut: 90 },
   { lowCut: 120 },
   { lowCut: 120 },
-  { lowCut: 150 },
+  { lowCut: 200 },
   { lowCut: 300 },
 ];
