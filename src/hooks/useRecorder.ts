@@ -9,7 +9,7 @@ import {
   type SignalParams,
 } from "../audio/chain";
 import { renderTake, startBacking, type Backing } from "../audio/render";
-import { PRESETS } from "../data/presets";
+import { CLEAN_RIG, PRESETS, rigMeta } from "../data/presets";
 
 export type Take = {
   id: string;
@@ -295,7 +295,7 @@ export function useRecorder({
       const fresh = !sourceRef.current;
       stopSource();
       const gain = ensureGain(ctx);
-      const target = dry ? ensureChain(ctx, rig, signal, fresh) : gain;
+      const target = dry && rig !== CLEAN_RIG ? ensureChain(ctx, rig, signal, fresh) : gain;
 
       const src = ctx.createBufferSource();
       src.buffer = buffer;
@@ -612,7 +612,8 @@ export function useRecorder({
         setError("this take has no dry signal to re-amp");
         return;
       }
-      const base = target === recorded ? take.params : signalOf(PRESETS[target]);
+      const base =
+        target === recorded || target === CLEAN_RIG ? take.params : signalOf(PRESETS[target]);
       setRigByTake((prev) => ({ ...prev, [take.id]: target }));
       setParamsByTake((prev) => ({ ...prev, [take.id]: base }));
       setError(null);
@@ -639,7 +640,8 @@ export function useRecorder({
     const take = takes.find((t) => t.id === activeTakeId);
     if (!take) return;
     const rig = rigByTake[take.id] ?? take.presetIdx ?? 0;
-    const base = rig === (take.presetIdx ?? 0) ? take.params : signalOf(PRESETS[rig]);
+    const base =
+      rig === (take.presetIdx ?? 0) || rig === CLEAN_RIG ? take.params : signalOf(PRESETS[rig]);
     setParamsByTake((prev) => ({ ...prev, [take.id]: base }));
     applyLive(rig, base);
   }, [takes, activeTakeId, rigByTake, applyLive]);
@@ -767,7 +769,7 @@ export function useRecorder({
     activeDuration,
     activeRegion,
     activeTrimmed,
-    nameOf: (take: Take, rig: number) => nameByTake[take.id] ?? `${PRESETS[rig].name} ${take.seq}`,
+    nameOf: (take: Take, rig: number) => nameByTake[take.id] ?? `${rigMeta(rig).name} ${take.seq}`,
     regionOf: (take: Take): Region => regionByTake[take.id] ?? { start: 0, end: take.duration },
   };
 }

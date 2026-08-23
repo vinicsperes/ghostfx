@@ -1,6 +1,6 @@
 import type { useRecorder } from "../hooks/useRecorder";
 import type { SignalParams } from "../audio/chain";
-import { PRESET_META } from "../data/presets";
+import { CLEAN_RIG, rigMeta } from "../data/presets";
 import { ChannelStrip } from "./ChannelStrip";
 import { PanelLabel } from "./PanelLabel";
 
@@ -22,9 +22,9 @@ export function TakeSignal({
   const { activeTake, activeRig, activeParams, activeEdited, setTakeParam, resetTakeParams } =
     recorder;
 
-  if (!activeTake) return null;
+  if (!activeTake || activeRig === CLEAN_RIG) return null;
 
-  const color = PRESET_META[activeRig].color;
+  const color = rigMeta(activeRig).color;
 
   return (
     <div

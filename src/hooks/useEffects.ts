@@ -7,7 +7,7 @@ import {
   mapDrivePreGain,
   masterGainFromKnob,
 } from "../audio/dsp";
-import { CABS, DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
+import { CABS, CLEAN_RIG, DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
 import {
   buildChain,
   chorusOf,
@@ -282,7 +282,7 @@ export function useEffects({
     destRef: recordDestRef,
     dryDestRef,
     ensureAudio: init,
-    presetIdx,
+    presetIdx: state === "active" ? presetIdx : CLEAN_RIG,
     params: liveParams,
     masterVolume,
     backingRef,

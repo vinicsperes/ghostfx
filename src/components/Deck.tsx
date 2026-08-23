@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { useRecorder } from "../hooks/useRecorder";
 import type { useTrack } from "../hooks/useTrack";
 import type { useMetronome } from "../hooks/useMetronome";
-import { PALETTE, PRESETS, PRESET_META } from "../data/presets";
+import { PALETTE, rigMeta } from "../data/presets";
 import { clock } from "../lib/format";
 import { Fader } from "./Fader";
 import { Popover } from "./Popover";
@@ -279,7 +279,7 @@ export function Deck({
               background: onTrack
                 ? PALETTE.cream
                 : activeTake
-                  ? PRESET_META[activeRig].color
+                  ? rigMeta(activeRig).color
                   : "rgba(231,228,220,0.25)",
             }}
           />
@@ -287,7 +287,7 @@ export function Deck({
             {onTrack && loaded
               ? loaded.name
               : activeTake
-                ? PRESETS[activeRig].name
+                ? rigMeta(activeRig).name
                 : "NO TAKES YET"}
           </span>
           {!onTrack && activeEdited && <span style={{ opacity: 0.5 }}>↺</span>}

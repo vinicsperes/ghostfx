@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import type { useRecorder } from "../hooks/useRecorder";
 import type { useTrack } from "../hooks/useTrack";
 import { MAX_TRACK_S } from "../hooks/useTrack";
-import { PALETTE, PRESETS, PRESET_META } from "../data/presets";
+import { CLEAN_RIG, PALETTE, PRESETS, rigMeta } from "../data/presets";
 import { clock, stamp } from "../lib/format";
 import { MiniWave } from "./MiniWave";
 import { PanelLabel } from "./PanelLabel";
@@ -151,6 +151,8 @@ function Meta({ children, width }: { children: React.ReactNode; width?: number }
   );
 }
 
+const RIG_CHOICES = [CLEAN_RIG, ...PRESETS.map((_, i) => i)];
+
 export function SourceMenu({
   recorder,
   track,
@@ -210,16 +212,22 @@ export function SourceMenu({
         <div className="flex flex-col" style={{ gap: 6 }}>
           <PanelLabel>Hear it through</PanelLabel>
           <div className="flex flex-wrap" style={{ gap: 4 }}>
-            {PRESETS.map((p, i) => {
+            {RIG_CHOICES.map((i) => {
+              const { color, name } = rigMeta(i);
               const on = activeRig === i;
               const recorded = (activeTake?.presetIdx ?? 0) === i;
-              const color = PRESET_META[i].color;
               return (
                 <button
-                  key={p.name}
+                  key={name}
                   onClick={() => void setRig(i)}
                   disabled={!canReamp && !on}
-                  title={recorded ? "Recorded through this rig" : `Re-amp through ${p.name}`}
+                  title={
+                    recorded
+                      ? "Recorded like this"
+                      : i === CLEAN_RIG
+                        ? "Hear the guitar dry, the way the pedal never touched it"
+                        : `Re-amp through ${name}`
+                  }
                   className="font-[var(--font-mono)] flex items-center"
                   style={{
                     gap: 5,
@@ -234,7 +242,7 @@ export function SourceMenu({
                   }}
                 >
                   <span style={{ width: 5, height: 5, borderRadius: 2, background: color }} />
-                  {p.name}
+                  {name}
                   {recorded && <span style={{ fontSize: 7, opacity: 0.5 }}>REC</span>}
                 </button>
               );
@@ -264,7 +272,7 @@ export function SourceMenu({
             {takes.map((take) => {
               const on = source === "take" && take.id === activeTake?.id;
               const rig = rigOf(take.id, take.presetIdx ?? 0);
-              const color = PRESET_META[rig].color;
+              const color = rigMeta(rig).color;
               const playing = playingId === take.id;
               return (
                 <Row

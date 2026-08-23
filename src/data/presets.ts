@@ -27,6 +27,13 @@ export const PRESET_META = [
   { color: "#f02a96", word: "DELIRIUM", chassis: "#150618" },
 ] as const;
 
+export const CLEAN_RIG = -1;
+
+export function rigMeta(idx: number): { color: string; name: string } {
+  if (idx === CLEAN_RIG) return { color: PALETTE.cream, name: "CLEAN" };
+  return { color: PRESET_META[idx].color, name: PRESETS[idx].name };
+}
+
 export const PRESET_TAGS = [
   "crunchy",
   "subterranean",

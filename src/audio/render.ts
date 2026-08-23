@@ -1,4 +1,5 @@
 import { buildChain, reverbBuffers, type SignalParams } from "./chain";
+import { CLEAN_RIG } from "../data/presets";
 import { createLimiterCurve } from "./dsp";
 
 export type Backing = {
@@ -131,7 +132,8 @@ export async function renderTake({
 
   const from = Math.max(0, Math.min(guitar.duration, region?.start ?? 0));
   const to = Math.max(from, Math.min(guitar.duration, region?.end ?? guitar.duration));
-  const tail = wet ? 0 : REVERB_TAIL_S;
+  const clean = presetIdx === CLEAN_RIG;
+  const tail = wet || clean ? 0 : REVERB_TAIL_S;
   const frames = Math.ceil((to - from + tail) * rate);
   const ctx = new OfflineAudioContext(2, frames, rate);
 
@@ -142,7 +144,7 @@ export async function renderTake({
 
   const source = ctx.createBufferSource();
   source.buffer = guitar;
-  if (wet) {
+  if (wet || clean) {
     source.connect(mix);
   } else {
     const chain = buildChain(ctx, { ...params, presetIdx }, reverbBuffers(ctx));

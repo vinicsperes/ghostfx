@@ -6,7 +6,7 @@ import type { useArrangement } from "../hooks/useArrangement";
 import type { useMetronome } from "../hooks/useMetronome";
 import type { TunerReading } from "../hooks/useTuner";
 import type { Source } from "./Deck";
-import { PALETTE, PRESETS, PRESET_META } from "../data/presets";
+import { PALETTE, rigMeta } from "../data/presets";
 import { clock } from "../lib/format";
 import { Fader } from "./Fader";
 import { PanelLabel } from "./PanelLabel";
@@ -377,10 +377,10 @@ export function StudioView({
     onTrack && loaded
       ? loaded.name
       : activeTake
-        ? `${nameOf(activeTake, activeRig)} · ${PRESETS[activeRig].name}`
+        ? `${nameOf(activeTake, activeRig)} · ${rigMeta(activeRig).name}`
         : "NOTHING SELECTED";
 
-  const color = onTrack ? PALETTE.cream : PRESET_META[activeRig].color;
+  const color = onTrack ? PALETTE.cream : rigMeta(activeRig).color;
   const lanes = onTrack && loaded ? [loaded.peaks] : activePeaks ? [activePeaks] : [];
   const duration = onTrack && loaded ? loaded.duration : activeDuration;
   const region = onTrack ? trackRegion : activeRegion;
