@@ -8,7 +8,7 @@ import {
   masterGainFromKnob,
 } from "../audio/dsp";
 import { CABS, DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
-import { buildChain, reverbBuffers, type ChainNodes } from "../audio/chain";
+import { buildChain, chorusOf, reverbBuffers, tremoloDepth, type ChainNodes } from "../audio/chain";
 import type { Backing } from "../audio/render";
 import { useRecorder } from "./useRecorder";
 
@@ -374,15 +374,20 @@ export function useEffects({
   useEffect(() => {
     const ctx = ctxRef.current;
     if (!ctx) return;
-    const { modLfo, modDelay, modDepth, modDamp, modFb, modWet } = nodesRef.current;
+    const { modLfo, modDelay, modDepth, modDamp, modFb, modWet, trem, tremDepth } =
+      nodesRef.current;
     const mp = MODS[presetIdx ?? 0] ?? MODS[0];
+    const ch = chorusOf(mp);
     const t = ctx.currentTime;
     modLfo?.frequency.setTargetAtTime(mp.rate, t, 0.1);
-    modDelay?.delayTime.setTargetAtTime(mp.base, t, 0.1);
-    modDamp?.frequency.setTargetAtTime(mp.damp, t, 0.05);
-    modDepth?.gain.setTargetAtTime(mp.depthMin + mod * (mp.depthMax - mp.depthMin), t, 0.05);
-    modFb?.gain.setTargetAtTime(mod * mp.fbMax, t, 0.05);
-    modWet?.gain.setTargetAtTime(mod * mp.mixMax, t, 0.05);
+    modDelay?.delayTime.setTargetAtTime(ch.base, t, 0.1);
+    modDamp?.frequency.setTargetAtTime(ch.damp, t, 0.05);
+    modDepth?.gain.setTargetAtTime(ch.depthMin + mod * (ch.depthMax - ch.depthMin), t, 0.05);
+    modFb?.gain.setTargetAtTime(mod * ch.fbMax, t, 0.05);
+    modWet?.gain.setTargetAtTime(mod * ch.mixMax, t, 0.05);
+    const throb = tremoloDepth(mp, mod);
+    tremDepth?.gain.setTargetAtTime(throb, t, 0.08);
+    trem?.gain.setTargetAtTime(1 - throb, t, 0.08);
   }, [mod, presetIdx]);
 
   useEffect(() => {

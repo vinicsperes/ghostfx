@@ -105,7 +105,8 @@ export const DELAYS: DelayProfile[] = [
   { timeMin: 0.28, timeMax: 0.56, fbMin: 0.25, fbMax: 0.62, loopHp: 260, loopLp: 3400, sat: 1.25 },
 ];
 
-export type ModProfile = {
+export type ChorusProfile = {
+  kind: "chorus";
   rate: number;
   base: number;
   depthMin: number;
@@ -115,8 +116,17 @@ export type ModProfile = {
   damp: number;
 };
 
+export type TremoloProfile = {
+  kind: "tremolo";
+  rate: number;
+  depth: number;
+};
+
+export type ModProfile = ChorusProfile | TremoloProfile;
+
 export const MODS: ModProfile[] = [
   {
+    kind: "chorus",
     rate: 0.25,
     base: 0.0025,
     depthMin: 0.0003,
@@ -126,6 +136,7 @@ export const MODS: ModProfile[] = [
     damp: 2800,
   },
   {
+    kind: "chorus",
     rate: 0.12,
     base: 0.003,
     depthMin: 0.0002,
@@ -135,6 +146,7 @@ export const MODS: ModProfile[] = [
     damp: 2200,
   },
   {
+    kind: "chorus",
     rate: 0.55,
     base: 0.006,
     depthMin: 0.0008,
@@ -144,6 +156,7 @@ export const MODS: ModProfile[] = [
     damp: 6000,
   },
   {
+    kind: "chorus",
     rate: 0.8,
     base: 0.002,
     depthMin: 0.0002,
@@ -153,6 +166,7 @@ export const MODS: ModProfile[] = [
     damp: 3500,
   },
   {
+    kind: "chorus",
     rate: 0.72,
     base: 0.0085,
     depthMin: 0.0016,
@@ -162,6 +176,7 @@ export const MODS: ModProfile[] = [
     damp: 2600,
   },
   {
+    kind: "chorus",
     rate: 1.8,
     base: 0.004,
     depthMin: 0.0006,

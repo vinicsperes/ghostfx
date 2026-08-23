@@ -7,6 +7,7 @@ import {
   masterGainFromKnob,
 } from "../audio/dsp";
 import { DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
+import { chorusOf, tremoloDepth } from "../audio/chain";
 
 export const NOTE_KEYS: Record<string, { freq: number; note: string; black?: true }> = {
   a: { freq: 261.63, note: "C4" },
@@ -43,6 +44,8 @@ type SynthNodes = {
   modDamp: BiquadFilterNode;
   modFb: GainNode;
   modWet: GainNode;
+  trem: GainNode;
+  tremDepth: GainNode;
   revDamp: BiquadFilterNode;
   reverbWet: GainNode;
   master: GainNode;
@@ -124,23 +127,33 @@ export function useSynth({
     const wetGain = ctx.createGain();
     wetGain.gain.value = p.echo * 0.5;
 
+    const ch = chorusOf(mp);
+
     const modDelay = ctx.createDelay(0.05);
-    modDelay.delayTime.value = mp.base;
+    modDelay.delayTime.value = ch.base;
     const modLfo = ctx.createOscillator();
     modLfo.type = "sine";
     modLfo.frequency.value = mp.rate;
     const modDepth = ctx.createGain();
-    modDepth.gain.value = mp.depthMin + p.mod * (mp.depthMax - mp.depthMin);
+    modDepth.gain.value = ch.depthMin + p.mod * (ch.depthMax - ch.depthMin);
     modLfo.connect(modDepth);
     modDepth.connect(modDelay.delayTime);
     modLfo.start();
     const modDamp = ctx.createBiquadFilter();
     modDamp.type = "lowpass";
-    modDamp.frequency.value = mp.damp;
+    modDamp.frequency.value = ch.damp;
     const modFb = ctx.createGain();
-    modFb.gain.value = p.mod * mp.fbMax;
+    modFb.gain.value = p.mod * ch.fbMax;
     const modWet = ctx.createGain();
-    modWet.gain.value = p.mod * mp.mixMax;
+    modWet.gain.value = p.mod * ch.mixMax;
+
+    const throb = tremoloDepth(mp, p.mod);
+    const trem = ctx.createGain();
+    trem.gain.value = 1 - throb;
+    const tremDepth = ctx.createGain();
+    tremDepth.gain.value = throb;
+    modLfo.connect(tremDepth);
+    tremDepth.connect(trem.gain);
 
     const reverbDamping = ctx.createBiquadFilter();
     reverbDamping.type = "lowpass";
@@ -202,7 +215,8 @@ export function useSynth({
     revFB3.connect(rev3);
     rev3.connect(reverbWet);
     reverbWet.connect(master);
-    master.connect(limiter);
+    master.connect(trem);
+    trem.connect(limiter);
     limiter.connect(ctx.destination);
 
     const nodes: SynthNodes = {
@@ -221,6 +235,8 @@ export function useSynth({
       modDamp,
       modFb,
       modWet,
+      trem,
+      tremDepth,
       revDamp: reverbDamping,
       reverbWet,
       master,
@@ -251,12 +267,16 @@ export function useSynth({
     n.wet.gain.setTargetAtTime(echo * 0.5, t, 0.05);
     n.revDamp.frequency.setTargetAtTime(Math.min(8000, rv.tone), t, 0.05);
     n.reverbWet.gain.setTargetAtTime(reverb * 0.5, t, 0.05);
+    const ch = chorusOf(mp);
     n.modLfo.frequency.setTargetAtTime(mp.rate, t, 0.1);
-    n.modDelay.delayTime.setTargetAtTime(mp.base, t, 0.1);
-    n.modDamp.frequency.setTargetAtTime(mp.damp, t, 0.05);
-    n.modDepth.gain.setTargetAtTime(mp.depthMin + mod * (mp.depthMax - mp.depthMin), t, 0.05);
-    n.modFb.gain.setTargetAtTime(mod * mp.fbMax, t, 0.05);
-    n.modWet.gain.setTargetAtTime(mod * mp.mixMax, t, 0.05);
+    n.modDelay.delayTime.setTargetAtTime(ch.base, t, 0.1);
+    n.modDamp.frequency.setTargetAtTime(ch.damp, t, 0.05);
+    n.modDepth.gain.setTargetAtTime(ch.depthMin + mod * (ch.depthMax - ch.depthMin), t, 0.05);
+    n.modFb.gain.setTargetAtTime(mod * ch.fbMax, t, 0.05);
+    n.modWet.gain.setTargetAtTime(mod * ch.mixMax, t, 0.05);
+    const throb = tremoloDepth(mp, mod);
+    n.tremDepth.gain.setTargetAtTime(throb, t, 0.08);
+    n.trem.gain.setTargetAtTime(1 - throb, t, 0.08);
     n.master.gain.setTargetAtTime(masterGainFromKnob(masterVolume) * 0.55, t, 0.05);
   }, [drive, echo, tone, reverb, mod, masterVolume, presetIdx]);
 

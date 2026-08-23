@@ -5,7 +5,16 @@ import {
   driveOversample,
   mapDrivePreGain,
 } from "./dsp";
-import { CABS, DELAYS, DRIVES, MODS, REVERBS, SENDS } from "../data/presets";
+import {
+  CABS,
+  DELAYS,
+  DRIVES,
+  MODS,
+  REVERBS,
+  SENDS,
+  type ChorusProfile,
+  type ModProfile,
+} from "../data/presets";
 
 export type SignalParams = {
   drive: number;
@@ -42,6 +51,8 @@ export type ChainNodes = {
   modDamp: BiquadFilterNode;
   modFb: GainNode;
   modWet: GainNode;
+  trem: GainNode;
+  tremDepth: GainNode;
   reverbHP: BiquadFilterNode;
   reverbPre: DelayNode;
   convolverA: ConvolverNode;
@@ -53,9 +64,28 @@ export type ChainNodes = {
   effects: GainNode;
 };
 
-function mixNorm(p: SignalParams, mixMax: number): number {
-  const wet = p.echo * 0.5 + p.reverb * 0.5 + p.mod * mixMax;
-  return 1 / (1 + 0.55 * wet);
+const IDLE_CHORUS: Omit<ChorusProfile, "kind" | "rate"> = {
+  base: 0.003,
+  depthMin: 0,
+  depthMax: 0,
+  fbMax: 0,
+  mixMax: 0,
+  damp: 4000,
+};
+
+export function chorusOf(mp: ModProfile): Omit<ChorusProfile, "kind" | "rate"> {
+  return mp.kind === "chorus" ? mp : IDLE_CHORUS;
+}
+
+export function tremoloDepth(mp: ModProfile, mod: number): number {
+  return mp.kind === "tremolo" ? mod * mp.depth : 0;
+}
+
+export function mixNorm(p: { echo: number; reverb: number; mod: number }, mp: ModProfile): number {
+  const ch = chorusOf(mp);
+  const wet = p.echo * 0.5 + p.reverb * 0.5 + p.mod * ch.mixMax;
+  const throb = tremoloDepth(mp, p.mod);
+  return 1 / ((1 + 0.55 * wet) * (1 - throb * 0.5));
 }
 
 const irCache = new Map<number, [Float32Array<ArrayBuffer>, Float32Array<ArrayBuffer>][]>();
@@ -100,11 +130,19 @@ export function applyChainParams(
 
   nodes.reverbWet.gain.setTargetAtTime(p.reverb * 0.5, t, ramp);
 
-  nodes.modDepth.gain.setTargetAtTime(mp.depthMin + p.mod * (mp.depthMax - mp.depthMin), t, ramp);
-  nodes.modFb.gain.setTargetAtTime(p.mod * mp.fbMax, t, ramp);
-  nodes.modWet.gain.setTargetAtTime(p.mod * mp.mixMax, t, ramp);
+  const ch = chorusOf(mp);
+  nodes.modLfo.frequency.setTargetAtTime(mp.rate, t, ramp);
+  nodes.modDelay.delayTime.setTargetAtTime(ch.base, t, ramp);
+  nodes.modDamp.frequency.setTargetAtTime(ch.damp, t, ramp);
+  nodes.modDepth.gain.setTargetAtTime(ch.depthMin + p.mod * (ch.depthMax - ch.depthMin), t, ramp);
+  nodes.modFb.gain.setTargetAtTime(p.mod * ch.fbMax, t, ramp);
+  nodes.modWet.gain.setTargetAtTime(p.mod * ch.mixMax, t, ramp);
 
-  nodes.mix.gain.setTargetAtTime(mixNorm(p, mp.mixMax), t, ramp);
+  const throb = tremoloDepth(mp, p.mod);
+  nodes.tremDepth.gain.setTargetAtTime(throb, t, ramp);
+  nodes.trem.gain.setTargetAtTime(1 - throb, t, ramp);
+
+  nodes.mix.gain.setTargetAtTime(mixNorm(p, mp), t, ramp);
 }
 
 export function buildChain(
@@ -191,23 +229,33 @@ export function buildChain(
   const wet = ctx.createGain();
   wet.gain.value = p.echo * 0.5;
 
+  const ch = chorusOf(mp);
+
   const modDelay = ctx.createDelay(0.05);
-  modDelay.delayTime.value = mp.base;
+  modDelay.delayTime.value = ch.base;
   const modLfo = ctx.createOscillator();
   modLfo.type = "sine";
   modLfo.frequency.value = mp.rate;
   const modDepth = ctx.createGain();
-  modDepth.gain.value = mp.depthMin + p.mod * (mp.depthMax - mp.depthMin);
+  modDepth.gain.value = ch.depthMin + p.mod * (ch.depthMax - ch.depthMin);
   modLfo.connect(modDepth);
   modDepth.connect(modDelay.delayTime);
   modLfo.start();
   const modDamp = ctx.createBiquadFilter();
   modDamp.type = "lowpass";
-  modDamp.frequency.value = mp.damp;
+  modDamp.frequency.value = ch.damp;
   const modFb = ctx.createGain();
-  modFb.gain.value = p.mod * mp.fbMax;
+  modFb.gain.value = p.mod * ch.fbMax;
   const modWet = ctx.createGain();
-  modWet.gain.value = p.mod * mp.mixMax;
+  modWet.gain.value = p.mod * ch.mixMax;
+
+  const throb = tremoloDepth(mp, p.mod);
+  const trem = ctx.createGain();
+  trem.gain.value = 1 - throb;
+  const tremDepth = ctx.createGain();
+  tremDepth.gain.value = throb;
+  modLfo.connect(tremDepth);
+  tremDepth.connect(trem.gain);
 
   const send = SENDS[idx] ?? SENDS[0];
 
@@ -234,7 +282,7 @@ export function buildChain(
   reverbWet.gain.value = p.reverb * 0.5;
 
   const mix = ctx.createGain();
-  mix.gain.value = mixNorm(p, mp.mixMax);
+  mix.gain.value = mixNorm(p, mp);
 
   const effects = ctx.createGain();
   effects.gain.value = 1;
@@ -249,7 +297,8 @@ export function buildChain(
   cabPres.connect(cabLP);
   cabLP.connect(toneFilter);
 
-  mix.connect(effects);
+  mix.connect(trem);
+  trem.connect(effects);
 
   toneFilter.connect(mix);
 
@@ -308,6 +357,8 @@ export function buildChain(
       modDamp,
       modFb,
       modWet,
+      trem,
+      tremDepth,
       reverbHP,
       reverbPre,
       convolverA,
