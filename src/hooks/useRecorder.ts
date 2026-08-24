@@ -119,6 +119,7 @@ export function useRecorder({
   const loopingRef = useRef(false);
   const playRegionRef = useRef<Region>({ start: 0, end: 0 });
   const bounceRef = useRef<{ id: string; buffer: AudioBuffer } | null>(null);
+  const bouncePendingRef = useRef<Promise<AudioBuffer | null> | null>(null);
   const bounceTakeRef = useRef<((id?: string) => Promise<AudioBuffer | null>) | null>(null);
 
   const presetIdxRef = useRef(presetIdx);
@@ -334,7 +335,9 @@ export function useRecorder({
       }
 
       bounceRef.current = null;
-      void bounceTakeRef.current?.(take.id).then((buffer) => {
+      const pending = (bounceTakeRef.current?.(take.id) ?? Promise.resolve(null)).catch(() => null);
+      bouncePendingRef.current = pending;
+      void pending.then((buffer) => {
         if (buffer) bounceRef.current = { id: take.id, buffer };
       });
 
@@ -502,7 +505,9 @@ export function useRecorder({
     if (dry && dry.state !== "inactive") dry.stop();
     recordingRef.current = false;
     setIsRecording(false);
-  }, []);
+    stopSource();
+    setPlayingId(null);
+  }, [stopSource]);
 
   const toggleRecording = useCallback(async () => {
     if (recordingRef.current) {
@@ -516,9 +521,14 @@ export function useRecorder({
     if (!ctx || !dest) return;
     if (ctx.state === "suspended") await ctx.resume();
 
-    stopSource();
-    setPlayingId(null);
-    playOffsetRef.current = 0;
+    const overdub = loopingRef.current && !!sourceRef.current && !!playingId;
+    if (overdub) {
+      await bouncePendingRef.current;
+    } else {
+      stopSource();
+      setPlayingId(null);
+      playOffsetRef.current = 0;
+    }
 
     const mime = pickMime();
     const rec = new MediaRecorder(dest.stream, mime ? { mimeType: mime } : undefined);
@@ -591,7 +601,7 @@ export function useRecorder({
     recordingRef.current = true;
     setIsRecording(true);
     recTimeoutRef.current = window.setTimeout(stopRecording, MAX_REC_MS);
-  }, [ensureAudio, ctxRef, destRef, dryDestRef, backingRef, stopRecording, stopSource]);
+  }, [ensureAudio, ctxRef, destRef, dryDestRef, backingRef, playingId, stopRecording, stopSource]);
 
   const applyLive = useCallback(
     (rig: number, signal: SignalParams) => {
