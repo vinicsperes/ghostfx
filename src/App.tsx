@@ -4,6 +4,7 @@ import { useMetronome } from "./hooks/useMetronome";
 import { useTuner } from "./hooks/useTuner";
 import { useSynth, NOTE_KEYS } from "./hooks/useSynth";
 import { useTrack } from "./hooks/useTrack";
+import { useLoop } from "./hooks/useLoop";
 import { useArrangement } from "./hooks/useArrangement";
 import { useBypass } from "./hooks/useBypass";
 import { useColorTransition } from "./hooks/useColorTransition";
@@ -118,15 +119,18 @@ export default function App() {
 
   const metronome = useMetronome({ ctxRef: fx.ctxRef, ensureAudio: fx.ensureAudio });
   const track = useTrack({ ctxRef: fx.ctxRef, ensureAudio: fx.ensureAudio });
+  const loop = useLoop({ ctxRef: fx.ctxRef, ensureAudio: fx.ensureAudio });
   const arrangement = useArrangement({ ctxRef: fx.ctxRef });
   const [source, setSource] = useState<Source>("take");
 
   const { snapshot: trackSnapshot } = track;
   const { snapshot: takeSnapshot } = fx.recorder;
+  const { snapshot: loopSnapshot } = loop;
   const { snapshot: arrangementSnapshot } = arrangement;
   useEffect(() => {
-    backingRef.current = () => arrangementSnapshot() ?? trackSnapshot() ?? takeSnapshot();
-  }, [arrangementSnapshot, trackSnapshot, takeSnapshot]);
+    backingRef.current = () =>
+      arrangementSnapshot() ?? loopSnapshot() ?? trackSnapshot() ?? takeSnapshot();
+  }, [arrangementSnapshot, loopSnapshot, trackSnapshot, takeSnapshot]);
 
   const { pause: pauseTake } = fx.recorder;
   const { pause: pauseTrack, track: loadedTrack } = track;
@@ -360,6 +364,7 @@ export default function App() {
             synth={synth}
             tuning={tuning}
             track={track}
+            loop={loop}
             source={source}
             onSourceChange={selectSource}
             levels={{ drive, echo, tone, reverb, mod, master: masterVolume }}
@@ -521,6 +526,7 @@ export default function App() {
             <Deck
               recorder={fx.recorder}
               track={track}
+              loop={loop}
               metronome={metronome}
               countInEnabled={countInEnabled}
               onToggleCountIn={() => setCountInEnabled((v) => !v)}
@@ -658,6 +664,7 @@ export default function App() {
         <StudioView
           recorder={fx.recorder}
           track={track}
+          loop={loop}
           arrangement={arrangement}
           metronome={metronome}
           tuning={tuning}

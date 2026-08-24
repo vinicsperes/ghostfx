@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { useRecorder } from "../hooks/useRecorder";
 import type { useTrack } from "../hooks/useTrack";
+import type { useLoop } from "../hooks/useLoop";
 import type { useMetronome } from "../hooks/useMetronome";
 import { PALETTE, rigMeta } from "../data/presets";
 import { clock } from "../lib/format";
@@ -9,6 +10,7 @@ import { Popover } from "./Popover";
 import { SourceMenu } from "./SourceMenu";
 import { TakeSignal } from "./TakeSignal";
 import { TakeScope } from "./TakeScope";
+import { LoopLane } from "./LoopLane";
 import { TrackScope } from "./TrackScope";
 import { TempoChip } from "./TempoChip";
 
@@ -126,6 +128,7 @@ function DownloadButton({
 export function Deck({
   recorder,
   track,
+  loop,
   metronome,
   countInEnabled,
   onToggleCountIn,
@@ -140,6 +143,7 @@ export function Deck({
 }: {
   recorder: ReturnType<typeof useRecorder>;
   track: ReturnType<typeof useTrack>;
+  loop: ReturnType<typeof useLoop>;
   metronome: ReturnType<typeof useMetronome>;
   countInEnabled: boolean;
   onToggleCountIn: () => void;
@@ -159,20 +163,43 @@ export function Deck({
     isRecording,
     isProcessing,
     isExporting,
-    looping,
-    setLooping,
+    bounceTake,
+    nameOf,
     downloadTake,
     selectTake,
   } = recorder;
-  const { track: loaded, loop, region, level, load, setLoop, setLevel } = track;
+  const { track: loaded, loop: trackLoop, region, level, load, setLoop, setLevel } = track;
   const [menu, setMenu] = useState(false);
   const [signal, setSignal] = useState(false);
+  const [pinning, setPinning] = useState(false);
   const [over, setOver] = useState(false);
   const anchor = useRef<HTMLButtonElement>(null);
   const signalAnchor = useRef<HTMLButtonElement>(null);
 
   const onTrack = !isRecording && source === "track" && !!loaded;
   const canEditSignal = !!activeTake?.dryBlob;
+  const pinned = !!activeTake && loop.slot?.id === activeTake.id;
+
+  const toggleLoop = async () => {
+    if (!activeTake || pinning) return;
+    if (pinned) {
+      loop.unpin();
+      return;
+    }
+    setPinning(true);
+    try {
+      const buffer = await bounceTake(activeTake.id);
+      if (buffer)
+        await loop.pin({
+          id: activeTake.id,
+          name: nameOf(activeTake, activeRig),
+          color: rigMeta(activeRig).color,
+          buffer,
+        });
+    } finally {
+      setPinning(false);
+    }
+  };
 
   return (
     <div
@@ -246,6 +273,8 @@ export function Deck({
           />
         )}
       </div>
+
+      <LoopLane loop={loop} />
 
       <div className="flex items-center" style={{ gap: 10 }}>
         <button
@@ -358,48 +387,49 @@ export function Deck({
 
         {!onTrack && activeTake && (
           <button
-            onClick={() => setLooping(!looping)}
-            aria-pressed={looping}
+            onClick={() => void toggleLoop()}
+            aria-pressed={pinned}
+            disabled={pinning}
             title={
-              looping
-                ? "Play it once"
-                : "Keep this take repeating in the background while you play over it"
+              pinned
+                ? "Take this one out of the loop"
+                : "Keep this take looping while you record over it"
             }
             className="font-[var(--font-mono)] flex items-center shrink-0"
             style={{
               gap: 7,
               padding: "6px 10px",
               borderRadius: 6,
-              border: `1px solid ${looping ? accent + "55" : "rgba(231,228,220,0.1)"}`,
-              background: looping ? `${accent}12` : "rgba(255,255,255,0.02)",
+              border: `1px solid ${pinned ? "rgba(231,228,220,0.26)" : "rgba(231,228,220,0.1)"}`,
+              background: pinned ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.02)",
               fontSize: 10.5,
-              color: looping ? accent : "rgba(231,228,220,0.62)",
-              cursor: "pointer",
+              color: pinned ? PALETTE.cream : "rgba(231,228,220,0.62)",
+              cursor: pinning ? "wait" : "pointer",
             }}
           >
-            ↻ REPEAT
+            ↻ {pinned ? "LOOPING" : "LOOP"}
           </button>
         )}
 
         {onTrack && (
           <button
-            onClick={() => setLoop(!loop)}
-            aria-pressed={loop}
-            title={loop ? "Play the whole track once" : "Repeat the selected section"}
+            onClick={() => setLoop(!trackLoop)}
+            aria-pressed={trackLoop}
+            title={trackLoop ? "Play the whole track once" : "Repeat the selected section"}
             className="font-[var(--font-mono)] flex items-center shrink-0"
             style={{
               gap: 7,
               padding: "6px 10px",
               borderRadius: 6,
-              border: `1px solid ${loop ? accent + "55" : "rgba(231,228,220,0.1)"}`,
-              background: loop ? `${accent}12` : "rgba(255,255,255,0.02)",
+              border: `1px solid ${trackLoop ? accent + "55" : "rgba(231,228,220,0.1)"}`,
+              background: trackLoop ? `${accent}12` : "rgba(255,255,255,0.02)",
               fontSize: 10.5,
-              color: loop ? accent : "rgba(231,228,220,0.62)",
+              color: trackLoop ? accent : "rgba(231,228,220,0.62)",
               cursor: "pointer",
             }}
           >
             ↻ REPEAT
-            {loop && (
+            {trackLoop && (
               <span style={{ opacity: 0.55 }}>
                 {clock(region.start)} - {clock(region.end)}
               </span>

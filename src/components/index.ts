@@ -22,6 +22,7 @@ export { TunerChip } from "./TunerChip";
 export { WaveEditor } from "./WaveEditor";
 export { TakeScope } from "./TakeScope";
 export { TrackScope } from "./TrackScope";
+export { LoopLane } from "./LoopLane";
 export { ChannelStrip } from "./ChannelStrip";
 export { MicBlockedModal } from "./MicBlockedModal";
 export { FeedbackModal } from "./FeedbackModal";

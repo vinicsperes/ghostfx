@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { useRecorder } from "../hooks/useRecorder";
 import type { useTrack } from "../hooks/useTrack";
+import type { useLoop } from "../hooks/useLoop";
 import type { useArrangement } from "../hooks/useArrangement";
 import type { useMetronome } from "../hooks/useMetronome";
 import type { TunerReading } from "../hooks/useTuner";
@@ -10,6 +11,7 @@ import { PALETTE, rigMeta } from "../data/presets";
 import { clock } from "../lib/format";
 import { Fader } from "./Fader";
 import { PanelLabel } from "./PanelLabel";
+import { LoopLane } from "./LoopLane";
 import { SourceMenu } from "./SourceMenu";
 import { InputMeter } from "./Deck";
 import { Timeline } from "./Timeline";
@@ -306,6 +308,7 @@ function Readout({ label, value }: { label: string; value: string }) {
 export function StudioView({
   recorder,
   track,
+  loop,
   arrangement,
   metronome,
   tuning,
@@ -324,6 +327,7 @@ export function StudioView({
 }: {
   recorder: ReturnType<typeof useRecorder>;
   track: ReturnType<typeof useTrack>;
+  loop: ReturnType<typeof useLoop>;
   arrangement: ReturnType<typeof useArrangement>;
   metronome: ReturnType<typeof useMetronome>;
   tuning: TunerReading;
@@ -341,6 +345,7 @@ export function StudioView({
   onClose: () => void;
 }) {
   const [sending, setSending] = useState(false);
+  const [pinning, setPinning] = useState(false);
   const [pps, setPps] = useState(40);
 
   useEffect(() => {
@@ -417,6 +422,29 @@ export function StudioView({
   };
 
   const reset = () => onRegion(0, duration);
+
+  const pinned = !!activeTake && loop.slot?.id === activeTake.id;
+
+  const toggleLoop = async () => {
+    if (!activeTake || pinning) return;
+    if (pinned) {
+      loop.unpin();
+      return;
+    }
+    setPinning(true);
+    try {
+      const buffer = await bounceTake(activeTake.id);
+      if (buffer)
+        await loop.pin({
+          id: activeTake.id,
+          name: nameOf(activeTake, activeRig),
+          color: rigMeta(activeRig).color,
+          buffer,
+        });
+    } finally {
+      setPinning(false);
+    }
+  };
 
   const sendToTrack = async () => {
     if (sending || duration <= 0) return;
@@ -622,6 +650,8 @@ export function StudioView({
             )}
           </Panel>
 
+          <LoopLane loop={loop} />
+
           <Panel
             label={title}
             right={
@@ -710,8 +740,22 @@ export function StudioView({
                 accent={accent}
                 strong={repeating}
                 disabled={duration <= 0}
-                title="Keep it repeating in the background while you play over it"
+                title="Repeat the selected region while you trim it"
               />
+              {!onTrack && activeTake && (
+                <Action
+                  label={pinned ? "↻ LOOPING" : "↻ LOOP"}
+                  onClick={() => void toggleLoop()}
+                  accent={pinned ? PALETTE.cream : accent}
+                  strong={pinned}
+                  disabled={pinning}
+                  title={
+                    pinned
+                      ? "Take this one out of the loop"
+                      : "Keep this take looping while you record over it"
+                  }
+                />
+              )}
               {onTrack && (
                 <div style={{ width: 150 }}>
                   <Fader

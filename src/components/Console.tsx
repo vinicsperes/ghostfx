@@ -9,6 +9,7 @@ import type { useMetronome } from "../hooks/useMetronome";
 import type { useRecorder } from "../hooks/useRecorder";
 import type { useSynth } from "../hooks/useSynth";
 import type { useTrack } from "../hooks/useTrack";
+import type { useLoop } from "../hooks/useLoop";
 import type { TunerReading } from "../hooks/useTuner";
 
 export type ToolId = "mix" | "tune" | "synth";
@@ -35,6 +36,7 @@ export function Console({
   synth,
   tuning,
   track,
+  loop,
   source,
   onSourceChange,
   levels,
@@ -53,6 +55,7 @@ export function Console({
   synth: ReturnType<typeof useSynth>;
   tuning: TunerReading;
   track: ReturnType<typeof useTrack>;
+  loop: ReturnType<typeof useLoop>;
   source: Source;
   onSourceChange: (next: Source) => void;
   levels: Record<KnobId, number>;
@@ -123,6 +126,7 @@ export function Console({
             <Deck
               recorder={recorder}
               track={track}
+              loop={loop}
               metronome={metronome}
               countInEnabled={countInEnabled}
               onToggleCountIn={onToggleCountIn}
