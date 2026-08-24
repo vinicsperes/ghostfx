@@ -64,7 +64,7 @@ function shapeGrunge(x: number, a: number): number {
 
 function shapeTube(x: number, a: number): number {
   const k = 1.4 + 8 * Math.pow(a, 1.3);
-  const bias = 1.0 * a;
+  const bias = 0.45 * a;
   const y = Math.tanh(k * x + bias) - Math.tanh(bias);
   return y / (1 + a * 0.95);
 }

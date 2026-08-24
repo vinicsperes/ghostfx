@@ -5,7 +5,7 @@ export const PRESETS = [
   { name: "DOOM", drive: 0.62, echo: 0.2, tone: 0.4, reverb: 0.45, mod: 0.05, master: 0.82 },
   { name: "FROST", drive: 0.25, echo: 0.35, tone: 0.8, reverb: 0.4, mod: 0.65, master: 0.95 },
   { name: "HEAVY", drive: 0.88, echo: 0.08, tone: 0.6, reverb: 0.15, mod: 0.0, master: 0.8 },
-  { name: "SMOKE", drive: 0.42, echo: 0.2, tone: 0.55, reverb: 0.32, mod: 0.3, master: 0.86 },
+  { name: "SMOKE", drive: 0.5, echo: 0.2, tone: 0.6, reverb: 0.32, mod: 0.3, master: 0.86 },
   { name: "FEVER", drive: 0.58, echo: 0.42, tone: 0.6, reverb: 0.4, mod: 0.15, master: 0.8 },
 ] as const;
 
@@ -89,7 +89,7 @@ export const DRIVES: DriveProfile[] = [
   { shape: "fuzz", preHp: 62, midHz: 420, midGain: 2, trim: 0.46 },
   { shape: "clean", preHp: 120, midHz: 2200, midGain: 2.5, trim: 3.8 },
   { shape: "rectifier", preHp: 125, midHz: 700, midGain: 3.5, trim: 0.32 },
-  { shape: "tube", preHp: 100, midHz: 620, midGain: 2.5, trim: 0.75 },
+  { shape: "tube", preHp: 100, midHz: 820, midGain: 3.5, trim: 0.62 },
   { shape: "smooth", preHp: 130, midHz: 1100, midGain: 5, trim: 0.63 },
 ];
 
@@ -203,7 +203,7 @@ export const CABS: CabProfile[] = [
   { lowCut: 68, bodyHz: 92, bodyGain: 4.5, presHz: 1400, presGain: 1.5, topCut: 4200 },
   { lowCut: 95, bodyHz: 100, bodyGain: 0.0, presHz: 3200, presGain: 3.0, topCut: 8500 },
   { lowCut: 85, bodyHz: 170, bodyGain: 4.5, presHz: 2600, presGain: 4.0, topCut: 5400 },
-  { lowCut: 78, bodyHz: 145, bodyGain: 3.2, presHz: 2200, presGain: 2.2, topCut: 5200 },
+  { lowCut: 78, bodyHz: 145, bodyGain: 3.2, presHz: 2600, presGain: 3.5, topCut: 6000 },
   { lowCut: 110, bodyHz: 210, bodyGain: 1.0, presHz: 2400, presGain: 3.5, topCut: 5400 },
 ];
 
