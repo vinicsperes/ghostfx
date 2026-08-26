@@ -297,7 +297,7 @@ export const RIGS: Rig[] = [
     bg: "smoke",
     bgOpacity: 0.8,
     knobs: { drive: 0.5, echo: 0.2, tone: 0.6, reverb: 0.32, mod: 0.3, master: 0.86 },
-    drive: { shape: "tube", preHp: 100, midHz: 820, midGain: 3.5, trim: 0.62 },
+    drive: { shape: "tube", preHp: 100, midHz: 1100, midGain: 4, trim: 0.83 },
     delay: {
       timeMin: 0.075,
       timeMax: 0.19,
