@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createDistortionCurve,
   createLimiterCurve,
+  createTapeCurve,
   driveOversample,
   mapDrivePreGain,
   synthDriveTrim,
@@ -39,6 +40,9 @@ type SynthNodes = {
   driveTrim: GainNode;
   tone: BiquadFilterNode;
   delay: DelayNode;
+  delayLoopHP: BiquadFilterNode;
+  delayLoopLP: BiquadFilterNode;
+  delaySat: WaveShaperNode;
   feedback: GainNode;
   wet: GainNode;
   modLfo: OscillatorNode;
@@ -126,6 +130,20 @@ export function useSynth({
     const delayNode = ctx.createDelay(2.0);
     delayNode.delayTime.value = dl.timeMin + p.echo * (dl.timeMax - dl.timeMin);
 
+    const delayLoopHP = ctx.createBiquadFilter();
+    delayLoopHP.type = "highpass";
+    delayLoopHP.frequency.value = dl.loopHp;
+    delayLoopHP.Q.value = 0.707;
+
+    const delayLoopLP = ctx.createBiquadFilter();
+    delayLoopLP.type = "lowpass";
+    delayLoopLP.frequency.value = dl.loopLp;
+    delayLoopLP.Q.value = 0.707;
+
+    const delaySat = ctx.createWaveShaper();
+    delaySat.curve = createTapeCurve(dl.sat);
+    delaySat.oversample = "none";
+
     const feedbackGain = ctx.createGain();
     feedbackGain.gain.value = dl.fbMin + p.echo * (dl.fbMax - dl.fbMin);
 
@@ -196,9 +214,12 @@ export function useSynth({
     dcBlock.connect(toneFilter);
     toneFilter.connect(mix);
     toneFilter.connect(delayNode);
-    delayNode.connect(feedbackGain);
+    delayNode.connect(delayLoopHP);
+    delayLoopHP.connect(delayLoopLP);
+    delayLoopLP.connect(delaySat);
+    delaySat.connect(feedbackGain);
     feedbackGain.connect(delayNode);
-    feedbackGain.connect(wetGain);
+    delaySat.connect(wetGain);
     wetGain.connect(mix);
     toneFilter.connect(modDelay);
     modDelay.connect(modDamp);
@@ -233,6 +254,9 @@ export function useSynth({
       driveTrim,
       tone: toneFilter,
       delay: delayNode,
+      delayLoopHP,
+      delayLoopLP,
+      delaySat,
       feedback: feedbackGain,
       wet: wetGain,
       modLfo,
@@ -271,6 +295,9 @@ export function useSynth({
     n.midEmphasis.gain.setTargetAtTime(dp.midGain + 2, t, 0.05);
     n.tone.frequency.setTargetAtTime(600 * Math.pow(20, tone), t, 0.05);
     n.delay.delayTime.setTargetAtTime(dl.timeMin + echo * (dl.timeMax - dl.timeMin), t, 0.05);
+    n.delayLoopHP.frequency.setTargetAtTime(dl.loopHp, t, 0.05);
+    n.delayLoopLP.frequency.setTargetAtTime(dl.loopLp, t, 0.05);
+    n.delaySat.curve = createTapeCurve(dl.sat);
     n.feedback.gain.setTargetAtTime(dl.fbMin + echo * (dl.fbMax - dl.fbMin), t, 0.05);
     n.wet.gain.setTargetAtTime(echo * 0.5, t, 0.05);
     n.revDamp.frequency.setTargetAtTime(Math.min(8000, rv.tone), t, 0.05);
