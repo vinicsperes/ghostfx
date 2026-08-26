@@ -32,6 +32,16 @@ export const NOTE_KEYS: Record<string, { freq: number; note: string; black?: tru
 
 const SYNTH_HEADROOM = 0.65;
 
+const REV_DT = [0.0233, 0.0371, 0.0531];
+const REV_AP = [0.0077, 0.0051];
+const REV_AP_G = 0.7;
+const REV_FB_CAP = 0.95;
+const REV_MAKEUP = 6.5;
+
+function combFeedback(decay: number): number[] {
+  return REV_DT.map((dt) => Math.min(REV_FB_CAP, Math.exp((Math.log(0.001) * dt) / decay)));
+}
+
 type SynthNodes = {
   input: GainNode;
   midEmphasis: BiquadFilterNode;
@@ -53,7 +63,10 @@ type SynthNodes = {
   modWet: GainNode;
   trem: GainNode;
   tremDepth: GainNode;
-  revDamp: BiquadFilterNode;
+  revIn: GainNode;
+  revDamp: BiquadFilterNode[];
+  revFB: GainNode[];
+  revNorm: GainNode[];
   reverbWet: GainNode;
   mix: GainNode;
   master: GainNode;
@@ -178,23 +191,58 @@ export function useSynth({
     modLfo.connect(tremDepth);
     tremDepth.connect(trem.gain);
 
-    const reverbDamping = ctx.createBiquadFilter();
-    reverbDamping.type = "lowpass";
-    reverbDamping.frequency.value = Math.min(8000, rv.tone);
-    const rev1 = ctx.createDelay(0.1);
-    rev1.delayTime.value = 0.0233;
-    const revFB1 = ctx.createGain();
-    revFB1.gain.value = 0.72;
-    const rev2 = ctx.createDelay(0.1);
-    rev2.delayTime.value = 0.0371;
-    const revFB2 = ctx.createGain();
-    revFB2.gain.value = 0.68;
-    const rev3 = ctx.createDelay(0.1);
-    rev3.delayTime.value = 0.0531;
-    const revFB3 = ctx.createGain();
-    revFB3.gain.value = 0.64;
+    const revIn = ctx.createGain();
+    revIn.gain.value = REV_MAKEUP;
+
+    const combSum = ctx.createGain();
+    const revDamp: BiquadFilterNode[] = [];
+    const revFB: GainNode[] = [];
+    const revNorm: GainNode[] = [];
+    const startFb = combFeedback(rv.decay);
+    REV_DT.forEach((dt, i) => {
+      const line = ctx.createDelay(0.1);
+      line.delayTime.value = dt;
+      const damp = ctx.createBiquadFilter();
+      damp.type = "lowpass";
+      damp.frequency.value = Math.min(8000, rv.tone);
+      const fb = ctx.createGain();
+      fb.gain.value = startFb[i];
+      const norm = ctx.createGain();
+      norm.gain.value = 1 - startFb[i];
+      revIn.connect(line);
+      line.connect(damp);
+      damp.connect(fb);
+      fb.connect(line);
+      line.connect(norm);
+      norm.connect(combSum);
+      revDamp.push(damp);
+      revFB.push(fb);
+      revNorm.push(norm);
+    });
+
+    let diffused: AudioNode = combSum;
+    for (const dt of REV_AP) {
+      const sum = ctx.createGain();
+      const line = ctx.createDelay(0.1);
+      line.delayTime.value = dt;
+      const fb = ctx.createGain();
+      fb.gain.value = REV_AP_G;
+      const ff = ctx.createGain();
+      ff.gain.value = -REV_AP_G;
+      const out = ctx.createGain();
+      diffused.connect(sum);
+      sum.connect(line);
+      line.connect(fb);
+      fb.connect(sum);
+      line.connect(out);
+      sum.connect(ff);
+      ff.connect(out);
+      diffused = out;
+    }
+
     const reverbWet = ctx.createGain();
     reverbWet.gain.value = p.reverb * 0.5;
+    diffused.connect(reverbWet);
 
     const mix = ctx.createGain();
     mix.gain.value = mixNorm(p, mp);
@@ -227,19 +275,7 @@ export function useSynth({
     modFb.connect(modDelay);
     modDamp.connect(modWet);
     modWet.connect(mix);
-    toneFilter.connect(reverbDamping);
-    reverbDamping.connect(rev1);
-    rev1.connect(revFB1);
-    revFB1.connect(rev1);
-    rev1.connect(reverbWet);
-    reverbDamping.connect(rev2);
-    rev2.connect(revFB2);
-    revFB2.connect(rev2);
-    rev2.connect(reverbWet);
-    reverbDamping.connect(rev3);
-    rev3.connect(revFB3);
-    revFB3.connect(rev3);
-    rev3.connect(reverbWet);
+    toneFilter.connect(revIn);
     reverbWet.connect(mix);
     mix.connect(master);
     master.connect(trem);
@@ -267,7 +303,10 @@ export function useSynth({
       modWet,
       trem,
       tremDepth,
-      revDamp: reverbDamping,
+      revIn,
+      revDamp,
+      revFB,
+      revNorm,
       reverbWet,
       mix,
       master,
@@ -300,7 +339,10 @@ export function useSynth({
     n.delaySat.curve = createTapeCurve(dl.sat);
     n.feedback.gain.setTargetAtTime(dl.fbMin + echo * (dl.fbMax - dl.fbMin), t, 0.05);
     n.wet.gain.setTargetAtTime(echo * 0.5, t, 0.05);
-    n.revDamp.frequency.setTargetAtTime(Math.min(8000, rv.tone), t, 0.05);
+    const revFbs = combFeedback(rv.decay);
+    n.revDamp.forEach((d) => d.frequency.setTargetAtTime(Math.min(8000, rv.tone), t, 0.05));
+    n.revFB.forEach((g, i) => g.gain.setTargetAtTime(revFbs[i], t, 0.05));
+    n.revNorm.forEach((g, i) => g.gain.setTargetAtTime(1 - revFbs[i], t, 0.05));
     n.reverbWet.gain.setTargetAtTime(reverb * 0.5, t, 0.05);
     const ch = chorusOf(mp);
     n.modLfo.frequency.setTargetAtTime(mp.rate, t, 0.1);
