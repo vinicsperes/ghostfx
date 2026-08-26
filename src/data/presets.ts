@@ -121,7 +121,7 @@ export const RIGS: Rig[] = [
     bg: "ghost",
     bgOpacity: 0.7,
     knobs: { drive: 0.52, echo: 0.3, tone: 0.58, reverb: 0.35, mod: 0.18, master: 0.85 },
-    drive: { shape: "screamer", preHp: 145, midHz: 800, midGain: 3, trim: 1.3 },
+    drive: { shape: "screamer", preHp: 145, midHz: 800, midGain: 3, trim: 1.01 },
     delay: {
       timeMin: 0.25,
       timeMax: 0.5,
@@ -164,7 +164,7 @@ export const RIGS: Rig[] = [
     circuit: "vintage fuzz → dark slap → cavern reverb",
     bg: "doom",
     bgOpacity: 0.65,
-    knobs: { drive: 0.62, echo: 0.2, tone: 0.4, reverb: 0.45, mod: 0.05, master: 0.82 },
+    knobs: { drive: 0.62, echo: 0.2, tone: 0.4, reverb: 0.45, mod: 0.05, master: 0.85 },
     drive: { shape: "fuzz", preHp: 62, midHz: 420, midGain: 2, trim: 0.46 },
     delay: {
       timeMin: 0.08,
@@ -208,8 +208,8 @@ export const RIGS: Rig[] = [
     circuit: "clean boost → chorus → crystal delay → plate reverb",
     bg: "frost",
     bgOpacity: 0.74,
-    knobs: { drive: 0.25, echo: 0.35, tone: 0.8, reverb: 0.4, mod: 0.65, master: 0.95 },
-    drive: { shape: "clean", preHp: 120, midHz: 2200, midGain: 2.5, trim: 3.8 },
+    knobs: { drive: 0.25, echo: 0.35, tone: 0.8, reverb: 0.4, mod: 0.65, master: 0.85 },
+    drive: { shape: "clean", preHp: 120, midHz: 2200, midGain: 2.5, trim: 2.63 },
     delay: {
       timeMin: 0.12,
       timeMax: 0.3,
@@ -252,8 +252,8 @@ export const RIGS: Rig[] = [
     circuit: "mid-pushed high gain → tight slap → dark room",
     bg: "heavy",
     bgOpacity: 0.82,
-    knobs: { drive: 0.88, echo: 0.08, tone: 0.6, reverb: 0.15, mod: 0.0, master: 0.8 },
-    drive: { shape: "rectifier", preHp: 125, midHz: 700, midGain: 3.5, trim: 0.32 },
+    knobs: { drive: 0.88, echo: 0.08, tone: 0.6, reverb: 0.15, mod: 0.0, master: 0.85 },
+    drive: { shape: "rectifier", preHp: 125, midHz: 700, midGain: 3.5, trim: 0.4 },
     delay: {
       timeMin: 0.1,
       timeMax: 0.35,
@@ -296,8 +296,8 @@ export const RIGS: Rig[] = [
     circuit: "tube drive → slapback → amp tremolo → spring",
     bg: "smoke",
     bgOpacity: 0.8,
-    knobs: { drive: 0.5, echo: 0.2, tone: 0.6, reverb: 0.32, mod: 0.3, master: 0.86 },
-    drive: { shape: "tube", preHp: 100, midHz: 1100, midGain: 4, trim: 0.83 },
+    knobs: { drive: 0.5, echo: 0.2, tone: 0.6, reverb: 0.32, mod: 0.3, master: 0.85 },
+    drive: { shape: "tube", preHp: 100, midHz: 1100, midGain: 4, trim: 0.69 },
     delay: {
       timeMin: 0.075,
       timeMax: 0.19,
@@ -331,8 +331,8 @@ export const RIGS: Rig[] = [
     circuit: "singing drive → mid bump → repeats → open plate",
     bg: "fever",
     bgOpacity: 0.82,
-    knobs: { drive: 0.58, echo: 0.42, tone: 0.6, reverb: 0.4, mod: 0.15, master: 0.8 },
-    drive: { shape: "smooth", preHp: 130, midHz: 1100, midGain: 5, trim: 0.63 },
+    knobs: { drive: 0.58, echo: 0.42, tone: 0.6, reverb: 0.4, mod: 0.15, master: 0.85 },
+    drive: { shape: "smooth", preHp: 130, midHz: 1100, midGain: 5, trim: 0.79 },
     delay: {
       timeMin: 0.28,
       timeMax: 0.56,
