@@ -4,6 +4,7 @@ import type { useTrack } from "../hooks/useTrack";
 import type { useLoop } from "../hooks/useLoop";
 import type { useMetronome } from "../hooks/useMetronome";
 import { PALETTE, rigMeta } from "../data/presets";
+import { LIMITER_THRESHOLD } from "../audio/dsp";
 import { clock } from "../lib/format";
 import { Fader } from "./Fader";
 import { Popover } from "./Popover";
@@ -32,19 +33,29 @@ export function InputMeter({
   useEffect(() => {
     let raf = 0;
     let smooth = 0;
+    let hot = false;
     const tick = () => {
       const level = getLevelRef.current?.() ?? 0;
       smooth = Math.max(level, smooth * 0.86);
-      if (fillRef.current) fillRef.current.style.height = `${Math.min(100, smooth * 100)}%`;
+      const fill = fillRef.current;
+      if (fill) {
+        fill.style.height = `${Math.min(100, smooth * 100)}%`;
+        const over = smooth >= LIMITER_THRESHOLD;
+        if (over !== hot) {
+          hot = over;
+          fill.style.background = over ? REC : accent;
+          fill.style.boxShadow = `0 0 6px ${over ? REC : accent}`;
+        }
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [getLevelRef]);
+  }, [getLevelRef, accent]);
 
   return (
     <div
-      title="Your guitar, live. This is what REC captures."
+      title="Your guitar, live. This is what REC captures. Red means the recording limiter is holding it back."
       className="shrink-0"
       style={{
         position: "relative",

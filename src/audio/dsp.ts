@@ -130,7 +130,9 @@ export function masterGainFromKnob(value: number): number {
   return (Math.pow(10, 2 * Math.min(1, value)) - 1) / 99;
 }
 
-export function createLimiterCurve(threshold = 0.82): Float32Array<ArrayBuffer> {
+export const LIMITER_THRESHOLD = 0.82;
+
+export function createLimiterCurve(threshold = LIMITER_THRESHOLD): Float32Array<ArrayBuffer> {
   const n = 8192;
   const curve = new Float32Array(n);
   for (let i = 0; i < n; i++) {

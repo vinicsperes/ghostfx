@@ -209,7 +209,7 @@ export function useEffects({
 
       const levelAnalyser = ctx.createAnalyser();
       levelAnalyser.fftSize = 256;
-      recLimiter.connect(levelAnalyser);
+      guardGain.connect(levelAnalyser);
       levelAnalyserRef.current = levelAnalyser;
 
       guardGain.connect(masterGain);
