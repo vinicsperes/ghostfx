@@ -9,7 +9,7 @@ import {
   type SignalParams,
 } from "../audio/chain";
 import { renderTake, startBacking, type Backing } from "../audio/render";
-import { CLEAN_RIG, PRESETS, rigMeta } from "../data/presets";
+import { CLEAN_RIG, RIGS, rigAt, rigMeta, type RigKnobs } from "../data/presets";
 
 export type Take = {
   id: string;
@@ -33,17 +33,17 @@ const MIME_CANDIDATES = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
 
 const SIGNAL_KEYS = ["drive", "echo", "tone", "reverb", "mod"] as const;
 
-export function signalOf(preset: (typeof PRESETS)[number]): SignalParams {
+export function signalOf(knobs: RigKnobs): SignalParams {
   return {
-    drive: preset.drive,
-    echo: preset.echo,
-    tone: preset.tone,
-    reverb: preset.reverb,
-    mod: preset.mod,
+    drive: knobs.drive,
+    echo: knobs.echo,
+    tone: knobs.tone,
+    reverb: knobs.reverb,
+    mod: knobs.mod,
   };
 }
 
-const IDLE_PARAMS = signalOf(PRESETS[0]);
+const IDLE_PARAMS = signalOf(RIGS[0].knobs);
 const MIN_REGION_S = 0.2;
 
 export type Region = { start: number; end: number };
@@ -623,7 +623,7 @@ export function useRecorder({
         return;
       }
       const base =
-        target === recorded || target === CLEAN_RIG ? take.params : signalOf(PRESETS[target]);
+        target === recorded || target === CLEAN_RIG ? take.params : signalOf(rigAt(target).knobs);
       setRigByTake((prev) => ({ ...prev, [take.id]: target }));
       setParamsByTake((prev) => ({ ...prev, [take.id]: base }));
       setError(null);
@@ -651,7 +651,7 @@ export function useRecorder({
     if (!take) return;
     const rig = rigByTake[take.id] ?? take.presetIdx ?? 0;
     const base =
-      rig === (take.presetIdx ?? 0) || rig === CLEAN_RIG ? take.params : signalOf(PRESETS[rig]);
+      rig === (take.presetIdx ?? 0) || rig === CLEAN_RIG ? take.params : signalOf(rigAt(rig).knobs);
     setParamsByTake((prev) => ({ ...prev, [take.id]: base }));
     applyLive(rig, base);
   }, [takes, activeTakeId, rigByTake, applyLive]);

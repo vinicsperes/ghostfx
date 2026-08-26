@@ -7,7 +7,7 @@ import {
   mapDrivePreGain,
   masterGainFromKnob,
 } from "../audio/dsp";
-import { CABS, CLEAN_RIG, DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
+import { CLEAN_RIG, rigAt } from "../data/presets";
 import {
   buildChain,
   chorusOf,
@@ -290,7 +290,7 @@ export function useEffects({
 
   useEffect(() => {
     const { drive: driveNode, driveTrim, preGain, preFilter, midEmphasis } = nodesRef.current;
-    const dp = DRIVES[presetIdx ?? 0] ?? DRIVES[0];
+    const dp = rigAt(presetIdx).drive;
     if (driveNode) {
       driveNode.curve = createDistortionCurve(drive, dp.shape);
       driveNode.oversample = driveOversample(drive, dp.shape);
@@ -309,7 +309,7 @@ export function useEffects({
     const ctx = ctxRef.current;
     if (!ctx) return;
     const { delay, lfoGain, feedback, delayLoopHP, delayLoopLP, delaySat, wet } = nodesRef.current;
-    const dl = DELAYS[presetIdx ?? 0] ?? DELAYS[0];
+    const dl = rigAt(presetIdx).delay;
     const t = ctx.currentTime;
     delay?.delayTime.setTargetAtTime(dl.timeMin + echo * (dl.timeMax - dl.timeMin), t, 0.05);
     lfoGain?.gain.setTargetAtTime(0.003 * echo, t, 0.05);
@@ -331,7 +331,7 @@ export function useEffects({
     const ctx = ctxRef.current;
     if (!ctx) return;
     const { cabHP, cabBody, cabPres, cabLP } = nodesRef.current;
-    const cab = CABS[presetIdx ?? 0] ?? CABS[0];
+    const cab = rigAt(presetIdx).cab;
     const t = ctx.currentTime;
     cabHP?.frequency.setTargetAtTime(cab.lowCut, t, 0.05);
     cabBody?.frequency.setTargetAtTime(cab.bodyHz, t, 0.05);
@@ -349,7 +349,7 @@ export function useEffects({
     const { convolverA, convolverB, reverbWetA, reverbWetB, reverbPre } = nodesRef.current;
     if (!buf || !convolverA || !convolverB || !reverbWetA || !reverbWetB) return;
     const t = ctx.currentTime;
-    reverbPre?.delayTime.setTargetAtTime(REVERBS[idx].predelay, t, 0.05);
+    reverbPre?.delayTime.setTargetAtTime(rigAt(idx).reverb.predelay, t, 0.05);
     if (activeConvRef.current === "A") {
       convolverB.buffer = buf;
       reverbWetB.gain.setTargetAtTime(1, t, 0.06);
@@ -383,7 +383,7 @@ export function useEffects({
     if (!ctx) return;
     const { modLfo, modDelay, modDepth, modDamp, modFb, modWet, trem, tremDepth } =
       nodesRef.current;
-    const mp = MODS[presetIdx ?? 0] ?? MODS[0];
+    const mp = rigAt(presetIdx).mod;
     const ch = chorusOf(mp);
     const t = ctx.currentTime;
     modLfo?.frequency.setTargetAtTime(mp.rate, t, 0.1);
@@ -401,7 +401,7 @@ export function useEffects({
     const ctx = ctxRef.current;
     if (!ctx) return;
     const { mix } = nodesRef.current;
-    const mp = MODS[presetIdx ?? 0] ?? MODS[0];
+    const mp = rigAt(presetIdx).mod;
     mix?.gain.setTargetAtTime(mixNorm({ echo, reverb, mod }, mp), ctx.currentTime, 0.05);
   }, [echo, reverb, mod, presetIdx]);
 

@@ -17,7 +17,7 @@ import LoadingScreen from "./LoadingScreen";
 import OnboardingModal from "./OnboardingModal";
 import GhostMark from "./GhostMark";
 import PresetBg from "./background/PresetBg";
-import { PRESETS, PALETTE, PRESET_META } from "./data/presets";
+import { RIGS, PALETTE, rigAt, type RigKnobs } from "./data/presets";
 import {
   Deck,
   Console,
@@ -85,27 +85,27 @@ export default function App() {
   useEffect(() => {
     presetIdxRef.current = presetIdx;
   }, [presetIdx]);
-  const [drive, setDrive] = useState<number>(PRESETS[0].drive);
-  const [echo, setEcho] = useState<number>(PRESETS[0].echo);
-  const [tone, setTone] = useState<number>(PRESETS[0].tone);
-  const [reverb, setReverb] = useState<number>(PRESETS[0].reverb);
-  const [mod, setMod] = useState<number>(PRESETS[0].mod);
+  const [drive, setDrive] = useState<number>(RIGS[0].knobs.drive);
+  const [echo, setEcho] = useState<number>(RIGS[0].knobs.echo);
+  const [tone, setTone] = useState<number>(RIGS[0].knobs.tone);
+  const [reverb, setReverb] = useState<number>(RIGS[0].knobs.reverb);
+  const [mod, setMod] = useState<number>(RIGS[0].knobs.mod);
   const [masterVolume, setMasterVolume] = useState<number>(0);
 
-  const applyPreset = useCallback((preset: (typeof PRESETS)[number]) => {
-    setDrive(preset.drive);
-    setEcho(preset.echo);
-    setTone(preset.tone);
-    setReverb(preset.reverb);
-    setMod(preset.mod);
+  const applyPreset = useCallback((knobs: RigKnobs) => {
+    setDrive(knobs.drive);
+    setEcho(knobs.echo);
+    setTone(knobs.tone);
+    setReverb(knobs.reverb);
+    setMod(knobs.mod);
   }, []);
 
   const handlePresetSelect = useCallback(
     (idx: number) => {
-      const i = ((idx % PRESETS.length) + PRESETS.length) % PRESETS.length;
+      const i = ((idx % RIGS.length) + RIGS.length) % RIGS.length;
       if (i === presetIdxRef.current) return;
       setPresetIdx(i);
-      applyPreset(PRESETS[i]);
+      applyPreset(RIGS[i].knobs);
     },
     [applyPreset],
   );
@@ -214,7 +214,7 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
       const n = Number(e.key);
-      if (!Number.isInteger(n) || n < 1 || n > PRESETS.length) return;
+      if (!Number.isInteger(n) || n < 1 || n > RIGS.length) return;
       const el = document.activeElement as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable))
         return;
@@ -255,7 +255,7 @@ export default function App() {
 
   const wake = useCallback(() => {
     if (fx.state !== "idle") return;
-    setMasterVolume((v) => (v > 0 ? v : PRESETS[presetIdxRef.current ?? 0].master));
+    setMasterVolume((v) => (v > 0 ? v : rigAt(presetIdxRef.current).knobs.master));
   }, [fx.state]);
 
   const handleTap = useCallback(() => {
@@ -301,8 +301,8 @@ export default function App() {
   useEffect(() => () => cancelAnimationFrame(pulseRaf.current), []);
 
   const isActive = fx.state === "active";
-  const themeTarget = presetIdx !== null ? PRESET_META[presetIdx].color : PALETTE.accent;
-  const chassisTarget = presetIdx !== null ? PRESET_META[presetIdx].chassis : PALETTE.pedal;
+  const themeTarget = presetIdx !== null ? rigAt(presetIdx).color : PALETTE.accent;
+  const chassisTarget = presetIdx !== null ? rigAt(presetIdx).chassis : PALETTE.pedal;
   const themeColor = useColorTransition(themeTarget);
   const chassisColor = useColorTransition(chassisTarget);
 
@@ -418,11 +418,11 @@ export default function App() {
             background: "linear-gradient(180deg, rgba(5,7,9,0.92) 60%, rgba(5,7,9,0) 100%)",
           }}
         >
-          {PRESETS.map((p, i) => (
+          {RIGS.map((rig, i) => (
             <PresetCard
-              key={p.name}
-              name={p.name}
-              color={PRESET_META[i].color}
+              key={rig.name}
+              name={rig.name}
+              color={rig.color}
               isActive={presetIdx === i}
               onSelect={() => handlePresetSelect(i)}
               fitScroll

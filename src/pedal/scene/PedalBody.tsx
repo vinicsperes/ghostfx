@@ -23,7 +23,7 @@ import { Internals } from "../internals";
 import { LabelText } from "./LabelText";
 import { Footswitch3D } from "./Footswitch3D";
 import { HangTag } from "./HangTag";
-import { PRESET_VISUALS } from "../constants";
+import { RIGS } from "../../data/presets";
 
 const GHOST_ICON = {
   scale: 0.0094,
@@ -89,7 +89,7 @@ export function PedalBody({
   onCancel: () => void;
   onExplode?: () => void;
 }) {
-  const v = presetIdx !== null ? PRESET_VISUALS[presetIdx] : null;
+  const v = presetIdx === null ? null : (RIGS[presetIdx]?.visual ?? null);
   const inkColor = v?.ink ?? palette.ink;
   const silkColor = v?.silk ?? palette.accent;
   const knobAccent = v?.knobAccent ?? palette.accent;

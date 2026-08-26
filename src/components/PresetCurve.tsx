@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { CABS } from "../data/presets";
+import { rigAt } from "../data/presets";
 
 const F_MIN = 60;
 const F_MAX = 12000;
@@ -24,7 +24,7 @@ export function PresetCurve({
   dim?: boolean;
 }) {
   const path = useMemo(() => {
-    const cab = CABS[presetIdx] ?? CABS[0];
+    const cab = rigAt(presetIdx).cab;
     const span = Math.log2(F_MAX / F_MIN);
     const points: [number, number][] = [];
 

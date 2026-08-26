@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import GhostMark from "../GhostMark";
-import { PRESETS, PRESET_META } from "../data/presets";
+import { RIGS } from "../data/presets";
 import { PresetCard } from "./PresetCard";
 
 export function TopBar({
@@ -56,11 +56,11 @@ export function TopBar({
       <div style={{ width: 1, height: 22, background: "rgba(231,228,220,0.1)" }} />
 
       <div className="flex flex-1 items-stretch" style={{ gap: 8 }}>
-        {PRESETS.map((p, i) => (
+        {RIGS.map((rig, i) => (
           <PresetCard
-            key={p.name}
-            name={p.name}
-            color={PRESET_META[i].color}
+            key={rig.name}
+            name={rig.name}
+            color={rig.color}
             isActive={activePresetIdx === i}
             onSelect={() => onPresetSelect(i)}
           />

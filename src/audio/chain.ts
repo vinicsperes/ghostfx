@@ -5,16 +5,7 @@ import {
   driveOversample,
   mapDrivePreGain,
 } from "./dsp";
-import {
-  CABS,
-  DELAYS,
-  DRIVES,
-  MODS,
-  REVERBS,
-  SENDS,
-  type ChorusProfile,
-  type ModProfile,
-} from "../data/presets";
+import { RIGS, rigAt, type ChorusProfile, type ModProfile } from "../data/presets";
 
 export type SignalParams = {
   drive: number;
@@ -94,7 +85,7 @@ export function reverbBuffers(ctx: BaseAudioContext): AudioBuffer[] {
   const rate = ctx.sampleRate;
   let raw = irCache.get(rate);
   if (!raw) {
-    raw = REVERBS.map((r) => createReverbIR(rate, r.decay, r.tone, r.width));
+    raw = RIGS.map(({ reverb: r }) => createReverbIR(rate, r.decay, r.tone, r.width));
     irCache.set(rate, raw);
   }
   return raw.map(([left, right]) => {
@@ -111,10 +102,10 @@ export function applyChainParams(
   p: ChainParams,
   ramp = 0.04,
 ): void {
-  const idx = p.presetIdx ?? 0;
-  const dp = DRIVES[idx] ?? DRIVES[0];
-  const dl = DELAYS[idx] ?? DELAYS[0];
-  const mp = MODS[idx] ?? MODS[0];
+  const rig = rigAt(p.presetIdx);
+  const dp = rig.drive;
+  const dl = rig.delay;
+  const mp = rig.mod;
   const t = ctx.currentTime;
 
   nodes.drive.curve = createDistortionCurve(p.drive, dp.shape);
@@ -151,10 +142,11 @@ export function buildChain(
   irBuffers: AudioBuffer[],
 ): { input: AudioNode; output: GainNode; nodes: ChainNodes } {
   const idx = p.presetIdx ?? 0;
-  const dp = DRIVES[idx] ?? DRIVES[0];
-  const cab = CABS[idx] ?? CABS[0];
-  const dl = DELAYS[idx] ?? DELAYS[0];
-  const mp = MODS[idx] ?? MODS[0];
+  const rig = rigAt(idx);
+  const dp = rig.drive;
+  const cab = rig.cab;
+  const dl = rig.delay;
+  const mp = rig.mod;
 
   const preFilter = ctx.createBiquadFilter();
   preFilter.type = "highpass";
@@ -257,7 +249,7 @@ export function buildChain(
   modLfo.connect(tremDepth);
   tremDepth.connect(trem.gain);
 
-  const send = SENDS[idx] ?? SENDS[0];
+  const send = rig.send;
 
   const reverbHP = ctx.createBiquadFilter();
   reverbHP.type = "highpass";
@@ -265,7 +257,7 @@ export function buildChain(
   reverbHP.Q.value = 0.707;
 
   const reverbPre = ctx.createDelay(0.2);
-  reverbPre.delayTime.value = REVERBS[idx].predelay;
+  reverbPre.delayTime.value = rig.reverb.predelay;
 
   const convolverA = ctx.createConvolver();
   convolverA.normalize = true;

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { PRESETS, PRESET_INFO, PRESET_META } from "../data/presets";
+import { rigAt } from "../data/presets";
 import { lang, setLang } from "../lib/locale";
 import { PresetCurve } from "./PresetCurve";
 
@@ -34,7 +34,7 @@ export function AboutModal({
   }, [onClose]);
 
   const idx = presetIdx ?? 0;
-  const info = PRESET_INFO[idx];
+  const rig = rigAt(idx);
 
   return (
     <div
@@ -134,24 +134,24 @@ export function AboutModal({
                   fontFamily: "'Bungee', sans-serif",
                   fontSize: 14,
                   letterSpacing: "0.14em",
-                  color: PRESET_META[idx].color,
+                  color: rig.color,
                 }}
               >
-                {PRESETS[idx].name}
+                {rig.name}
               </span>
-              <PresetCurve presetIdx={idx} color={PRESET_META[idx].color} width={76} height={20} />
+              <PresetCurve presetIdx={idx} color={rig.color} width={76} height={20} />
             </div>
             <p
               className="font-[var(--font-mono)] leading-relaxed"
               style={{ fontSize: 11, color: "rgba(231,228,220,0.62)", margin: 0 }}
             >
-              {info.blurb}
+              {rig.blurb}
             </p>
             <span
               className="font-[var(--font-mono)] uppercase"
               style={{ fontSize: 9, letterSpacing: "0.06em", color: `${accent}bb` }}
             >
-              {info.circuit}
+              {rig.circuit}
             </span>
           </div>
         </div>

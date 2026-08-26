@@ -1,3 +1,5 @@
+import { rigAt, type RigBg } from "../data/presets";
+
 const [GR, GG, GB] = [5, 185, 32];
 const [SR, SG, SB] = [14, 90, 74];
 const [DR, DG, DB] = [10, 60, 20];
@@ -179,8 +181,18 @@ void main(){
   gl_FragColor=col;
 }`;
 
-export const PRESET_FS = [GHOST_FS, CLEAN_FS, FROST_FS, HEAVY_FS, SMOKE_FS, FEVER_FS];
-export const PRESET_OPACITY = [0.7, 0.65, 0.74, 0.82, 0.8, 0.82];
+const RIG_FS: Record<RigBg, string> = {
+  ghost: GHOST_FS,
+  doom: CLEAN_FS,
+  frost: FROST_FS,
+  heavy: HEAVY_FS,
+  smoke: SMOKE_FS,
+  fever: FEVER_FS,
+};
+
+export function bgOpacity(idx: number | null): number {
+  return idx === null ? 0 : rigAt(idx).bgOpacity;
+}
 
 export type GlState = {
   tLoc: WebGLUniformLocation;
@@ -204,7 +216,7 @@ export function buildShader(gl: WebGLRenderingContext, idx: number, old?: WebGLP
   };
   const prog = gl.createProgram()!;
   gl.attachShader(prog, compile(gl.VERTEX_SHADER, BG_VS));
-  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, PRESET_FS[idx]));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, RIG_FS[rigAt(idx).bg]));
   gl.linkProgram(prog);
   gl.useProgram(prog);
   const buf = gl.createBuffer();

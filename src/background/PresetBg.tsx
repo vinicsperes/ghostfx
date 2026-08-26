@@ -1,12 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  PRESET_OPACITY,
-  BLEND_OUT,
-  BLEND_IN,
-  INTRO_IDX,
-  buildShader,
-  type GlState,
-} from "./shaders";
+import { bgOpacity, BLEND_OUT, BLEND_IN, INTRO_IDX, buildShader, type GlState } from "./shaders";
 
 export default function PresetBg({
   presetIdx,
@@ -23,7 +16,7 @@ export default function PresetBg({
   const rafRef = useRef(0);
   const startRef = useRef(performance.now());
 
-  const [canvasOpacity, setCanvasOpacity] = useState(effIdx !== null ? PRESET_OPACITY[effIdx] : 0);
+  const [canvasOpacity, setCanvasOpacity] = useState(bgOpacity(effIdx));
   const setOpacityRef = useRef(setCanvasOpacity);
   setOpacityRef.current = setCanvasOpacity;
 
@@ -98,7 +91,7 @@ export default function PresetBg({
         if (p >= 1) {
           if (t.pendingIdx !== null && gl && !gl.isContextLost()) {
             glState.current = buildShader(gl, t.pendingIdx, glState.current?.prog);
-            setOpacityRef.current(PRESET_OPACITY[t.pendingIdx]);
+            setOpacityRef.current(bgOpacity(t.pendingIdx));
           }
           t.currentIdx = t.pendingIdx;
           t.pendingIdx = null;

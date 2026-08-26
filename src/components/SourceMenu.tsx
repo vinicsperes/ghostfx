@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import type { useRecorder } from "../hooks/useRecorder";
 import type { useTrack } from "../hooks/useTrack";
 import { MAX_TRACK_S } from "../hooks/useTrack";
-import { CLEAN_RIG, PALETTE, PRESETS, rigMeta } from "../data/presets";
+import { CLEAN_RIG, PALETTE, RIGS, rigMeta } from "../data/presets";
 import { clock, stamp } from "../lib/format";
 import { MiniWave } from "./MiniWave";
 import { PanelLabel } from "./PanelLabel";
@@ -151,7 +151,7 @@ function Meta({ children, width }: { children: React.ReactNode; width?: number }
   );
 }
 
-const RIG_CHOICES = [CLEAN_RIG, ...PRESETS.map((_, i) => i)];
+const RIG_CHOICES = [CLEAN_RIG, ...RIGS.map((_, i) => i)];
 
 export function SourceMenu({
   recorder,

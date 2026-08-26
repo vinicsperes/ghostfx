@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import Pedal3D from "./Pedal3D";
-import { PALETTE, PRESET_META } from "./data/presets";
+import { PALETTE, RIGS } from "./data/presets";
 
-const GREEN = PRESET_META[0].color;
-const palette = { ...PALETTE, accent: GREEN, pedal: PRESET_META[0].chassis };
+const GREEN = RIGS[0].color;
+const palette = { ...PALETTE, accent: GREEN, pedal: RIGS[0].chassis };
 
 export default function Studio() {
   const [explode, setExplode] = useState(0);

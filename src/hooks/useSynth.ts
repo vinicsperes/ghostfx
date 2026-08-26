@@ -6,7 +6,7 @@ import {
   synthDriveTrim,
   masterGainFromKnob,
 } from "../audio/dsp";
-import { DELAYS, DRIVES, MODS, REVERBS } from "../data/presets";
+import { rigAt } from "../data/presets";
 import { chorusOf, tremoloDepth } from "../audio/chain";
 
 export const NOTE_KEYS: Record<string, { freq: number; note: string; black?: true }> = {
@@ -83,10 +83,11 @@ export function useSynth({
 
     const p = paramsRef.current;
     const idx = p.presetIdx ?? 0;
-    const dp = DRIVES[idx] ?? DRIVES[0];
-    const dl = DELAYS[idx] ?? DELAYS[0];
-    const mp = MODS[idx] ?? MODS[0];
-    const rv = REVERBS[idx] ?? REVERBS[0];
+    const rig = rigAt(idx);
+    const dp = rig.drive;
+    const dl = rig.delay;
+    const mp = rig.mod;
+    const rv = rig.reverb;
     const ctx = new AudioContext();
     ctxRef.current = ctx;
 
@@ -250,10 +251,11 @@ export function useSynth({
     const ctx = ctxRef.current;
     if (!n || !ctx) return;
     const idx = presetIdx ?? 0;
-    const dp = DRIVES[idx] ?? DRIVES[0];
-    const dl = DELAYS[idx] ?? DELAYS[0];
-    const mp = MODS[idx] ?? MODS[0];
-    const rv = REVERBS[idx] ?? REVERBS[0];
+    const rig = rigAt(idx);
+    const dp = rig.drive;
+    const dl = rig.delay;
+    const mp = rig.mod;
+    const rv = rig.reverb;
     const t = ctx.currentTime;
     n.preGain.gain.setTargetAtTime(mapDrivePreGain(drive), t, 0.05);
     n.drive.curve = createDistortionCurve(drive, dp.shape);

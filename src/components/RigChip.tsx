@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { PRESETS, PRESET_META } from "../data/presets";
+import { RIGS, rigAt } from "../data/presets";
 import { Popover } from "./Popover";
 
 export function RigChip({
@@ -14,7 +14,7 @@ export function RigChip({
   const [open, setOpen] = useState(false);
   const anchor = useRef<HTMLButtonElement>(null);
   const idx = presetIdx ?? 0;
-  const color = PRESET_META[idx].color;
+  const color = rigAt(idx).color;
 
   return (
     <>
@@ -47,18 +47,18 @@ export function RigChip({
             boxShadow: `0 0 6px ${color}`,
           }}
         />
-        {PRESETS[idx].name}
+        {rigAt(idx).name}
         <span style={{ fontSize: 8, opacity: 0.55 }}>▾</span>
       </button>
 
       <Popover anchorRef={anchor} open={open} onClose={() => setOpen(false)} width={190}>
         <div className="flex flex-col" style={{ gap: 2, padding: 4 }}>
-          {PRESETS.map((preset, i) => {
+          {RIGS.map((rig, i) => {
             const on = i === idx;
-            const tint = PRESET_META[i].color;
+            const tint = rig.color;
             return (
               <button
-                key={preset.name}
+                key={rig.name}
                 onClick={() => {
                   onSelect(i);
                   setOpen(false);
@@ -85,7 +85,7 @@ export function RigChip({
                     boxShadow: on ? `0 0 6px ${tint}` : "none",
                   }}
                 />
-                {preset.name}
+                {rig.name}
                 <div style={{ flex: 1 }} />
                 <span
                   className="font-[var(--font-mono)]"
