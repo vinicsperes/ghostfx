@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createDistortionCurve,
+  createLimiterCurve,
   driveOversample,
   mapDrivePreGain,
   synthDriveTrim,
   masterGainFromKnob,
 } from "../audio/dsp";
 import { rigAt } from "../data/presets";
-import { chorusOf, tremoloDepth } from "../audio/chain";
+import { chorusOf, mixNorm, tremoloDepth } from "../audio/chain";
 
 export const NOTE_KEYS: Record<string, { freq: number; note: string; black?: true }> = {
   a: { freq: 261.63, note: "C4" },
@@ -27,6 +28,8 @@ export const NOTE_KEYS: Record<string, { freq: number; note: string; black?: tru
   l: { freq: 587.33, note: "D5" },
   p: { freq: 622.25, note: "D#5", black: true },
 };
+
+const SYNTH_HEADROOM = 0.65;
 
 type SynthNodes = {
   input: GainNode;
@@ -48,6 +51,7 @@ type SynthNodes = {
   tremDepth: GainNode;
   revDamp: BiquadFilterNode;
   reverbWet: GainNode;
+  mix: GainNode;
   master: GainNode;
 };
 
@@ -174,15 +178,15 @@ export function useSynth({
     const reverbWet = ctx.createGain();
     reverbWet.gain.value = p.reverb * 0.5;
 
-    const master = ctx.createGain();
-    master.gain.value = masterGainFromKnob(p.masterVolume) * 0.55;
+    const mix = ctx.createGain();
+    mix.gain.value = mixNorm(p, mp);
 
-    const limiter = ctx.createDynamicsCompressor();
-    limiter.threshold.value = -1.5;
-    limiter.knee.value = 3;
-    limiter.ratio.value = 20;
-    limiter.attack.value = 0.003;
-    limiter.release.value = 0.1;
+    const master = ctx.createGain();
+    master.gain.value = masterGainFromKnob(p.masterVolume) * SYNTH_HEADROOM;
+
+    const limiter = ctx.createWaveShaper();
+    limiter.curve = createLimiterCurve();
+    limiter.oversample = "none";
 
     input.connect(midEmphasis);
     midEmphasis.connect(preGain);
@@ -190,18 +194,18 @@ export function useSynth({
     driveNode.connect(driveTrim);
     driveTrim.connect(dcBlock);
     dcBlock.connect(toneFilter);
-    toneFilter.connect(master);
+    toneFilter.connect(mix);
     toneFilter.connect(delayNode);
     delayNode.connect(feedbackGain);
     feedbackGain.connect(delayNode);
     feedbackGain.connect(wetGain);
-    wetGain.connect(master);
+    wetGain.connect(mix);
     toneFilter.connect(modDelay);
     modDelay.connect(modDamp);
     modDamp.connect(modFb);
     modFb.connect(modDelay);
     modDamp.connect(modWet);
-    modWet.connect(master);
+    modWet.connect(mix);
     toneFilter.connect(reverbDamping);
     reverbDamping.connect(rev1);
     rev1.connect(revFB1);
@@ -215,7 +219,8 @@ export function useSynth({
     rev3.connect(revFB3);
     revFB3.connect(rev3);
     rev3.connect(reverbWet);
-    reverbWet.connect(master);
+    reverbWet.connect(mix);
+    mix.connect(master);
     master.connect(trem);
     trem.connect(limiter);
     limiter.connect(ctx.destination);
@@ -240,6 +245,7 @@ export function useSynth({
       tremDepth,
       revDamp: reverbDamping,
       reverbWet,
+      mix,
       master,
     };
     nodesRef.current = nodes;
@@ -279,7 +285,8 @@ export function useSynth({
     const throb = tremoloDepth(mp, mod);
     n.tremDepth.gain.setTargetAtTime(throb, t, 0.08);
     n.trem.gain.setTargetAtTime(1 - throb, t, 0.08);
-    n.master.gain.setTargetAtTime(masterGainFromKnob(masterVolume) * 0.55, t, 0.05);
+    n.mix.gain.setTargetAtTime(mixNorm({ echo, reverb, mod }, mp), t, 0.05);
+    n.master.gain.setTargetAtTime(masterGainFromKnob(masterVolume) * SYNTH_HEADROOM, t, 0.05);
   }, [drive, echo, tone, reverb, mod, masterVolume, presetIdx]);
 
   const playNote = useCallback(
