@@ -130,6 +130,85 @@ export function masterGainFromKnob(value: number): number {
   return (Math.pow(10, 2 * Math.min(1, value)) - 1) / 99;
 }
 
+type CabShape = {
+  lowCut: number;
+  bodyHz: number;
+  bodyGain: number;
+  presHz: number;
+  presGain: number;
+  topCut: number;
+};
+
+type Biquad = [number, number, number, number, number];
+
+function biquadCoef(
+  type: "lowpass" | "highpass" | "peaking",
+  f0: number,
+  q: number,
+  gainDb: number,
+  rate: number,
+): Biquad {
+  const w0 = (2 * Math.PI * f0) / rate;
+  const cw = Math.cos(w0);
+  const sw = Math.sin(w0);
+  let b0: number, b1: number, b2: number, a0: number, a1: number, a2: number;
+  if (type === "peaking") {
+    const A = Math.pow(10, gainDb / 40);
+    const alpha = sw / (2 * q);
+    b0 = 1 + alpha * A;
+    b1 = -2 * cw;
+    b2 = 1 - alpha * A;
+    a0 = 1 + alpha / A;
+    a1 = -2 * cw;
+    a2 = 1 - alpha / A;
+  } else {
+    const alpha = sw / (2 * Math.pow(10, q / 20));
+    if (type === "lowpass") {
+      b0 = (1 - cw) / 2;
+      b1 = 1 - cw;
+      b2 = b0;
+    } else {
+      b0 = (1 + cw) / 2;
+      b1 = -(1 + cw);
+      b2 = b0;
+    }
+    a0 = 1 + alpha;
+    a1 = -2 * cw;
+    a2 = 1 - alpha;
+  }
+  return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+}
+
+function biquadMag([b0, b1, b2, a1, a2]: Biquad, f: number, rate: number): number {
+  const w = (2 * Math.PI * f) / rate;
+  const nr = b0 + b1 * Math.cos(w) + b2 * Math.cos(2 * w);
+  const ni = -(b1 * Math.sin(w) + b2 * Math.sin(2 * w));
+  const dr = 1 + a1 * Math.cos(w) + a2 * Math.cos(2 * w);
+  const di = -(a1 * Math.sin(w) + a2 * Math.sin(2 * w));
+  return Math.hypot(nr, ni) / Math.hypot(dr, di);
+}
+
+export function cabTrim(cab: CabShape, rate = 48000): number {
+  const stages: Biquad[] = [
+    biquadCoef("highpass", cab.lowCut, 0.707, 0, rate),
+    biquadCoef("peaking", cab.bodyHz, 0.9, cab.bodyGain, rate),
+    biquadCoef("peaking", cab.presHz, 1.0, cab.presGain, rate),
+    biquadCoef("lowpass", cab.topCut, 0.9, 0, rate),
+  ];
+  let shaped = 0;
+  let flat = 0;
+  for (let k = 1; k <= 120; k++) {
+    const f = 220 * k;
+    if (f > rate / 2) break;
+    const a = 1 / k;
+    let g = 1;
+    for (const c of stages) g *= biquadMag(c, f, rate);
+    shaped += a * g * (a * g);
+    flat += a * a;
+  }
+  return Math.sqrt(flat / Math.max(shaped, 1e-12));
+}
+
 export const LIMITER_THRESHOLD = 0.82;
 
 export function createLimiterCurve(threshold = LIMITER_THRESHOLD): Float32Array<ArrayBuffer> {

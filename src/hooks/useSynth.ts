@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  cabTrim,
   createDistortionCurve,
   createLimiterCurve,
   createTapeCurve,
@@ -48,6 +49,10 @@ type SynthNodes = {
   preGain: GainNode;
   drive: WaveShaperNode;
   driveTrim: GainNode;
+  cabHP: BiquadFilterNode;
+  cabBody: BiquadFilterNode;
+  cabPres: BiquadFilterNode;
+  cabLP: BiquadFilterNode;
   tone: BiquadFilterNode;
   delay: DelayNode;
   delayLoopHP: BiquadFilterNode;
@@ -129,7 +134,26 @@ export function useSynth({
     driveNode.oversample = driveOversample(p.drive, dp.shape);
 
     const driveTrim = ctx.createGain();
-    driveTrim.gain.value = synthDriveTrim(p.drive, dp.shape);
+    driveTrim.gain.value = synthDriveTrim(p.drive, dp.shape) * cabTrim(rig.cab, ctx.sampleRate);
+
+    const cabHP = ctx.createBiquadFilter();
+    cabHP.type = "highpass";
+    cabHP.frequency.value = rig.cab.lowCut;
+    cabHP.Q.value = 0.707;
+    const cabBody = ctx.createBiquadFilter();
+    cabBody.type = "peaking";
+    cabBody.frequency.value = rig.cab.bodyHz;
+    cabBody.Q.value = 0.9;
+    cabBody.gain.value = rig.cab.bodyGain;
+    const cabPres = ctx.createBiquadFilter();
+    cabPres.type = "peaking";
+    cabPres.frequency.value = rig.cab.presHz;
+    cabPres.Q.value = 1.0;
+    cabPres.gain.value = rig.cab.presGain;
+    const cabLP = ctx.createBiquadFilter();
+    cabLP.type = "lowpass";
+    cabLP.frequency.value = rig.cab.topCut;
+    cabLP.Q.value = 0.9;
 
     const dcBlock = ctx.createBiquadFilter();
     dcBlock.type = "highpass";
@@ -259,7 +283,11 @@ export function useSynth({
     preGain.connect(driveNode);
     driveNode.connect(driveTrim);
     driveTrim.connect(dcBlock);
-    dcBlock.connect(toneFilter);
+    dcBlock.connect(cabHP);
+    cabHP.connect(cabBody);
+    cabBody.connect(cabPres);
+    cabPres.connect(cabLP);
+    cabLP.connect(toneFilter);
     toneFilter.connect(mix);
     toneFilter.connect(delayNode);
     delayNode.connect(delayLoopHP);
@@ -288,6 +316,10 @@ export function useSynth({
       preGain,
       drive: driveNode,
       driveTrim,
+      cabHP,
+      cabBody,
+      cabPres,
+      cabLP,
       tone: toneFilter,
       delay: delayNode,
       delayLoopHP,
@@ -329,7 +361,17 @@ export function useSynth({
     n.preGain.gain.setTargetAtTime(mapDrivePreGain(drive), t, 0.05);
     n.drive.curve = createDistortionCurve(drive, dp.shape);
     n.drive.oversample = driveOversample(drive, dp.shape);
-    n.driveTrim.gain.setTargetAtTime(synthDriveTrim(drive, dp.shape), t, 0.05);
+    n.driveTrim.gain.setTargetAtTime(
+      synthDriveTrim(drive, dp.shape) * cabTrim(rig.cab, ctx.sampleRate),
+      t,
+      0.05,
+    );
+    n.cabHP.frequency.setTargetAtTime(rig.cab.lowCut, t, 0.05);
+    n.cabBody.frequency.setTargetAtTime(rig.cab.bodyHz, t, 0.05);
+    n.cabBody.gain.setTargetAtTime(rig.cab.bodyGain, t, 0.05);
+    n.cabPres.frequency.setTargetAtTime(rig.cab.presHz, t, 0.05);
+    n.cabPres.gain.setTargetAtTime(rig.cab.presGain, t, 0.05);
+    n.cabLP.frequency.setTargetAtTime(rig.cab.topCut, t, 0.05);
     n.midEmphasis.frequency.setTargetAtTime(dp.midHz, t, 0.05);
     n.midEmphasis.gain.setTargetAtTime(dp.midGain + 2, t, 0.05);
     n.tone.frequency.setTargetAtTime(600 * Math.pow(20, tone), t, 0.05);
