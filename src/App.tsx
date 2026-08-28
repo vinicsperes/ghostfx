@@ -119,7 +119,7 @@ export default function App() {
 
   const metronome = useMetronome({ ctxRef: fx.ctxRef, ensureAudio: fx.ensureAudio });
   const track = useTrack({ ctxRef: fx.ctxRef, ensureAudio: fx.ensureAudio });
-  const loop = useLoop({ ctxRef: fx.ctxRef, ensureAudio: fx.ensureAudio });
+  const loop = useLoop({ ctxRef: fx.ctxRef, ensureAudio: fx.ensureAudio, masterVolume });
   const arrangement = useArrangement({ ctxRef: fx.ctxRef });
   const [source, setSource] = useState<Source>("take");
 
@@ -134,6 +134,7 @@ export default function App() {
 
   const { pause: pauseTake } = fx.recorder;
   const { pause: pauseTrack, track: loadedTrack } = track;
+  const { pause: pauseLoop } = loop;
   const selectSource = useCallback(
     (next: Source) => {
       if (next === "track") pauseTake();
@@ -169,8 +170,10 @@ export default function App() {
   }, [activeTakeId, selectSource]);
 
   useEffect(() => {
-    if (playingId) pauseTrack();
-  }, [playingId, pauseTrack]);
+    if (!playingId) return;
+    pauseTrack();
+    pauseLoop();
+  }, [playingId, pauseTrack, pauseLoop]);
 
   const [studioOpen, setStudioOpen] = useState(false);
   const [studioTool, setStudioTool] = useState<StudioTool>("mix");
