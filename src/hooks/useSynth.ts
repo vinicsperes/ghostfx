@@ -36,8 +36,9 @@ const SYNTH_HEADROOM = 0.65;
 const REV_DT = [0.0233, 0.0371, 0.0531];
 const REV_AP = [0.0077, 0.0051];
 const REV_AP_G = 0.7;
-const REV_FB_CAP = 0.95;
-const REV_MAKEUP = 6.5;
+const REV_FB_CAP = 0.92;
+const REV_DAMP_Q = -3.01;
+const REV_MAKEUP = 6.0;
 
 function combFeedback(decay: number): number[] {
   return REV_DT.map((dt) => Math.min(REV_FB_CAP, Math.exp((Math.log(0.001) * dt) / decay)));
@@ -229,6 +230,7 @@ export function useSynth({
       const damp = ctx.createBiquadFilter();
       damp.type = "lowpass";
       damp.frequency.value = Math.min(8000, rv.tone);
+      damp.Q.value = REV_DAMP_Q;
       const fb = ctx.createGain();
       fb.gain.value = startFb[i];
       const norm = ctx.createGain();
