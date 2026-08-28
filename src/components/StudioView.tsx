@@ -7,7 +7,7 @@ import type { useArrangement } from "../hooks/useArrangement";
 import type { useMetronome } from "../hooks/useMetronome";
 import type { TunerReading } from "../hooks/useTuner";
 import type { Source } from "./Deck";
-import { PALETTE, rigMeta } from "../data/presets";
+import { PALETTE, inkOn, rigMeta } from "../data/presets";
 import { clock } from "../lib/format";
 import { Fader } from "./Fader";
 import { PanelLabel } from "./PanelLabel";
@@ -75,7 +75,7 @@ function Action({
             ? "rgba(231,228,220,0.35)"
             : "rgba(231,228,220,0.3)"
           : primary
-            ? "#06080a"
+            ? inkOn(accent)
             : strong
               ? accent
               : "rgba(231,228,220,0.7)",

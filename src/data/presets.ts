@@ -11,6 +11,27 @@ export const PALETTE = {
 
 export const CLEAN_RIG = -1;
 
+const INK_DARK = "#06080a";
+const INK_LIGHT = "#f4f2ea";
+
+function luminance(hex: string): number {
+  const n = parseInt(hex.slice(1), 16);
+  const lin = (c: number) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+}
+
+export function inkOn(hex: string): string {
+  const bg = luminance(hex) + 0.05;
+  const ratio = (ink: string) => {
+    const fg = luminance(ink) + 0.05;
+    return fg > bg ? fg / bg : bg / fg;
+  };
+  return ratio(INK_DARK) >= ratio(INK_LIGHT) ? INK_DARK : INK_LIGHT;
+}
+
 export type RigKnobs = {
   drive: number;
   echo: number;
