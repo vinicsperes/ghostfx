@@ -152,7 +152,18 @@ export default function App() {
     }
   }, [loadedTrack, pauseTake]);
 
-  const { activeTakeId, playingId } = fx.recorder;
+  const { activeTakeId, playingId, takes } = fx.recorder;
+  const hasUnsavedWork = isRecording || takes.length > 0 || arrangement.clips.length > 0;
+  useEffect(() => {
+    if (!hasUnsavedWork) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [hasUnsavedWork]);
+
   useEffect(() => {
     if (activeTakeId) selectSource("take");
   }, [activeTakeId, selectSource]);
