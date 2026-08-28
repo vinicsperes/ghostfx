@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { computePeaks } from "../audio/encode";
+import { masterGainFromKnob } from "../audio/dsp";
 import type { Backing } from "../audio/render";
 
 export type LoopSlot = {
@@ -14,18 +15,47 @@ export type LoopSlot = {
 export function useLoop({
   ctxRef,
   ensureAudio,
+  masterVolume,
 }: {
   ctxRef: React.RefObject<AudioContext | null>;
   ensureAudio: () => Promise<void>;
+  masterVolume: number;
 }) {
   const [slot, setSlot] = useState<LoopSlot | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [level, setLevelState] = useState(1);
 
   const slotRef = useRef<LoopSlot | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const startedAtRef = useRef(0);
   const offsetRef = useRef(0);
+  const levelRef = useRef(1);
+  const masterRef = useRef(masterVolume);
+
+  const monitorGain = useCallback(
+    () => levelRef.current * masterGainFromKnob(masterRef.current),
+    [],
+  );
+
+  useEffect(() => {
+    masterRef.current = masterVolume;
+    const ctx = ctxRef.current;
+    if (gainRef.current && ctx)
+      gainRef.current.gain.setTargetAtTime(monitorGain(), ctx.currentTime, 0.05);
+  }, [masterVolume, ctxRef, monitorGain]);
+
+  const setLevel = useCallback(
+    (next: number) => {
+      const clamped = Math.max(0, Math.min(1, next));
+      levelRef.current = clamped;
+      setLevelState(clamped);
+      const ctx = ctxRef.current;
+      if (gainRef.current && ctx)
+        gainRef.current.gain.setTargetAtTime(monitorGain(), ctx.currentTime, 0.02);
+    },
+    [ctxRef, monitorGain],
+  );
 
   const getPosition = useCallback((): number => {
     const current = slotRef.current;
@@ -44,7 +74,7 @@ export function useLoop({
     return {
       buffer: current.buffer,
       name: current.name,
-      level: 1,
+      level: levelRef.current,
       loop: true,
       start: 0,
       end: current.duration,
@@ -84,6 +114,7 @@ export function useLoop({
         gain.connect(ctx.destination);
         gainRef.current = gain;
       }
+      gainRef.current.gain.value = monitorGain();
 
       stopSource();
       const at = Math.max(0, Math.min(current.duration, from ?? offsetRef.current));
@@ -99,7 +130,7 @@ export function useLoop({
       offsetRef.current = at;
       setIsPlaying(true);
     },
-    [ctxRef, ensureAudio, stopSource],
+    [ctxRef, ensureAudio, stopSource, monitorGain],
   );
 
   const pin = useCallback(
@@ -154,5 +185,18 @@ export function useLoop({
     };
   }, []);
 
-  return { slot, isPlaying, pin, unpin, play, pause, toggle, seek, getPosition, snapshot };
+  return {
+    slot,
+    isPlaying,
+    level,
+    setLevel,
+    pin,
+    unpin,
+    play,
+    pause,
+    toggle,
+    seek,
+    getPosition,
+    snapshot,
+  };
 }

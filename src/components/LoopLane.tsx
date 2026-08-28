@@ -10,7 +10,7 @@ export function LoopLane({
   loop: ReturnType<typeof useLoop>;
   height?: number;
 }) {
-  const { slot, isPlaying, toggle, seek, unpin, getPosition } = loop;
+  const { slot, isPlaying, level, setLevel, toggle, seek, unpin, getPosition } = loop;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const badgeRef = useRef<HTMLSpanElement>(null);
@@ -75,6 +75,11 @@ export function LoopLane({
 
   if (!slot) return null;
 
+  const onLevel = (e: React.PointerEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setLevel((e.clientX - rect.left) / rect.width);
+  };
+
   const onSeek = (e: React.PointerEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
@@ -120,6 +125,41 @@ export function LoopLane({
         className="font-[var(--font-mono)] shrink-0 tabular-nums"
         style={{ fontSize: 9.5, color: "rgba(231,228,220,0.4)" }}
       />
+
+      <div
+        role="slider"
+        aria-label="Loop level"
+        aria-valuenow={Math.round(level * 100)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        tabIndex={0}
+        title={`Loop level ${Math.round(level * 100)}%`}
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          onLevel(e);
+        }}
+        onPointerMove={(e) => {
+          if (e.currentTarget.hasPointerCapture(e.pointerId)) onLevel(e);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowLeft") setLevel(level - 0.05);
+          if (e.key === "ArrowRight") setLevel(level + 0.05);
+        }}
+        className="shrink-0"
+        style={{ width: 62, height: 16, display: "flex", alignItems: "center", cursor: "pointer" }}
+      >
+        <div
+          style={{
+            width: "100%",
+            height: 4,
+            borderRadius: 2,
+            background: "rgba(255,255,255,0.08)",
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ width: `${level * 100}%`, height: "100%", background: slot.color }} />
+        </div>
+      </div>
 
       <button
         onClick={toggle}
