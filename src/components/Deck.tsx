@@ -3,7 +3,7 @@ import type { useRecorder } from "../hooks/useRecorder";
 import type { useTrack } from "../hooks/useTrack";
 import type { useLoop } from "../hooks/useLoop";
 import type { useMetronome } from "../hooks/useMetronome";
-import { PALETTE, rigMeta } from "../data/presets";
+import { PALETTE, inkOn, rigMeta } from "../data/presets";
 import { LIMITER_THRESHOLD } from "../audio/dsp";
 import { clock } from "../lib/format";
 import { Fader } from "./Fader";
@@ -476,46 +476,6 @@ export function Deck({
           </button>
         )}
 
-        <button
-          onClick={onOpenStudio}
-          title="Open the studio: trim, arrange and mix"
-          aria-label="Open the studio"
-          className="font-[var(--font-mono)] flex items-center shrink-0 transition-all active:scale-95"
-          style={{
-            gap: 7,
-            padding: "6px 12px",
-            borderRadius: 6,
-            border: `1px solid ${accent}77`,
-            background: `linear-gradient(180deg, ${accent}22, ${accent}0d)`,
-            fontSize: 10.5,
-            fontWeight: 700,
-            letterSpacing: "0.1em",
-            color: accent,
-            boxShadow: `0 0 14px ${accent}22`,
-            cursor: "pointer",
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-            <rect
-              x="1.6"
-              y="2.4"
-              width="12.8"
-              height="11.2"
-              rx="1.6"
-              stroke="currentColor"
-              strokeWidth="1.3"
-            />
-            <path d="M1.6 6.1h12.8" stroke="currentColor" strokeWidth="1.3" />
-            <path
-              d="M4.4 8.6v2.6M7 8.1v3.6M9.6 9.2v1.4M12.2 8.4v2.8"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-            />
-          </svg>
-          STUDIO
-        </button>
-
         <div style={{ flex: 1 }} />
 
         {onTrack ? (
@@ -538,6 +498,51 @@ export function Deck({
             onClick={() => void downloadTake()}
           />
         )}
+
+        <div
+          className="shrink-0"
+          style={{ width: 1, height: 22, background: "rgba(231,228,220,0.12)", margin: "0 2px" }}
+        />
+
+        <button
+          onClick={onOpenStudio}
+          title="Open the studio: trim, arrange and mix"
+          aria-label="Open the studio"
+          className="font-[var(--font-mono)] flex items-center shrink-0 transition-all active:scale-95"
+          style={{
+            gap: 8,
+            padding: "8px 16px",
+            borderRadius: 7,
+            border: `1px solid ${accent}`,
+            background: accent,
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.12em",
+            color: inkOn(accent),
+            boxShadow: `0 0 20px ${accent}55`,
+            cursor: "pointer",
+          }}
+        >
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+            <rect
+              x="1.6"
+              y="2.4"
+              width="12.8"
+              height="11.2"
+              rx="1.6"
+              stroke="currentColor"
+              strokeWidth="1.4"
+            />
+            <path d="M1.6 6.1h12.8" stroke="currentColor" strokeWidth="1.4" />
+            <path
+              d="M4.4 8.6v2.6M7 8.1v3.6M9.6 9.2v1.4M12.2 8.4v2.8"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          </svg>
+          STUDIO
+        </button>
       </div>
     </div>
   );
