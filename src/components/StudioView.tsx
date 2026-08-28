@@ -796,7 +796,7 @@ export function StudioView({
                   label="Download this take"
                   color={PALETTE.cream}
                   title={
-                    activeTake?.backing
+                    recorder.activeBackingOn
                       ? "Download this take as MP3, backing mixed in"
                       : "Download this take as MP3"
                   }

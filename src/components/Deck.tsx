@@ -174,6 +174,9 @@ export function Deck({
     isRecording,
     isProcessing,
     isExporting,
+    activeBacking,
+    activeBackingOn,
+    toggleBacking,
     bounceTake,
     nameOf,
     downloadTake,
@@ -422,6 +425,31 @@ export function Deck({
           </button>
         )}
 
+        {!onTrack && activeBacking && (
+          <button
+            onClick={toggleBacking}
+            aria-pressed={activeBackingOn}
+            title={
+              activeBackingOn
+                ? "Playing and exporting with what this take was recorded over. Click to hear it alone."
+                : "This take alone. Click to bring back what it was recorded over."
+            }
+            className="font-[var(--font-mono)] flex items-center shrink-0"
+            style={{
+              gap: 7,
+              padding: "6px 10px",
+              borderRadius: 6,
+              border: `1px solid ${activeBackingOn ? "rgba(231,228,220,0.26)" : "rgba(231,228,220,0.1)"}`,
+              background: activeBackingOn ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.02)",
+              fontSize: 10.5,
+              color: activeBackingOn ? PALETTE.cream : "rgba(231,228,220,0.4)",
+              cursor: "pointer",
+            }}
+          >
+            BACKING
+          </button>
+        )}
+
         {onTrack && (
           <button
             onClick={() => setLoop(!trackLoop)}
@@ -503,7 +531,7 @@ export function Deck({
             title={
               !activeTake
                 ? "Record something first"
-                : activeTake.backing
+                : activeBackingOn
                   ? "Download MP3, backing mixed in"
                   : "Download MP3"
             }

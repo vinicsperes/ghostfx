@@ -87,6 +87,7 @@ export function useRecorder({
   const [paramsByTake, setParamsByTake] = useState<Record<string, SignalParams>>({});
   const [regionByTake, setRegionByTake] = useState<Record<string, Region>>({});
   const [nameByTake, setNameByTake] = useState<Record<string, string>>({});
+  const [backingOff, setBackingOff] = useState<Record<string, true>>({});
   const [error, setError] = useState<string | null>(null);
 
   const wetRef = useRef<Map<string, AudioBuffer>>(new Map());
@@ -149,6 +150,8 @@ export function useRecorder({
     : IDLE_PARAMS;
   const activePeaks = activeTake?.peaks ?? null;
   const activeDuration = activeTake?.duration ?? 0;
+  const activeBacking = !!activeTake?.backing;
+  const activeBackingOn = activeBacking && !backingOff[activeTake.id];
   const activeRegion: Region = activeTake
     ? (regionByTake[activeTake.id] ?? { start: 0, end: activeTake.duration })
     : { start: 0, end: 0 };
@@ -325,8 +328,9 @@ export function useRecorder({
       sourceRef.current = src;
       playRegionRef.current = region;
 
-      if (take.backing) {
-        const { source } = startBacking(ctx, take.backing, ctx.destination, {
+      const backing = backingOff[take.id] ? null : take.backing;
+      if (backing) {
+        const { source } = startBacking(ctx, backing, ctx.destination, {
           at: from,
           stopAt: repeat ? undefined : now + left,
           loopSpan: repeat ? span : undefined,
@@ -350,6 +354,7 @@ export function useRecorder({
       rigByTake,
       paramsByTake,
       regionByTake,
+      backingOff,
       decodeDry,
       decodeWet,
       stopSource,
@@ -410,6 +415,18 @@ export function useRecorder({
       return { ...prev, [id]: clean };
     });
   }, []);
+
+  const toggleBacking = useCallback(() => {
+    const take = takes.find((t) => t.id === activeTakeId);
+    if (!take?.backing) return;
+    setBackingOff((prev) => {
+      if (prev[take.id]) {
+        const { [take.id]: _dropped, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [take.id]: true };
+    });
+  }, [takes, activeTakeId]);
 
   const setLooping = useCallback(
     (next: boolean) => {
@@ -484,6 +501,7 @@ export function useRecorder({
       setParamsByTake(({ [id]: _dropped, ...rest }) => rest);
       setRegionByTake(({ [id]: _dropped, ...rest }) => rest);
       setNameByTake(({ [id]: _dropped, ...rest }) => rest);
+      setBackingOff(({ [id]: _dropped, ...rest }) => rest);
       setTakes((prev) => {
         const next = prev.filter((t) => t.id !== id);
         setActiveTakeId((current) => (current === id ? (next[0]?.id ?? null) : current));
@@ -673,18 +691,29 @@ export function useRecorder({
         setError("could not read that take");
         return null;
       }
-      if (wet && !take.backing && whole) return wet;
+      const backing = backingOff[take.id] ? null : take.backing;
+      if (wet && !backing && whole) return wet;
       return renderTake({
         rate: ctx.sampleRate,
         wet,
         dry,
         presetIdx: rig,
         params: signal,
-        backing: take.backing,
+        backing,
         region,
       });
     },
-    [takes, activeTakeId, ctxRef, rigByTake, paramsByTake, regionByTake, decodeWet, decodeDry],
+    [
+      takes,
+      activeTakeId,
+      ctxRef,
+      rigByTake,
+      paramsByTake,
+      regionByTake,
+      backingOff,
+      decodeWet,
+      decodeDry,
+    ],
   );
 
   useEffect(() => {
@@ -775,6 +804,9 @@ export function useRecorder({
     activeRig,
     activeParams,
     activeEdited,
+    activeBacking,
+    activeBackingOn,
+    toggleBacking,
     activePeaks,
     activeDuration,
     activeRegion,
