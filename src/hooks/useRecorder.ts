@@ -8,7 +8,7 @@ import {
   type ChainNodes,
   type SignalParams,
 } from "../audio/chain";
-import { renderTake, startBacking, type Backing } from "../audio/render";
+import { renderTake, sliceBuffer, startBacking, type Backing } from "../audio/render";
 import { CLEAN_RIG, RIGS, rigAt, rigMeta, type RigKnobs } from "../data/presets";
 
 export type Take = {
@@ -416,6 +416,82 @@ export function useRecorder({
     });
   }, []);
 
+  const cutTake = useCallback(
+    async (id?: string): Promise<string | null> => {
+      const targetId = id ?? activeTakeId;
+      const take = takes.find((t) => t.id === targetId);
+      const ctx = ctxRef.current;
+      if (!take || !ctx) return null;
+
+      const region = regionByTake[take.id] ?? { start: 0, end: take.duration };
+      const span = region.end - region.start;
+      if (span < MIN_REGION_S || span >= take.duration - 0.02) return null;
+
+      const wet = await decodeWet(take);
+      if (!wet) {
+        setError("could not read that take");
+        return null;
+      }
+      const dry = await decodeDry(take);
+      const wetSlice = sliceBuffer(ctx, wet, region.start, region.end);
+      const drySlice = dry ? sliceBuffer(ctx, dry, region.start, region.end) : null;
+
+      const rig = rigByTake[take.id] ?? take.presetIdx ?? 0;
+      const name = nameByTake[take.id] ?? `${rigMeta(rig).name} ${take.seq}`;
+      const cut: Take = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        seq: ++seqRef.current,
+        blob: encodeWav(wetSlice),
+        dryBlob: drySlice ? encodeWav(drySlice) : null,
+        peaks: computePeaks(wetSlice),
+        duration: wetSlice.duration,
+        presetIdx: take.presetIdx,
+        params: paramsByTake[take.id] ?? take.params,
+        backing: take.backing
+          ? { ...take.backing, offset: take.backing.offset + region.start }
+          : null,
+        createdAt: Date.now(),
+      };
+
+      wetRef.current.set(cut.id, wetSlice);
+      if (drySlice) dryRef.current.set(cut.id, drySlice);
+      setRigByTake((prev) => ({ ...prev, [cut.id]: rig }));
+      setParamsByTake((prev) => ({ ...prev, [cut.id]: cut.params }));
+      setNameByTake((prev) => ({
+        ...prev,
+        [cut.id]: name.endsWith(" CUT") || name.length > 20 ? name : `${name} CUT`,
+      }));
+      setTakes((prev) => {
+        const next = [cut, ...prev].slice(0, MAX_TAKES);
+        const kept = new Set(next.map((t) => t.id));
+        for (const key of [...wetRef.current.keys()])
+          if (!kept.has(key)) wetRef.current.delete(key);
+        for (const key of [...dryRef.current.keys()])
+          if (!kept.has(key)) dryRef.current.delete(key);
+        return next;
+      });
+
+      stopSource();
+      setPlayingId(null);
+      playOffsetRef.current = 0;
+      setActiveTakeId(cut.id);
+      setError(null);
+      return cut.id;
+    },
+    [
+      activeTakeId,
+      takes,
+      ctxRef,
+      regionByTake,
+      rigByTake,
+      paramsByTake,
+      nameByTake,
+      decodeWet,
+      decodeDry,
+      stopSource,
+    ],
+  );
+
   const toggleBacking = useCallback(() => {
     const take = takes.find((t) => t.id === activeTakeId);
     if (!take?.backing) return;
@@ -632,8 +708,8 @@ export function useRecorder({
   );
 
   const setRig = useCallback(
-    async (target: number) => {
-      const take = takes.find((t) => t.id === activeTakeId);
+    async (target: number, id?: string) => {
+      const take = takes.find((t) => t.id === (id ?? activeTakeId));
       if (!take) return;
       const recorded = take.presetIdx ?? 0;
       if (target !== recorded && !take.dryBlob) {
@@ -788,6 +864,7 @@ export function useRecorder({
     seek,
     selectTake,
     deleteTake,
+    cutTake,
     downloadTake,
     bounceTake,
     getPlayPosition,

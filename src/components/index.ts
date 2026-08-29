@@ -17,6 +17,7 @@ export { StudioView } from "./StudioView";
 export { Timeline } from "./Timeline";
 export { TrackMixer } from "./TrackMixer";
 export { RigChip } from "./RigChip";
+export { TakeRigChip, RigOptions } from "./RigPicker";
 export { TempoChip } from "./TempoChip";
 export { TunerChip } from "./TunerChip";
 export { WaveEditor } from "./WaveEditor";

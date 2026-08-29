@@ -2,10 +2,12 @@ import { useRef, useState } from "react";
 import type { useRecorder } from "../hooks/useRecorder";
 import type { useTrack } from "../hooks/useTrack";
 import { MAX_TRACK_S } from "../hooks/useTrack";
-import { CLEAN_RIG, PALETTE, RIGS, rigMeta } from "../data/presets";
+import { PALETTE, rigMeta } from "../data/presets";
 import { clock, stamp } from "../lib/format";
 import { MiniWave } from "./MiniWave";
 import { PanelLabel } from "./PanelLabel";
+import { Popover } from "./Popover";
+import { RigOptions } from "./RigPicker";
 
 function RowButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
@@ -22,14 +24,12 @@ function RowButton({ onClick, children }: { onClick: () => void; children: React
 function Row({
   active,
   accent,
-  onRemove,
-  removeLabel,
+  menu,
   children,
 }: {
   active: boolean;
   accent: string;
-  onRemove: () => void;
-  removeLabel: string;
+  menu: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -44,93 +44,156 @@ function Row({
       }}
     >
       {children}
-      <button
-        onClick={onRemove}
-        aria-label={removeLabel}
-        title={removeLabel}
-        className="shrink-0"
-        style={{
-          fontSize: 13,
-          lineHeight: 1,
-          padding: "0 4px",
-          color: "rgba(231,228,220,0.3)",
-          cursor: "pointer",
-        }}
-      >
-        ×
-      </button>
+      {menu}
     </div>
   );
 }
 
-function Name({
-  value,
-  editable,
-  color,
-  width,
-  onCommit,
+function RowMenu({
+  open,
+  onOpenChange,
+  name,
+  onRename,
+  onDelete,
+  deleteLabel,
+  rig,
 }: {
-  value: string;
-  editable: boolean;
-  color: string;
-  width?: number;
-  onCommit: (next: string) => void;
+  open: boolean;
+  onOpenChange: (next: boolean) => void;
+  name: string;
+  onRename: (next: string) => void;
+  onDelete: () => void;
+  deleteLabel: string;
+  rig?: {
+    value: number;
+    recorded: number;
+    canReamp: boolean;
+    onSelect: (idx: number) => void;
+  };
 }) {
-  if (!editable) {
-    return (
-      <span
-        className="font-[var(--font-mono)] truncate"
+  const anchor = useRef<HTMLButtonElement>(null);
+
+  return (
+    <>
+      <button
+        ref={anchor}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={() => onOpenChange(!open)}
+        aria-expanded={open}
+        aria-label="More"
+        title={rig ? "Rename, re-amp or delete" : "Rename or remove"}
+        className="font-[var(--font-mono)] shrink-0"
         style={{
-          width,
-          flex: width ? undefined : 1,
-          minWidth: 0,
-          textAlign: "left",
-          fontSize: 9.5,
-          letterSpacing: "0.06em",
-          color,
+          width: 18,
+          padding: "1px 0",
+          borderRadius: 4,
+          border: `1px solid ${open ? "rgba(231,228,220,0.22)" : "transparent"}`,
+          background: open ? "rgba(255,255,255,0.05)" : "transparent",
+          fontSize: 12,
+          lineHeight: 1,
+          color: open ? "rgba(231,228,220,0.8)" : "rgba(231,228,220,0.35)",
+          cursor: "pointer",
         }}
       >
-        {value}
-      </span>
-    );
-  }
+        ⋮
+      </button>
+
+      <Popover
+        anchorRef={anchor}
+        open={open}
+        onClose={() => onOpenChange(false)}
+        width={196}
+        align="right"
+      >
+        <div className="flex flex-col" style={{ gap: 9, padding: 5 }}>
+          <div className="flex flex-col" style={{ gap: 5 }}>
+            <PanelLabel>Rename</PanelLabel>
+            <input
+              key={name}
+              defaultValue={name}
+              autoFocus
+              maxLength={24}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  onRename((e.target as HTMLInputElement).value);
+                  onOpenChange(false);
+                }
+                if (e.key === "Escape") {
+                  (e.target as HTMLInputElement).value = name;
+                  onOpenChange(false);
+                }
+                e.stopPropagation();
+              }}
+              onBlur={(e) => onRename(e.target.value)}
+              className="font-[var(--font-mono)] min-w-0"
+              style={{
+                padding: "5px 7px",
+                borderRadius: 5,
+                border: "1px solid rgba(231,228,220,0.14)",
+                background: "rgba(0,0,0,0.45)",
+                fontSize: 10,
+                letterSpacing: "0.06em",
+                color: "#e7e4dc",
+                outline: "none",
+              }}
+            />
+          </div>
+
+          {rig && (
+            <div className="flex flex-col" style={{ gap: 5 }}>
+              <PanelLabel>Hear it through</PanelLabel>
+              <RigOptions
+                value={rig.value}
+                recorded={rig.recorded}
+                canReamp={rig.canReamp}
+                onSelect={(idx) => {
+                  rig.onSelect(idx);
+                  onOpenChange(false);
+                }}
+              />
+            </div>
+          )}
+
+          <button
+            onClick={() => {
+              onDelete();
+              onOpenChange(false);
+            }}
+            className="font-[var(--font-mono)]"
+            style={{
+              padding: "6px 8px",
+              borderRadius: 5,
+              border: "1px solid rgba(245,62,62,0.3)",
+              background: "rgba(245,62,62,0.08)",
+              fontSize: 9.5,
+              letterSpacing: "0.12em",
+              color: "#f57070",
+              textAlign: "left",
+              cursor: "pointer",
+            }}
+          >
+            {deleteLabel}
+          </button>
+        </div>
+      </Popover>
+    </>
+  );
+}
+
+function Name({ value, color, width }: { value: string; color: string; width: number }) {
   return (
-    <input
-      defaultValue={value}
-      key={value}
-      onClick={(e) => e.stopPropagation()}
-      onBlur={(e) => onCommit(e.target.value)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-        if (e.key === "Escape") {
-          (e.target as HTMLInputElement).value = value;
-          (e.target as HTMLInputElement).blur();
-        }
-        e.stopPropagation();
-      }}
-      title="Rename"
-      className="font-[var(--font-mono)] min-w-0"
+    <span
+      className="font-[var(--font-mono)] truncate shrink-0"
       style={{
-        width: width ?? 96,
-        flex: width ? undefined : 1,
-        padding: "2px 4px",
-        borderRadius: 4,
-        border: "1px solid transparent",
-        background: "transparent",
+        width,
+        textAlign: "left",
         fontSize: 9.5,
         letterSpacing: "0.06em",
         color,
-        outline: "none",
       }}
-      onFocus={(e) => {
-        e.target.style.border = `1px solid ${color}55`;
-        e.target.style.background = "rgba(255,255,255,0.03)";
-      }}
-      onBlurCapture={(e) => {
-        e.target.style.border = "1px solid transparent";
-        e.target.style.background = "transparent";
-      }}
-    />
+    >
+      {value}
+    </span>
   );
 }
 
@@ -150,8 +213,6 @@ function Meta({ children, width }: { children: React.ReactNode; width?: number }
     </span>
   );
 }
-
-const RIG_CHOICES = [CLEAN_RIG, ...RIGS.map((_, i) => i)];
 
 export function SourceMenu({
   recorder,
@@ -173,7 +234,6 @@ export function SourceMenu({
   const {
     takes,
     activeTake,
-    activeRig,
     isRecording,
     playingId,
     deleteTake,
@@ -187,7 +247,7 @@ export function SourceMenu({
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
-  const canReamp = !!activeTake?.dryBlob && !isRecording;
+  const [menuFor, setMenuFor] = useState<string | null>(null);
 
   const pick = (file: File | undefined) => {
     if (file) void load(file);
@@ -208,49 +268,6 @@ export function SourceMenu({
         pick(e.dataTransfer.files[0]);
       }}
     >
-      {takes.length > 0 && (
-        <div className="flex flex-col" style={{ gap: 6 }}>
-          <PanelLabel>Hear it through</PanelLabel>
-          <div className="flex flex-wrap" style={{ gap: 4 }}>
-            {RIG_CHOICES.map((i) => {
-              const { color, name } = rigMeta(i);
-              const on = activeRig === i;
-              const recorded = (activeTake?.presetIdx ?? 0) === i;
-              return (
-                <button
-                  key={name}
-                  onClick={() => void setRig(i)}
-                  disabled={!canReamp && !on}
-                  title={
-                    recorded
-                      ? "Recorded like this"
-                      : i === CLEAN_RIG
-                        ? "Hear the guitar dry, the way the pedal never touched it"
-                        : `Re-amp through ${name}`
-                  }
-                  className="font-[var(--font-mono)] flex items-center"
-                  style={{
-                    gap: 5,
-                    padding: "5px 7px",
-                    borderRadius: 6,
-                    border: `1px solid ${on ? color + "66" : "rgba(231,228,220,0.1)"}`,
-                    background: on ? `${color}16` : "rgba(255,255,255,0.02)",
-                    fontSize: 9.5,
-                    color: on ? color : "rgba(231,228,220,0.6)",
-                    opacity: canReamp || on ? 1 : 0.45,
-                    cursor: canReamp || on ? "pointer" : "default",
-                  }}
-                >
-                  <span style={{ width: 5, height: 5, borderRadius: 2, background: color }} />
-                  {name}
-                  {recorded && <span style={{ fontSize: 7, opacity: 0.5 }}>REC</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-col" style={{ gap: 6 }}>
         <PanelLabel>Takes</PanelLabel>
         {takes.length === 0 ? (
@@ -279,8 +296,25 @@ export function SourceMenu({
                   key={take.id}
                   active={on}
                   accent={accent}
-                  onRemove={() => deleteTake(take.id)}
-                  removeLabel="Delete take"
+                  menu={
+                    <RowMenu
+                      open={menuFor === take.id}
+                      onOpenChange={(next) => setMenuFor(next ? take.id : null)}
+                      name={nameOf(take, rig)}
+                      onRename={(next) => renameTake(take.id, next)}
+                      onDelete={() => deleteTake(take.id)}
+                      deleteLabel="DELETE TAKE"
+                      rig={{
+                        value: rig,
+                        recorded: take.presetIdx ?? 0,
+                        canReamp: !!take.dryBlob && !isRecording,
+                        onSelect: (idx) => {
+                          onPickTake(take.id);
+                          void setRig(idx, take.id);
+                        },
+                      }}
+                    />
+                  }
                 >
                   <button
                     onClick={() => void togglePlay(take.id)}
@@ -308,14 +342,12 @@ export function SourceMenu({
                       </svg>
                     )}
                   </button>
-                  <Name
-                    value={nameOf(take, rig)}
-                    editable={editable}
-                    color={on ? color : "rgba(231,228,220,0.55)"}
-                    width={editable ? undefined : 58}
-                    onCommit={(next) => renameTake(take.id, next)}
-                  />
                   <RowButton onClick={() => onPickTake(take.id)}>
+                    <Name
+                      value={nameOf(take, rig)}
+                      color={on ? color : "rgba(231,228,220,0.62)"}
+                      width={editable ? 76 : 58}
+                    />
                     <span className="flex-1 min-w-0">
                       <MiniWave peaks={take.peaks} color={color} width={104} height={18} stretch />
                     </span>
@@ -357,8 +389,16 @@ export function SourceMenu({
           <Row
             active={source === "track"}
             accent={accent}
-            onRemove={clear}
-            removeLabel="Remove track"
+            menu={
+              <RowMenu
+                open={menuFor === "track"}
+                onOpenChange={(next) => setMenuFor(next ? "track" : null)}
+                name={loaded.name}
+                onRename={renameTrack}
+                onDelete={clear}
+                deleteLabel="REMOVE TRACK"
+              />
+            }
           >
             <RowButton onClick={onPickTrack}>
               <span
@@ -371,25 +411,16 @@ export function SourceMenu({
                   boxShadow: source === "track" ? `0 0 6px ${PALETTE.cream}` : "none",
                 }}
               />
-              {editable ? (
-                <Name
-                  value={loaded.name}
-                  editable
-                  color={source === "track" ? "#e7e4dc" : "rgba(231,228,220,0.62)"}
-                  onCommit={renameTrack}
-                />
-              ) : (
-                <span
-                  className="font-[var(--font-mono)] flex-1 min-w-0 truncate"
-                  style={{
-                    textAlign: "left",
-                    fontSize: 10,
-                    color: source === "track" ? "#e7e4dc" : "rgba(231,228,220,0.62)",
-                  }}
-                >
-                  {loaded.name}
-                </span>
-              )}
+              <span
+                className="font-[var(--font-mono)] flex-1 min-w-0 truncate"
+                style={{
+                  textAlign: "left",
+                  fontSize: 10,
+                  color: source === "track" ? "#e7e4dc" : "rgba(231,228,220,0.62)",
+                }}
+              >
+                {loaded.name}
+              </span>
               <Meta width={26}>{clock(loaded.duration)}</Meta>
             </RowButton>
           </Row>

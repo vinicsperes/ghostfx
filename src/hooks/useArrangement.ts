@@ -26,6 +26,8 @@ export function clipLength(clip: Clip): number {
 
 export const MAX_CLIPS = 24;
 
+const newId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
 export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContext | null> }) {
   const [clips, setClips] = useState<Clip[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -189,7 +191,7 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
               .filter((c) => c.lane === lane)
               .reduce((max, c) => Math.max(max, c.at + clipLength(c)), 0);
       const next: Clip = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        id: newId(),
         name: clip.name,
         color: clip.color,
         lane,
@@ -238,6 +240,46 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
           return { ...clip, in: next, at: Math.max(0, clip.at + (next - clip.in)) };
         }),
       );
+    },
+    [commit],
+  );
+
+  const split = useCallback(
+    (id: string, at: number) => {
+      const list = clipsRef.current;
+      if (list.length >= MAX_CLIPS) {
+        setError(`the track holds ${MAX_CLIPS} clips`);
+        return;
+      }
+      const clip = list.find((c) => c.id === id);
+      if (!clip) return;
+      const local = at - clip.at;
+      if (local < MIN_CLIP_S || clipLength(clip) - local < MIN_CLIP_S) {
+        setError("park the playhead inside the clip to split it");
+        return;
+      }
+      const cutAt = clip.in + local;
+      const head: Clip = { ...clip, out: cutAt };
+      const tail: Clip = { ...clip, id: newId(), at: clip.at + local, in: cutAt };
+      setError(null);
+      commit(list.flatMap((c) => (c.id === id ? [head, tail] : [c])));
+    },
+    [commit],
+  );
+
+  const duplicate = useCallback(
+    (id: string): string | null => {
+      const list = clipsRef.current;
+      if (list.length >= MAX_CLIPS) {
+        setError(`the track holds ${MAX_CLIPS} clips`);
+        return null;
+      }
+      const clip = list.find((c) => c.id === id);
+      if (!clip) return null;
+      const copy: Clip = { ...clip, id: newId(), at: clip.at + clipLength(clip) };
+      setError(null);
+      commit([...list, copy]);
+      return copy.id;
     },
     [commit],
   );
@@ -294,16 +336,17 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
     if (!ctx || !list.length || isExporting) return;
     setIsExporting(true);
     try {
+      const live = list.filter((clip) => !clip.muted);
+      const head = live.reduce((min, clip) => Math.min(min, clip.at), Infinity);
+      const origin = Number.isFinite(head) ? head : 0;
       const rendered = await renderArrangement(
-        list
-          .filter((clip) => !clip.muted)
-          .map((clip) => ({
-            buffer: clip.buffer,
-            at: clip.at,
-            from: clip.in,
-            span: clipLength(clip),
-            level: clip.level,
-          })),
+        live.map((clip) => ({
+          buffer: clip.buffer,
+          at: Math.max(0, clip.at - origin),
+          from: clip.in,
+          span: clipLength(clip),
+          level: clip.level,
+        })),
         ctx.sampleRate,
         masterRef.current,
       );
@@ -355,6 +398,8 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
     add,
     move,
     trim,
+    split,
+    duplicate,
     setClipLevel,
     toggleMute,
     remove,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { useRecorder } from "../hooks/useRecorder";
 import type { useTrack } from "../hooks/useTrack";
@@ -20,6 +20,7 @@ import { TempoChip } from "./TempoChip";
 import { TrackMixer } from "./TrackMixer";
 import { TunerChip } from "./TunerChip";
 import { TakeSignal } from "./TakeSignal";
+import { TakeRigChip } from "./RigPicker";
 import { WaveEditor } from "./WaveEditor";
 
 function Action({
@@ -305,6 +306,115 @@ function Readout({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ClipTools({
+  arrangement,
+  accent,
+  selected,
+  onSelect,
+  snap,
+  onSnap,
+  onFit,
+}: {
+  arrangement: ReturnType<typeof useArrangement>;
+  accent: string;
+  selected: string | null;
+  onSelect: (id: string | null) => void;
+  snap: boolean;
+  onSnap: () => void;
+  onFit: () => void;
+}) {
+  const { clips, remove, duplicate, split, move, toggleMute, getPosition, error } = arrangement;
+  const clip = clips.find((c) => c.id === selected) ?? null;
+
+  const nudge = (by: number) => {
+    if (!clip) return;
+    move(clip.id, clip.lane, Math.max(0, clip.at + by));
+  };
+
+  return (
+    <div className="flex items-center flex-wrap shrink-0" style={{ gap: 8 }}>
+      {clip ? (
+        <>
+          <span
+            className="font-[var(--font-mono)] flex items-center shrink-0"
+            style={{ gap: 6, fontSize: 9.5, letterSpacing: "0.08em", color: clip.color }}
+          >
+            <span style={{ width: 6, height: 6, borderRadius: 2, background: clip.color }} />
+            {clip.name}
+          </span>
+          <Readout label="on" value={clock(clip.at)} />
+          <Action
+            label="SPLIT"
+            onClick={() => split(clip.id, getPosition())}
+            accent={accent}
+            title="Cut this clip in two where the playhead sits (S)"
+          />
+          <Action
+            label="DOUBLE"
+            onClick={() => onSelect(duplicate(clip.id))}
+            accent={accent}
+            title="Drop a copy right after this one (D)"
+          />
+          <Action
+            label={clip.muted ? "UNMUTE" : "MUTE"}
+            onClick={() => toggleMute(clip.id)}
+            accent={accent}
+            strong={clip.muted}
+            title="Leave this clip out of the mix"
+          />
+          <Action
+            label="◀"
+            onClick={() => nudge(-0.1)}
+            accent={accent}
+            title="Nudge left, 0.1s (arrow keys)"
+          />
+          <Action
+            label="▶"
+            onClick={() => nudge(0.1)}
+            accent={accent}
+            title="Nudge right, 0.1s (arrow keys)"
+          />
+          <Action
+            label="REMOVE"
+            onClick={() => {
+              remove(clip.id);
+              onSelect(null);
+            }}
+            accent={accent}
+            title="Take this clip off the track (Delete)"
+          />
+        </>
+      ) : (
+        <span
+          className="font-[var(--font-mono)]"
+          style={{ fontSize: 9, letterSpacing: "0.1em", color: "rgba(231,228,220,0.32)" }}
+        >
+          CLICK A CLIP TO SPLIT, DOUBLE OR NUDGE IT
+        </span>
+      )}
+
+      <div style={{ flex: 1 }} />
+
+      {error && (
+        <span
+          className="font-[var(--font-mono)]"
+          style={{ fontSize: 9, letterSpacing: "0.06em", color: "#f5a33e" }}
+        >
+          {error}
+        </span>
+      )}
+      <Action
+        label="SNAP"
+        onClick={onSnap}
+        accent={accent}
+        strong={snap}
+        title="Stick clips to the grid and to each other, hold Alt to slip free"
+      />
+      <Action label="FIT" onClick={onFit} accent={accent} title="Zoom so the whole track fits" />
+    </div>
+  );
+}
+
 export function StudioView({
   recorder,
   track,
@@ -346,15 +456,81 @@ export function StudioView({
 }) {
   const [sending, setSending] = useState(false);
   const [pinning, setPinning] = useState(false);
+  const [cutting, setCutting] = useState(false);
   const [pps, setPps] = useState(40);
+  const [snap, setSnap] = useState(true);
+  const [picked, setPicked] = useState<string | null>(null);
+  const laneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      if (picked) {
+        setPicked(null);
+        return;
+      }
+      onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, picked]);
+
+  const {
+    clips: trackClips,
+    length: trackLength,
+    remove: removeClip,
+    duplicate: duplicateClip,
+    split: splitClip,
+    move: moveClip,
+    getPosition: trackPosition,
+  } = arrangement;
+
+  useEffect(() => {
+    if (picked && !trackClips.some((clip) => clip.id === picked)) setPicked(null);
+  }, [picked, trackClips]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || !picked) return;
+      const el = document.activeElement as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable))
+        return;
+      const clip = trackClips.find((c) => c.id === picked);
+      if (!clip) return;
+      const step = e.shiftKey ? 1 : 0.1;
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        removeClip(clip.id);
+        setPicked(null);
+      } else if (e.key === "d" || e.key === "D") {
+        e.preventDefault();
+        setPicked(duplicateClip(clip.id));
+      } else if (e.key === "s" || e.key === "S") {
+        e.preventDefault();
+        splitClip(clip.id, trackPosition());
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        moveClip(clip.id, clip.lane, Math.max(0, clip.at - step));
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        moveClip(clip.id, clip.lane, clip.at + step);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        moveClip(clip.id, clip.lane - 1, clip.at);
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        moveClip(clip.id, clip.lane + 1, clip.at);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [picked, trackClips, removeClip, duplicateClip, splitClip, moveClip, trackPosition]);
+
+  const fitTrack = () => {
+    const el = laneRef.current;
+    if (!el || trackLength <= 0) return;
+    setPps(Math.max(18, Math.min(110, Math.floor((el.clientWidth - 20) / (trackLength + 1)))));
+  };
 
   const {
     activeTake,
@@ -373,6 +549,7 @@ export function StudioView({
     bounceTake,
     isExporting,
     selectTake,
+    cutTake,
     nameOf,
   } = recorder;
   const { track: loaded, region: trackRegion, setRegion: setTrackRegion } = track;
@@ -382,7 +559,7 @@ export function StudioView({
     onTrack && loaded
       ? loaded.name
       : activeTake
-        ? `${nameOf(activeTake, activeRig)} · ${rigMeta(activeRig).name}`
+        ? nameOf(activeTake, activeRig)
         : "NOTHING SELECTED";
 
   const color = onTrack ? PALETTE.cream : rigMeta(activeRig).color;
@@ -422,6 +599,16 @@ export function StudioView({
   };
 
   const reset = () => onRegion(0, duration);
+
+  const cut = async () => {
+    if (cutting || !activeTake) return;
+    setCutting(true);
+    try {
+      await cutTake();
+    } finally {
+      setCutting(false);
+    }
+  };
 
   const pinned = !!activeTake && loop.slot?.id === activeTake.id;
 
@@ -621,18 +808,18 @@ export function StudioView({
                   accent={accent}
                   strong
                   disabled={!hasClips || arrangement.isExporting}
-                  title="Mix every clip down to one MP3"
+                  title="Mix every clip down to one MP3, trimmed to where the audio starts"
                 />
               </div>
             }
           >
             {hasClips ? (
-              <div className="flex flex-col xl:flex-row min-w-0" style={{ gap: 12 }}>
+              <div className="flex flex-col xl:flex-row flex-1 min-w-0 min-h-0" style={{ gap: 12 }}>
                 <div
-                  className="shrink-0 overflow-y-auto w-full xl:w-[252px]"
+                  className="shrink-0 overflow-y-auto w-full xl:w-[252px] xl:self-start"
                   style={{
                     maxWidth: 272,
-                    maxHeight: 210,
+                    maxHeight: "100%",
                     padding: "8px 8px 10px",
                     borderRadius: 10,
                     border: "1px solid rgba(231,228,220,0.08)",
@@ -641,8 +828,30 @@ export function StudioView({
                 >
                   <TrackMixer arrangement={arrangement} accent={accent} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <Timeline arrangement={arrangement} accent={accent} pps={pps} />
+                <div
+                  ref={laneRef}
+                  className="flex-1 flex flex-col min-w-0 min-h-0"
+                  style={{ gap: 8 }}
+                >
+                  <ClipTools
+                    arrangement={arrangement}
+                    accent={accent}
+                    selected={picked}
+                    onSelect={setPicked}
+                    snap={snap}
+                    onSnap={() => setSnap((v) => !v)}
+                    onFit={fitTrack}
+                  />
+                  <div className="flex-1 min-h-[286px]">
+                    <Timeline
+                      arrangement={arrangement}
+                      accent={accent}
+                      pps={pps}
+                      snap={snap}
+                      selected={picked}
+                      onSelect={setPicked}
+                    />
+                  </div>
                 </div>
               </div>
             ) : (
@@ -654,6 +863,7 @@ export function StudioView({
 
           <Panel
             label={title}
+            left={!onTrack ? <TakeRigChip recorder={recorder} height={24} /> : undefined}
             right={
               duration > 0 ? (
                 <div className="flex items-center flex-wrap" style={{ gap: 12 }}>
@@ -734,6 +944,32 @@ export function StudioView({
                 disabled={!trimmed}
                 title="Undo the trim, back to the whole thing"
               />
+              {!onTrack && (
+                <Action
+                  label={cutting ? "CUTTING..." : "CUT"}
+                  onClick={() => void cut()}
+                  accent={accent}
+                  strong={trimmed}
+                  disabled={!activeTake || !trimmed || cutting}
+                  title={
+                    trimmed
+                      ? "Keep just this selection as a new take"
+                      : "Drag the handles to pick a section first"
+                  }
+                  icon={
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                      <circle cx="4" cy="12" r="1.9" stroke="currentColor" strokeWidth="1.5" />
+                      <circle cx="12" cy="12" r="1.9" stroke="currentColor" strokeWidth="1.5" />
+                      <path
+                        d="M11.2 2.4 5.1 10.6M4.8 2.4l6.1 8.2"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  }
+                />
+              )}
               <Action
                 label={repeating ? "↻ REPEAT" : "↻ ONCE"}
                 onClick={onRepeat}

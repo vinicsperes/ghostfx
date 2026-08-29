@@ -1,7 +1,7 @@
 export const LANES = 4;
-export const LANE_H = 40;
-export const LANE_GAP = 4;
-export const RULER_H = 18;
+export const LANE_H = 58;
+export const LANE_GAP = 6;
+export const RULER_H = 22;
 
 export function slotAt(
   rect: DOMRect,

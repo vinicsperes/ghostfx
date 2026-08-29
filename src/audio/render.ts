@@ -57,6 +57,21 @@ export function startBacking(
   return { source, gain };
 }
 
+export function sliceBuffer(
+  ctx: BaseAudioContext,
+  buffer: AudioBuffer,
+  from: number,
+  to: number,
+): AudioBuffer {
+  const rate = buffer.sampleRate;
+  const start = Math.max(0, Math.min(buffer.length - 1, Math.floor(from * rate)));
+  const end = Math.min(buffer.length, Math.max(start + 1, Math.ceil(to * rate)));
+  const out = ctx.createBuffer(buffer.numberOfChannels, end - start, rate);
+  for (let ch = 0; ch < buffer.numberOfChannels; ch++)
+    out.copyToChannel(buffer.getChannelData(ch).subarray(start, end), ch);
+  return out;
+}
+
 function limiterNode(ctx: BaseAudioContext): WaveShaperNode {
   const limiter = ctx.createWaveShaper();
   limiter.curve = createLimiterCurve();
