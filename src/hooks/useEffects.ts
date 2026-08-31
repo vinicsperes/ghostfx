@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  createCompCurve,
   createDistortionCurve,
   createLimiterCurve,
   createTapeCurve,
@@ -326,6 +327,15 @@ export function useEffects({
     const { toneFilter } = nodesRef.current;
     toneFilter?.frequency.setTargetAtTime(600 * Math.pow(20, tone), ctx.currentTime, 0.05);
   }, [tone]);
+
+  useEffect(() => {
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    const { compEnv, compMap } = nodesRef.current;
+    const comp = rigAt(presetIdx).comp;
+    compEnv?.frequency.setTargetAtTime(comp.speed, ctx.currentTime, 0.05);
+    if (compMap) compMap.curve = createCompCurve(comp);
+  }, [presetIdx]);
 
   useEffect(() => {
     const ctx = ctxRef.current;

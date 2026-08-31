@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   cabTrim,
+  createCompCurve,
   createDistortionCurve,
+  createRectifierCurve,
   createLimiterCurve,
   createTapeCurve,
   driveOversample,
@@ -50,6 +52,9 @@ type SynthNodes = {
   preGain: GainNode;
   drive: WaveShaperNode;
   driveTrim: GainNode;
+  compEnv: BiquadFilterNode;
+  compMap: WaveShaperNode;
+  compGain: GainNode;
   cabHP: BiquadFilterNode;
   cabBody: BiquadFilterNode;
   cabPres: BiquadFilterNode;
@@ -136,6 +141,22 @@ export function useSynth({
 
     const driveTrim = ctx.createGain();
     driveTrim.gain.value = synthDriveTrim(p.drive, dp.shape) * cabTrim(rig.cab, ctx.sampleRate);
+
+    const compRect = ctx.createWaveShaper();
+    compRect.curve = createRectifierCurve();
+    compRect.oversample = "none";
+
+    const compEnv = ctx.createBiquadFilter();
+    compEnv.type = "lowpass";
+    compEnv.frequency.value = rig.comp.speed;
+    compEnv.Q.value = 0.5;
+
+    const compMap = ctx.createWaveShaper();
+    compMap.curve = createCompCurve(rig.comp);
+    compMap.oversample = "none";
+
+    const compGain = ctx.createGain();
+    compGain.gain.value = 0;
 
     const cabHP = ctx.createBiquadFilter();
     cabHP.type = "highpass";
@@ -285,7 +306,12 @@ export function useSynth({
     preGain.connect(driveNode);
     driveNode.connect(driveTrim);
     driveTrim.connect(dcBlock);
-    dcBlock.connect(cabHP);
+    dcBlock.connect(compRect);
+    compRect.connect(compEnv);
+    compEnv.connect(compMap);
+    compMap.connect(compGain.gain);
+    dcBlock.connect(compGain);
+    compGain.connect(cabHP);
     cabHP.connect(cabBody);
     cabBody.connect(cabPres);
     cabPres.connect(cabLP);
@@ -318,6 +344,9 @@ export function useSynth({
       preGain,
       drive: driveNode,
       driveTrim,
+      compEnv,
+      compMap,
+      compGain,
       cabHP,
       cabBody,
       cabPres,
@@ -368,6 +397,8 @@ export function useSynth({
       t,
       0.05,
     );
+    n.compEnv.frequency.setTargetAtTime(rig.comp.speed, t, 0.05);
+    n.compMap.curve = createCompCurve(rig.comp);
     n.cabHP.frequency.setTargetAtTime(rig.cab.lowCut, t, 0.05);
     n.cabBody.frequency.setTargetAtTime(rig.cab.bodyHz, t, 0.05);
     n.cabBody.gain.setTargetAtTime(rig.cab.bodyGain, t, 0.05);

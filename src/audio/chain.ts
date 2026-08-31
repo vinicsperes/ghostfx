@@ -1,5 +1,7 @@
 import {
+  createCompCurve,
   createDistortionCurve,
+  createRectifierCurve,
   createReverbIR,
   createTapeCurve,
   driveOversample,
@@ -23,6 +25,10 @@ export type ChainNodes = {
   preGain: GainNode;
   drive: WaveShaperNode;
   driveTrim: GainNode;
+  compRect: WaveShaperNode;
+  compEnv: BiquadFilterNode;
+  compMap: WaveShaperNode;
+  compGain: GainNode;
   cabHP: BiquadFilterNode;
   cabBody: BiquadFilterNode;
   cabPres: BiquadFilterNode;
@@ -168,6 +174,22 @@ export function buildChain(
   const driveTrim = ctx.createGain();
   driveTrim.gain.value = dp.trim;
 
+  const compRect = ctx.createWaveShaper();
+  compRect.curve = createRectifierCurve();
+  compRect.oversample = "none";
+
+  const compEnv = ctx.createBiquadFilter();
+  compEnv.type = "lowpass";
+  compEnv.frequency.value = rig.comp.speed;
+  compEnv.Q.value = 0.5;
+
+  const compMap = ctx.createWaveShaper();
+  compMap.curve = createCompCurve(rig.comp);
+  compMap.oversample = "none";
+
+  const compGain = ctx.createGain();
+  compGain.gain.value = 0;
+
   const cabHP = ctx.createBiquadFilter();
   cabHP.type = "highpass";
   cabHP.frequency.value = cab.lowCut;
@@ -283,7 +305,12 @@ export function buildChain(
   midEmphasis.connect(preGain);
   preGain.connect(drive);
   drive.connect(driveTrim);
-  driveTrim.connect(cabHP);
+  driveTrim.connect(compRect);
+  compRect.connect(compEnv);
+  compEnv.connect(compMap);
+  compMap.connect(compGain.gain);
+  driveTrim.connect(compGain);
+  compGain.connect(cabHP);
   cabHP.connect(cabBody);
   cabBody.connect(cabPres);
   cabPres.connect(cabLP);
@@ -330,6 +357,10 @@ export function buildChain(
       preGain,
       drive,
       driveTrim,
+      compRect,
+      compEnv,
+      compMap,
+      compGain,
       cabHP,
       cabBody,
       cabPres,

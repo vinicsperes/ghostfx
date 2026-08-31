@@ -209,6 +209,35 @@ export function cabTrim(cab: CabShape, rate = 48000): number {
   return Math.sqrt(flat / Math.max(shaped, 1e-12));
 }
 
+const COMP_STEPS = 2048;
+const COMP_KNEE_DB = 8;
+
+type CompShape = { threshold: number; ratio: number; makeup: number };
+
+export function createRectifierCurve(): Float32Array<ArrayBuffer> {
+  const curve = new Float32Array(COMP_STEPS);
+  for (let i = 0; i < COMP_STEPS; i++) curve[i] = Math.abs((i / (COMP_STEPS - 1)) * 2 - 1);
+  return curve;
+}
+
+export function createCompCurve(comp: CompShape): Float32Array<ArrayBuffer> {
+  const curve = new Float32Array(COMP_STEPS);
+  const slope = 1 - 1 / Math.max(1, comp.ratio);
+  const half = COMP_KNEE_DB / 2;
+  for (let i = 0; i < COMP_STEPS; i++) {
+    const env = Math.max(0, (i / (COMP_STEPS - 1)) * 2 - 1);
+    const over = 20 * Math.log10(Math.max(env, 1e-5)) - comp.threshold;
+    const cut =
+      over >= half
+        ? over * slope
+        : over > -half
+          ? (slope * (over + half) * (over + half)) / (2 * COMP_KNEE_DB)
+          : 0;
+    curve[i] = Math.pow(10, (comp.makeup - cut) / 20);
+  }
+  return curve;
+}
+
 export const LIMITER_THRESHOLD = 0.82;
 
 export function createLimiterCurve(threshold = LIMITER_THRESHOLD): Float32Array<ArrayBuffer> {
