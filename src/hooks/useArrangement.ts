@@ -18,7 +18,24 @@ export type Clip = {
   peaks: Float32Array;
 };
 
+export type Lane = {
+  name: string;
+  level: number;
+  pan: number;
+  muted: boolean;
+  solo: boolean;
+};
+
 const MIN_CLIP_S = 0.15;
+
+const freshLanes = (): Lane[] =>
+  Array.from({ length: LANES }, (_, i) => ({
+    name: `LANE ${i + 1}`,
+    level: 0.9,
+    pan: 0,
+    muted: false,
+    solo: false,
+  }));
 
 export function clipLength(clip: Clip): number {
   return Math.max(0, clip.out - clip.in);
@@ -30,12 +47,14 @@ const newId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContext | null> }) {
   const [clips, setClips] = useState<Clip[]>([]);
+  const [lanes, setLanes] = useState<Lane[]>(freshLanes);
   const [isPlaying, setIsPlaying] = useState(false);
   const [master, setMasterState] = useState(0.9);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const clipsRef = useRef<Clip[]>([]);
+  const lanesRef = useRef<Lane[]>(freshLanes());
   const sourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const gainRef = useRef<GainNode | null>(null);
   const masterRef = useRef(0.9);
@@ -45,6 +64,17 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
   const timerRef = useRef<number | null>(null);
 
   const length = clips.reduce((max, clip) => Math.max(max, clip.at + clipLength(clip)), 0);
+
+  const voices = useCallback((list: Clip[], rows: Lane[]) => {
+    const soloed = rows.some((lane) => lane.solo);
+    return list
+      .map((clip) => {
+        const lane = rows[clip.lane] ?? rows[0];
+        const off = clip.muted || lane.muted || (soloed && !lane.solo);
+        return { clip, lane, gain: off ? 0 : clip.level * lane.level };
+      })
+      .filter((voice) => voice.gain > 0);
+  }, []);
 
   const stopSources = useCallback(() => {
     if (timerRef.current) {
@@ -93,15 +123,17 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
     const when = ctx.currentTime + 0.05;
     originRef.current = when - phase;
 
-    for (const clip of list) {
+    for (const { clip, lane, gain: level } of voices(list, lanesRef.current)) {
       const span = clipLength(clip);
       if (clip.at + span <= phase) continue;
-      if (clip.muted) continue;
       const src = ctx.createBufferSource();
       src.buffer = clip.buffer;
       const gain = ctx.createGain();
-      gain.gain.value = clip.level;
-      gain.connect(gainRef.current);
+      gain.gain.value = level;
+      const pan = ctx.createStereoPanner();
+      pan.pan.value = lane.pan;
+      gain.connect(pan);
+      pan.connect(gainRef.current);
       src.connect(gain);
       const into = Math.max(0, phase - clip.at);
       src.start(when + Math.max(0, clip.at - phase), clip.in + into, span - into);
@@ -114,15 +146,14 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
     if (mixRef.current?.length !== total) {
       mixRef.current = null;
       void renderArrangement(
-        list
-          .filter((clip) => !clip.muted)
-          .map((clip) => ({
-            buffer: clip.buffer,
-            at: clip.at,
-            from: clip.in,
-            span: clipLength(clip),
-            level: clip.level,
-          })),
+        voices(list, lanesRef.current).map(({ clip, lane, gain }) => ({
+          buffer: clip.buffer,
+          at: clip.at,
+          from: clip.in,
+          span: clipLength(clip),
+          level: gain,
+          pan: lane.pan,
+        })),
         ctx.sampleRate,
         masterRef.current,
       ).then((buffer) => {
@@ -138,7 +169,7 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
       },
       (total - phase) * 1000 + 120,
     );
-  }, [ctxRef, stopSources]);
+  }, [ctxRef, stopSources, voices]);
 
   const toggle = useCallback(() => {
     if (sourcesRef.current.length) pause();
@@ -304,6 +335,41 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
     [commit],
   );
 
+  const editLane = useCallback((index: number, patch: Partial<Lane>) => {
+    const next = lanesRef.current.map((lane, i) => (i === index ? { ...lane, ...patch } : lane));
+    lanesRef.current = next;
+    mixRef.current = null;
+    setLanes(next);
+  }, []);
+
+  const setLaneLevel = useCallback(
+    (index: number, level: number) => editLane(index, { level: Math.max(0, Math.min(1, level)) }),
+    [editLane],
+  );
+
+  const setLanePan = useCallback(
+    (index: number, pan: number) => editLane(index, { pan: Math.max(-1, Math.min(1, pan)) }),
+    [editLane],
+  );
+
+  const toggleLaneMute = useCallback(
+    (index: number) => editLane(index, { muted: !lanesRef.current[index].muted }),
+    [editLane],
+  );
+
+  const toggleLaneSolo = useCallback(
+    (index: number) => editLane(index, { solo: !lanesRef.current[index].solo }),
+    [editLane],
+  );
+
+  const renameLane = useCallback(
+    (index: number, name: string) => {
+      const clean = name.trim().slice(0, 14);
+      editLane(index, { name: clean || `LANE ${index + 1}` });
+    },
+    [editLane],
+  );
+
   const setMaster = useCallback(
     (next: number) => {
       const clamped = Math.max(0, Math.min(1, next));
@@ -327,6 +393,8 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
     stopSources();
     phaseRef.current = 0;
     setIsPlaying(false);
+    lanesRef.current = freshLanes();
+    setLanes(lanesRef.current);
     commit([]);
   }, [commit, stopSources]);
 
@@ -336,16 +404,17 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
     if (!ctx || !list.length || isExporting) return;
     setIsExporting(true);
     try {
-      const live = list.filter((clip) => !clip.muted);
-      const head = live.reduce((min, clip) => Math.min(min, clip.at), Infinity);
+      const live = voices(list, lanesRef.current);
+      const head = live.reduce((min, { clip }) => Math.min(min, clip.at), Infinity);
       const origin = Number.isFinite(head) ? head : 0;
       const rendered = await renderArrangement(
-        live.map((clip) => ({
+        live.map(({ clip, lane, gain }) => ({
           buffer: clip.buffer,
           at: Math.max(0, clip.at - origin),
           from: clip.in,
           span: clipLength(clip),
-          level: clip.level,
+          level: gain,
+          pan: lane.pan,
         })),
         ctx.sampleRate,
         masterRef.current,
@@ -372,7 +441,7 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
     } finally {
       setIsExporting(false);
     }
-  }, [ctxRef, isExporting]);
+  }, [ctxRef, isExporting, voices]);
 
   const teardown = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -389,6 +458,12 @@ export function useArrangement({ ctxRef }: { ctxRef: React.RefObject<AudioContex
 
   return {
     clips,
+    lanes,
+    setLaneLevel,
+    setLanePan,
+    toggleLaneMute,
+    toggleLaneSolo,
+    renameLane,
     length,
     isPlaying,
     isExporting,

@@ -15,7 +15,7 @@ export { SourceMenu } from "./SourceMenu";
 export { TakeSignal } from "./TakeSignal";
 export { StudioView } from "./StudioView";
 export { Timeline } from "./Timeline";
-export { TrackMixer } from "./TrackMixer";
+export { LaneHeads } from "./LaneHeads";
 export { RigChip } from "./RigChip";
 export { TakeRigChip, RigOptions } from "./RigPicker";
 export { TempoChip } from "./TempoChip";

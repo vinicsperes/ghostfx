@@ -17,11 +17,13 @@ import { InputMeter } from "./Deck";
 import { Timeline } from "./Timeline";
 import { RigChip } from "./RigChip";
 import { TempoChip } from "./TempoChip";
-import { TrackMixer } from "./TrackMixer";
+import { HEADS_W } from "./LaneHeads";
+import { RULER_H } from "../lib/timeline";
 import { TunerChip } from "./TunerChip";
 import { TakeSignal } from "./TakeSignal";
 import { TakeRigChip } from "./RigPicker";
 import { WaveEditor } from "./WaveEditor";
+import { bg } from "../lib/perf";
 
 function Action({
   label,
@@ -192,26 +194,6 @@ function IconAction({
         </svg>
       )}
     </button>
-  );
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      className="flex flex-1 items-center justify-center font-[var(--font-mono)]"
-      style={{
-        minHeight: 64,
-        borderRadius: 8,
-        border: "1px dashed rgba(231,228,220,0.12)",
-        fontSize: 9.5,
-        letterSpacing: "0.1em",
-        color: "rgba(231,228,220,0.3)",
-        textAlign: "center",
-        padding: "0 12px",
-      }}
-    >
-      {children}
-    </div>
   );
 }
 
@@ -460,7 +442,15 @@ export function StudioView({
   const [pps, setPps] = useState(40);
   const [snap, setSnap] = useState(true);
   const [picked, setPicked] = useState<string | null>(null);
+  const [laneSel, setLaneSel] = useState<number | null>(0);
   const laneRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bg.covered = true;
+    return () => {
+      bg.covered = false;
+    };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -643,6 +633,7 @@ export function StudioView({
         name: onTrack && loaded ? loaded.name : activeTake ? nameOf(activeTake, activeRig) : "clip",
         color,
         buffer,
+        lane: laneSel ?? undefined,
       });
     } finally {
       setSending(false);
@@ -780,6 +771,24 @@ export function StudioView({
               <div className="flex items-center flex-wrap" style={{ gap: 10 }}>
                 <Readout label="length" value={clock(arrangement.length)} />
                 <Readout label="clips" value={String(arrangement.clips.length)} />
+                <div className="flex items-center" style={{ gap: 6, width: 116 }}>
+                  <span
+                    className="font-[var(--font-mono)] uppercase shrink-0"
+                    style={{
+                      fontSize: 8,
+                      letterSpacing: "0.16em",
+                      color: "rgba(231,228,220,0.32)",
+                    }}
+                  >
+                    all
+                  </span>
+                  <Fader
+                    label=""
+                    value={arrangement.master}
+                    accent={accent}
+                    onChange={arrangement.setMaster}
+                  />
+                </div>
                 {hasClips && (
                   <>
                     <Action
@@ -813,50 +822,49 @@ export function StudioView({
               </div>
             }
           >
-            {hasClips ? (
-              <div className="flex flex-col xl:flex-row flex-1 min-w-0 min-h-0" style={{ gap: 12 }}>
-                <div
-                  className="shrink-0 overflow-y-auto w-full xl:w-[252px] xl:self-start"
-                  style={{
-                    maxWidth: 272,
-                    maxHeight: "100%",
-                    padding: "8px 8px 10px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(231,228,220,0.08)",
-                    background: "rgba(255,255,255,0.015)",
-                  }}
-                >
-                  <TrackMixer arrangement={arrangement} accent={accent} />
-                </div>
-                <div
-                  ref={laneRef}
-                  className="flex-1 flex flex-col min-w-0 min-h-0"
-                  style={{ gap: 8 }}
-                >
-                  <ClipTools
-                    arrangement={arrangement}
-                    accent={accent}
-                    selected={picked}
-                    onSelect={setPicked}
-                    snap={snap}
-                    onSnap={() => setSnap((v) => !v)}
-                    onFit={fitTrack}
-                  />
-                  <div className="flex-1 min-h-[286px]">
-                    <Timeline
-                      arrangement={arrangement}
-                      accent={accent}
-                      pps={pps}
-                      snap={snap}
-                      selected={picked}
-                      onSelect={setPicked}
-                    />
+            <div ref={laneRef} className="flex-1 flex flex-col min-w-0 min-h-0" style={{ gap: 8 }}>
+              <ClipTools
+                arrangement={arrangement}
+                accent={accent}
+                selected={picked}
+                onSelect={setPicked}
+                snap={snap}
+                onSnap={() => setSnap((v) => !v)}
+                onFit={fitTrack}
+              />
+              <div className="flex-1 min-h-[300px]" style={{ position: "relative" }}>
+                <Timeline
+                  arrangement={arrangement}
+                  accent={accent}
+                  pps={pps}
+                  snap={snap}
+                  selected={picked}
+                  onSelect={setPicked}
+                  lane={laneSel}
+                  onLane={setLaneSel}
+                />
+                {!hasClips && (
+                  <div
+                    className="font-[var(--font-mono)] flex items-center justify-center"
+                    style={{
+                      position: "absolute",
+                      left: HEADS_W + 1,
+                      right: 1,
+                      top: RULER_H + 1,
+                      bottom: 1,
+                      fontSize: 10,
+                      letterSpacing: "0.14em",
+                      color: "rgba(231,228,220,0.3)",
+                      textAlign: "center",
+                      pointerEvents: "none",
+                      padding: "0 16px",
+                    }}
+                  >
+                    SEND A TAKE UP HERE AND IT LANDS ON A LANE
                   </div>
-                </div>
+                )}
               </div>
-            ) : (
-              <Empty>PICK SOMETHING BELOW AND SEND IT UP HERE</Empty>
-            )}
+            </div>
           </Panel>
 
           <LoopLane loop={loop} />

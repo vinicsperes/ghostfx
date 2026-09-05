@@ -3,6 +3,7 @@ import type { useArrangement } from "../hooks/useArrangement";
 import { clipLength } from "../hooks/useArrangement";
 import { LANES, LANE_H, LANE_GAP, RULER_H } from "../lib/timeline";
 import { clock } from "../lib/format";
+import { LaneHeads } from "./LaneHeads";
 
 const MIN_SECONDS = 20;
 const EDGE = 9;
@@ -70,6 +71,8 @@ export function Timeline({
   snap = true,
   selected,
   onSelect,
+  lane: laneSel,
+  onLane,
 }: {
   arrangement: ReturnType<typeof useArrangement>;
   accent: string;
@@ -77,6 +80,8 @@ export function Timeline({
   snap?: boolean;
   selected: string | null;
   onSelect: (id: string | null) => void;
+  lane: number | null;
+  onLane: (lane: number) => void;
 }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [laneH, setLaneH] = useState(LANE_H);
@@ -85,7 +90,7 @@ export function Timeline({
     const el = boxRef.current;
     if (!el) return;
     const measure = () => {
-      const room = el.clientHeight - RULER_H - (LANES - 1) * LANE_GAP - 14;
+      const room = el.clientHeight - RULER_H - (LANES - 1) * LANE_GAP - 4;
       setLaneH(Math.max(LANE_H, Math.min(124, Math.floor(room / LANES))));
     };
     measure();
@@ -237,256 +242,269 @@ export function Timeline({
   return (
     <div
       ref={boxRef}
-      className="overflow-x-auto overflow-y-hidden"
+      className="flex"
       style={{
         height: "100%",
         borderRadius: 10,
         border: "1px solid rgba(231,228,220,0.08)",
         background: "rgba(0,0,0,0.35)",
+        overflow: "hidden",
       }}
     >
-      <div ref={wrapRef} style={{ position: "relative", width, height, minWidth: "100%" }}>
-        <div
-          onPointerDown={(e) => {
-            e.currentTarget.setPointerCapture(e.pointerId);
-            scrubRef.current = true;
-            scrub(e.clientX);
-          }}
-          onPointerMove={(e) => scrubRef.current && scrub(e.clientX)}
-          onPointerUp={(e) => {
-            scrubRef.current = false;
-            e.currentTarget.releasePointerCapture?.(e.pointerId);
-          }}
-          onPointerCancel={() => {
-            scrubRef.current = false;
-          }}
-          style={{
-            position: "absolute",
-            inset: "0 0 auto 0",
-            height: RULER_H,
-            borderBottom: "1px solid rgba(231,228,220,0.07)",
-            cursor: "ew-resize",
-            touchAction: "none",
-          }}
-        >
-          {Array.from({ length: Math.floor(seconds / ticks) + 1 }, (_, i) => {
-            const at = i * ticks;
-            const strong = at % label === 0;
+      <LaneHeads
+        arrangement={arrangement}
+        accent={accent}
+        laneH={laneH}
+        selected={laneSel}
+        onSelect={onLane}
+      />
+      <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden">
+        <div ref={wrapRef} style={{ position: "relative", width, height, minWidth: "100%" }}>
+          <div
+            onPointerDown={(e) => {
+              e.currentTarget.setPointerCapture(e.pointerId);
+              scrubRef.current = true;
+              scrub(e.clientX);
+            }}
+            onPointerMove={(e) => scrubRef.current && scrub(e.clientX)}
+            onPointerUp={(e) => {
+              scrubRef.current = false;
+              e.currentTarget.releasePointerCapture?.(e.pointerId);
+            }}
+            onPointerCancel={() => {
+              scrubRef.current = false;
+            }}
+            style={{
+              position: "absolute",
+              inset: "0 0 auto 0",
+              height: RULER_H,
+              borderBottom: "1px solid rgba(231,228,220,0.07)",
+              cursor: "ew-resize",
+              touchAction: "none",
+            }}
+          >
+            {Array.from({ length: Math.floor(seconds / ticks) + 1 }, (_, i) => {
+              const at = i * ticks;
+              const strong = at % label === 0;
+              return (
+                <div
+                  key={at}
+                  style={{
+                    position: "absolute",
+                    left: at * pps,
+                    top: strong ? 0 : RULER_H - 5,
+                    bottom: 0,
+                    width: 1,
+                    background: strong ? "rgba(231,228,220,0.18)" : "rgba(231,228,220,0.07)",
+                  }}
+                >
+                  {strong && (
+                    <span
+                      className="font-[var(--font-mono)]"
+                      style={{
+                        position: "absolute",
+                        left: 3,
+                        top: 3,
+                        fontSize: 8,
+                        fontVariantNumeric: "tabular-nums",
+                        color: "rgba(231,228,220,0.4)",
+                      }}
+                    >
+                      {clock(at)}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {Array.from({ length: LANES }, (_, lane) => (
+            <div
+              key={lane}
+              onPointerDown={() => {
+                onSelect(null);
+                onLane(lane);
+              }}
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: laneTop(lane),
+                height: laneH,
+                borderRadius: 7,
+                background:
+                  dropLane === lane
+                    ? `${accent}0f`
+                    : lane % 2 === 0
+                      ? "rgba(255,255,255,0.016)"
+                      : "transparent",
+                border: `1px solid ${dropLane === lane ? accent + "3d" : "rgba(231,228,220,0.05)"}`,
+              }}
+            />
+          ))}
+
+          {clips.map((clip) => {
+            const on = selected === clip.id;
+            const lit = on || hover === clip.id || dragging === clip.id;
+            const span = clipLength(clip);
+            const wide = Math.max(30, span * pps);
             return (
               <div
-                key={at}
+                key={clip.id}
+                data-clip={clip.id}
+                onPointerDown={(e) => onClipDown(e, clip.id)}
+                onPointerMove={onClipMove}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+                onPointerEnter={() => setHover(clip.id)}
+                onPointerLeave={() => setHover((id) => (id === clip.id ? null : id))}
+                title={`${clip.name} · ${clock(span)} · drag to move, drag the edges to trim`}
                 style={{
                   position: "absolute",
-                  left: at * pps,
-                  top: strong ? 0 : RULER_H - 5,
-                  bottom: 0,
-                  width: 1,
-                  background: strong ? "rgba(231,228,220,0.18)" : "rgba(231,228,220,0.07)",
+                  left: clip.at * pps,
+                  top: laneTop(clip.lane),
+                  width: wide,
+                  height: laneH,
+                  borderRadius: 6,
+                  overflow: "hidden",
+                  border: `1px solid ${on ? clip.color : lit ? clip.color + "88" : clip.color + "4d"}`,
+                  background: `linear-gradient(180deg, ${clip.color}${on ? "30" : "1f"}, rgba(0,0,0,0.4))`,
+                  boxShadow: on
+                    ? `0 0 0 1px ${clip.color}55, 0 8px 22px rgba(0,0,0,0.55)`
+                    : dragging === clip.id
+                      ? "0 8px 22px rgba(0,0,0,0.55)"
+                      : "none",
+                  opacity: clip.muted ? 0.42 : 1,
+                  cursor: dragging === clip.id ? "grabbing" : "grab",
+                  touchAction: "none",
+                  zIndex: dragging === clip.id ? 3 : on ? 2 : 1,
                 }}
               >
-                {strong && (
+                <div
+                  className="flex items-center"
+                  style={{ height: HEAD_H, padding: "0 3px 0 6px", gap: 5 }}
+                >
                   <span
-                    className="font-[var(--font-mono)]"
+                    className="font-[var(--font-mono)] truncate"
                     style={{
-                      position: "absolute",
-                      left: 3,
-                      top: 3,
+                      fontSize: 8.5,
+                      letterSpacing: "0.06em",
+                      color: clip.color,
+                      opacity: on ? 1 : 0.85,
+                    }}
+                  >
+                    {clip.name}
+                  </span>
+                  <span
+                    className="font-[var(--font-mono)] shrink-0"
+                    style={{
                       fontSize: 8,
                       fontVariantNumeric: "tabular-nums",
                       color: "rgba(231,228,220,0.4)",
                     }}
                   >
-                    {clock(at)}
+                    {clock(span)}
                   </span>
+                  <div style={{ flex: 1 }} />
+                  <button
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => remove(clip.id)}
+                    aria-label="Remove clip"
+                    title="Remove clip"
+                    className="shrink-0"
+                    style={{
+                      fontSize: 11,
+                      lineHeight: 1,
+                      padding: "0 3px",
+                      color: lit ? "rgba(231,228,220,0.7)" : "rgba(231,228,220,0.3)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div style={{ pointerEvents: "none", padding: "0 1px" }}>
+                  <ClipWave
+                    peaks={clip.peaks}
+                    from={clip.in / clip.full}
+                    to={clip.out / clip.full}
+                    color={clip.color}
+                    width={Math.max(28, wide - 4)}
+                    height={laneH - HEAD_H - 4}
+                  />
+                </div>
+                {lit && (
+                  <>
+                    <span
+                      style={{
+                        position: "absolute",
+                        left: 0,
+                        top: HEAD_H,
+                        bottom: 0,
+                        width: EDGE,
+                        pointerEvents: "none",
+                        background: `linear-gradient(90deg, ${clip.color}66, transparent)`,
+                      }}
+                    />
+                    <span
+                      style={{
+                        position: "absolute",
+                        right: 0,
+                        top: HEAD_H,
+                        bottom: 0,
+                        width: EDGE,
+                        pointerEvents: "none",
+                        background: `linear-gradient(270deg, ${clip.color}66, transparent)`,
+                      }}
+                    />
+                  </>
                 )}
               </div>
             );
           })}
-        </div>
 
-        {Array.from({ length: LANES }, (_, lane) => (
+          {guide !== null && (
+            <div
+              style={{
+                position: "absolute",
+                left: guide * pps,
+                top: RULER_H,
+                bottom: 0,
+                width: 1,
+                background: accent,
+                opacity: 0.7,
+                pointerEvents: "none",
+                zIndex: 4,
+              }}
+            />
+          )}
+
           <div
-            key={lane}
-            onPointerDown={() => onSelect(null)}
+            ref={headRef}
             style={{
               position: "absolute",
               left: 0,
-              right: 0,
-              top: laneTop(lane),
-              height: laneH,
-              borderRadius: 7,
-              background:
-                dropLane === lane
-                  ? `${accent}0f`
-                  : lane % 2 === 0
-                    ? "rgba(255,255,255,0.016)"
-                    : "transparent",
-              border: `1px solid ${dropLane === lane ? accent + "3d" : "rgba(231,228,220,0.05)"}`,
-            }}
-          />
-        ))}
-
-        {clips.map((clip) => {
-          const on = selected === clip.id;
-          const lit = on || hover === clip.id || dragging === clip.id;
-          const span = clipLength(clip);
-          const wide = Math.max(30, span * pps);
-          return (
-            <div
-              key={clip.id}
-              data-clip={clip.id}
-              onPointerDown={(e) => onClipDown(e, clip.id)}
-              onPointerMove={onClipMove}
-              onPointerUp={endDrag}
-              onPointerCancel={endDrag}
-              onPointerEnter={() => setHover(clip.id)}
-              onPointerLeave={() => setHover((id) => (id === clip.id ? null : id))}
-              title={`${clip.name} · ${clock(span)} · drag to move, drag the edges to trim`}
-              style={{
-                position: "absolute",
-                left: clip.at * pps,
-                top: laneTop(clip.lane),
-                width: wide,
-                height: laneH,
-                borderRadius: 6,
-                overflow: "hidden",
-                border: `1px solid ${on ? clip.color : lit ? clip.color + "88" : clip.color + "4d"}`,
-                background: `linear-gradient(180deg, ${clip.color}${on ? "30" : "1f"}, rgba(0,0,0,0.4))`,
-                boxShadow: on
-                  ? `0 0 0 1px ${clip.color}55, 0 8px 22px rgba(0,0,0,0.55)`
-                  : dragging === clip.id
-                    ? "0 8px 22px rgba(0,0,0,0.55)"
-                    : "none",
-                opacity: clip.muted ? 0.42 : 1,
-                cursor: dragging === clip.id ? "grabbing" : "grab",
-                touchAction: "none",
-                zIndex: dragging === clip.id ? 3 : on ? 2 : 1,
-              }}
-            >
-              <div
-                className="flex items-center"
-                style={{ height: HEAD_H, padding: "0 3px 0 6px", gap: 5 }}
-              >
-                <span
-                  className="font-[var(--font-mono)] truncate"
-                  style={{
-                    fontSize: 8.5,
-                    letterSpacing: "0.06em",
-                    color: clip.color,
-                    opacity: on ? 1 : 0.85,
-                  }}
-                >
-                  {clip.name}
-                </span>
-                <span
-                  className="font-[var(--font-mono)] shrink-0"
-                  style={{
-                    fontSize: 8,
-                    fontVariantNumeric: "tabular-nums",
-                    color: "rgba(231,228,220,0.4)",
-                  }}
-                >
-                  {clock(span)}
-                </span>
-                <div style={{ flex: 1 }} />
-                <button
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => remove(clip.id)}
-                  aria-label="Remove clip"
-                  title="Remove clip"
-                  className="shrink-0"
-                  style={{
-                    fontSize: 11,
-                    lineHeight: 1,
-                    padding: "0 3px",
-                    color: lit ? "rgba(231,228,220,0.7)" : "rgba(231,228,220,0.3)",
-                    cursor: "pointer",
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-              <div style={{ pointerEvents: "none", padding: "0 1px" }}>
-                <ClipWave
-                  peaks={clip.peaks}
-                  from={clip.in / clip.full}
-                  to={clip.out / clip.full}
-                  color={clip.color}
-                  width={Math.max(28, wide - 4)}
-                  height={laneH - HEAD_H - 4}
-                />
-              </div>
-              {lit && (
-                <>
-                  <span
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      top: HEAD_H,
-                      bottom: 0,
-                      width: EDGE,
-                      pointerEvents: "none",
-                      background: `linear-gradient(90deg, ${clip.color}66, transparent)`,
-                    }}
-                  />
-                  <span
-                    style={{
-                      position: "absolute",
-                      right: 0,
-                      top: HEAD_H,
-                      bottom: 0,
-                      width: EDGE,
-                      pointerEvents: "none",
-                      background: `linear-gradient(270deg, ${clip.color}66, transparent)`,
-                    }}
-                  />
-                </>
-              )}
-            </div>
-          );
-        })}
-
-        {guide !== null && (
-          <div
-            style={{
-              position: "absolute",
-              left: guide * pps,
-              top: RULER_H,
+              top: 0,
               bottom: 0,
               width: 1,
-              background: accent,
-              opacity: 0.7,
+              background: "#e7e4dc",
+              boxShadow: `0 0 6px ${accent}`,
               pointerEvents: "none",
-              zIndex: 4,
+              zIndex: 5,
             }}
-          />
-        )}
-
-        <div
-          ref={headRef}
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 1,
-            background: "#e7e4dc",
-            boxShadow: `0 0 6px ${accent}`,
-            pointerEvents: "none",
-            zIndex: 5,
-          }}
-        >
-          <span
-            style={{
-              position: "absolute",
-              left: -4,
-              top: 0,
-              width: 9,
-              height: 7,
-              background: accent,
-              clipPath: "polygon(0 0, 100% 0, 50% 100%)",
-            }}
-          />
+          >
+            <span
+              style={{
+                position: "absolute",
+                left: -4,
+                top: 0,
+                width: 9,
+                height: 7,
+                background: accent,
+                clipPath: "polygon(0 0, 100% 0, 50% 100%)",
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>

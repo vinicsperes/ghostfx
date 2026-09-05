@@ -101,7 +101,14 @@ export async function renderLayers(
 }
 
 export async function renderArrangement(
-  clips: { buffer: AudioBuffer; at: number; from: number; span: number; level: number }[],
+  clips: {
+    buffer: AudioBuffer;
+    at: number;
+    from: number;
+    span: number;
+    level: number;
+    pan?: number;
+  }[],
   rate: number,
   master = 1,
 ): Promise<AudioBuffer> {
@@ -118,7 +125,14 @@ export async function renderArrangement(
     source.buffer = clip.buffer;
     const gain = ctx.createGain();
     gain.gain.value = clip.level;
-    gain.connect(bus);
+    if (clip.pan) {
+      const pan = ctx.createStereoPanner();
+      pan.pan.value = clip.pan;
+      gain.connect(pan);
+      pan.connect(bus);
+    } else {
+      gain.connect(bus);
+    }
     source.connect(gain);
     source.start(clip.at, clip.from, clip.span);
   }
