@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { useRecorder } from "../hooks/useRecorder";
 import { MAX_REC_MS, WARN_REC_MS } from "../hooks/useRecorder";
 import { clock } from "../lib/format";
+import { savings } from "../lib/perf";
 
 const REC = "#f53e3e";
 
@@ -50,10 +51,19 @@ export function TakeScope({
     const duration = activeDuration;
     const isPlaying = !!activeTake && playingId === activeTake.id;
 
+    let settled = false;
+
     const draw = () => {
       const dpr = window.devicePixelRatio || 1;
       const cssW = canvas.clientWidth || 520;
       const cssH = canvas.clientHeight || height;
+      const resized = canvas.width !== Math.round(cssW * dpr);
+      const still = !isRecording && !isPlaying && !(peaks && peaks.length > 0);
+      if (savings.on && still && settled && !resized) {
+        rafRef.current = requestAnimationFrame(draw);
+        return;
+      }
+      settled = still;
       if (canvas.width !== Math.round(cssW * dpr) || canvas.height !== Math.round(cssH * dpr)) {
         canvas.width = Math.round(cssW * dpr);
         canvas.height = Math.round(cssH * dpr);

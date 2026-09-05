@@ -17,6 +17,8 @@ import LoadingScreen from "./LoadingScreen";
 import OnboardingModal from "./OnboardingModal";
 import GhostMark from "./GhostMark";
 import PresetBg from "./background/PresetBg";
+import { perfOn } from "./lib/perf";
+import { PerfHud } from "./components/PerfHud";
 import { RIGS, PALETTE, rigAt, type RigKnobs } from "./data/presets";
 import {
   Deck,
@@ -347,6 +349,7 @@ export default function App() {
       )}
 
       <PresetBg presetIdx={presetIdx} introActive={!warningDone} />
+      {perfOn && <PerfHud />}
 
       <div
         className="absolute inset-0 pointer-events-none"

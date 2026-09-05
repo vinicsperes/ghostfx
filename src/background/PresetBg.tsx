@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { bgOpacity, BLEND_OUT, BLEND_IN, INTRO_IDX, buildShader, type GlState } from "./shaders";
+import { bg, savings } from "../lib/perf";
+
+const BG_FRAME_MS = 1000 / 30;
 
 export default function PresetBg({
   presetIdx,
@@ -15,6 +18,7 @@ export default function PresetBg({
   const glState = useRef<GlState | null>(null);
   const rafRef = useRef(0);
   const startRef = useRef(performance.now());
+  const drawnRef = useRef(0);
 
   const [canvasOpacity, setCanvasOpacity] = useState(bgOpacity(effIdx));
   const setOpacityRef = useRef(setCanvasOpacity);
@@ -110,6 +114,15 @@ export default function PresetBg({
       }
 
       const s = glState.current;
+      if (savings.on && (bg.covered || document.hidden)) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      if (savings.on && now - drawnRef.current < BG_FRAME_MS - 1) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      drawnRef.current = now;
       if (s && gl) {
         const time = (now - startRef.current) * 0.00012;
         gl.uniform1f(s.tLoc, time);
