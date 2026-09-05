@@ -6,7 +6,8 @@ export type DriveShape =
   | "smooth"
   | "starved"
   | "grunge"
-  | "tube";
+  | "tube"
+  | "turbo";
 
 function shapeScreamer(x: number, a: number): number {
   const k = Math.pow(a, 2.2) * 9;
@@ -69,6 +70,12 @@ function shapeTube(x: number, a: number): number {
   return y / (1 + a * 0.95);
 }
 
+function shapeTurbo(x: number, a: number): number {
+  const g = 2 + 22 * Math.pow(a, 1.1);
+  const bias = 0.095 * a;
+  return (softClip(g * x + bias, 4.3) - softClip(bias, 4.3)) * (0.63 / (1 + a * 0.34));
+}
+
 const DRIVE_SHAPES: Record<DriveShape, (x: number, a: number) => number> = {
   screamer: shapeScreamer,
   fuzz: shapeFuzz,
@@ -78,6 +85,7 @@ const DRIVE_SHAPES: Record<DriveShape, (x: number, a: number) => number> = {
   starved: shapeStarved,
   grunge: shapeGrunge,
   tube: shapeTube,
+  turbo: shapeTurbo,
 };
 
 export function createDistortionCurve(
@@ -99,7 +107,7 @@ export function driveOversample(amount: number, shape: DriveShape = "screamer"):
   if (shape === "starved") return amount >= 0.25 ? "2x" : "none";
   if (shape === "fuzz" || shape === "rectifier" || shape === "grunge")
     return amount >= 0.4 ? "2x" : "none";
-  if (shape === "tube") return amount >= 0.3 ? "2x" : "none";
+  if (shape === "tube" || shape === "turbo") return amount >= 0.3 ? "2x" : "none";
   return amount >= 0.6 ? "2x" : "none";
 }
 

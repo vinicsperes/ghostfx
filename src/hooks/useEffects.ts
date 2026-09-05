@@ -290,15 +290,35 @@ export function useEffects({
   });
 
   useEffect(() => {
-    const { drive: driveNode, driveTrim, preGain, preFilter, midEmphasis } = nodesRef.current;
+    const {
+      drive: driveNode,
+      driveTrim,
+      preGain,
+      preFilter,
+      midEmphasis,
+      stageHP,
+      stageLP,
+      stageGain,
+      stage2,
+    } = nodesRef.current;
     const dp = rigAt(presetIdx).drive;
     if (driveNode) {
       driveNode.curve = createDistortionCurve(drive, dp.shape);
       driveNode.oversample = driveOversample(drive, dp.shape);
     }
+    const s2 = dp.stage2;
+    if (stage2) {
+      stage2.curve = s2
+        ? createDistortionCurve(s2.amount * drive, s2.shape)
+        : createDistortionCurve(0, "clean");
+      stage2.oversample = s2 ? "2x" : "none";
+    }
     const ctx = ctxRef.current;
     if (!ctx) return;
     const t = ctx.currentTime;
+    stageGain?.gain.setTargetAtTime(s2 ? 1 + (s2.gain - 1) * drive : 1, t, 0.05);
+    stageHP?.frequency.setTargetAtTime(s2 ? s2.hp : 20, t, 0.05);
+    stageLP?.frequency.setTargetAtTime(s2 ? s2.lp : 20000, t, 0.05);
     preGain?.gain.setTargetAtTime(mapDrivePreGain(drive), t, 0.05);
     driveTrim?.gain.setTargetAtTime(dp.trim, t, 0.05);
     preFilter?.frequency.setTargetAtTime(dp.preHp, t, 0.05);
@@ -309,16 +329,31 @@ export function useEffects({
   useEffect(() => {
     const ctx = ctxRef.current;
     if (!ctx) return;
-    const { delay, lfoGain, feedback, delayLoopHP, delayLoopLP, delaySat, wet } = nodesRef.current;
+    const {
+      delay,
+      delayR,
+      panL,
+      panR,
+      lfoGain,
+      feedback,
+      delayLoopHP,
+      delayLoopLP,
+      delaySat,
+      wet,
+    } = nodesRef.current;
     const dl = rigAt(presetIdx).delay;
     const t = ctx.currentTime;
-    delay?.delayTime.setTargetAtTime(dl.timeMin + echo * (dl.timeMax - dl.timeMin), t, 0.05);
+    const time = dl.timeMin + echo * (dl.timeMax - dl.timeMin);
+    delay?.delayTime.setTargetAtTime(time, t, 0.05);
+    delayR?.delayTime.setTargetAtTime(time * dl.bounce, t, 0.05);
+    panL?.pan.setTargetAtTime(-dl.spread, t, 0.05);
+    panR?.pan.setTargetAtTime(dl.spread, t, 0.05);
     lfoGain?.gain.setTargetAtTime(0.003 * echo, t, 0.05);
     feedback?.gain.setTargetAtTime(dl.fbMin + echo * (dl.fbMax - dl.fbMin), t, 0.05);
     delayLoopHP?.frequency.setTargetAtTime(dl.loopHp, t, 0.05);
     delayLoopLP?.frequency.setTargetAtTime(dl.loopLp, t, 0.05);
     if (delaySat) delaySat.curve = createTapeCurve(dl.sat);
-    wet?.gain.setTargetAtTime(echo * 0.5, t, 0.05);
+    wet?.gain.setTargetAtTime(echo * dl.wet, t, 0.05);
   }, [echo, presetIdx]);
 
   useEffect(() => {
@@ -385,8 +420,8 @@ export function useEffects({
     const ctx = ctxRef.current;
     if (!ctx) return;
     const { reverbWet } = nodesRef.current;
-    reverbWet?.gain.setTargetAtTime(reverb * 0.5, ctx.currentTime, 0.05);
-  }, [reverb]);
+    reverbWet?.gain.setTargetAtTime(reverb * rigAt(presetIdx).send.wet, ctx.currentTime, 0.05);
+  }, [reverb, presetIdx]);
 
   useEffect(() => {
     const ctx = ctxRef.current;
@@ -411,8 +446,11 @@ export function useEffects({
     const ctx = ctxRef.current;
     if (!ctx) return;
     const { mix } = nodesRef.current;
-    const mp = rigAt(presetIdx).mod;
-    mix?.gain.setTargetAtTime(mixNorm({ echo, reverb, mod }, mp), ctx.currentTime, 0.05);
+    mix?.gain.setTargetAtTime(
+      mixNorm({ echo, reverb, mod }, rigAt(presetIdx)),
+      ctx.currentTime,
+      0.05,
+    );
   }, [echo, reverb, mod, presetIdx]);
 
   useEffect(() => {

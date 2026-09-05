@@ -52,6 +52,10 @@ type SynthNodes = {
   preGain: GainNode;
   drive: WaveShaperNode;
   driveTrim: GainNode;
+  stageHP: BiquadFilterNode;
+  stageLP: BiquadFilterNode;
+  stageGain: GainNode;
+  stage2: WaveShaperNode;
   compEnv: BiquadFilterNode;
   compMap: WaveShaperNode;
   compGain: GainNode;
@@ -142,6 +146,27 @@ export function useSynth({
     const driveTrim = ctx.createGain();
     driveTrim.gain.value = synthDriveTrim(p.drive, dp.shape) * cabTrim(rig.cab, ctx.sampleRate);
 
+    const s2 = dp.stage2;
+
+    const stageHP = ctx.createBiquadFilter();
+    stageHP.type = "highpass";
+    stageHP.frequency.value = s2 ? s2.hp : 20;
+    stageHP.Q.value = 0.707;
+
+    const stageLP = ctx.createBiquadFilter();
+    stageLP.type = "lowpass";
+    stageLP.frequency.value = s2 ? s2.lp : 20000;
+    stageLP.Q.value = 0.707;
+
+    const stageGain = ctx.createGain();
+    stageGain.gain.value = s2 ? 1 + (s2.gain - 1) * p.drive : 1;
+
+    const stage2 = ctx.createWaveShaper();
+    stage2.curve = s2
+      ? createDistortionCurve(s2.amount * p.drive, s2.shape)
+      : createDistortionCurve(0, "clean");
+    stage2.oversample = s2 ? "2x" : "none";
+
     const compRect = ctx.createWaveShaper();
     compRect.curve = createRectifierCurve();
     compRect.oversample = "none";
@@ -207,7 +232,7 @@ export function useSynth({
     feedbackGain.gain.value = dl.fbMin + p.echo * (dl.fbMax - dl.fbMin);
 
     const wetGain = ctx.createGain();
-    wetGain.gain.value = p.echo * 0.5;
+    wetGain.gain.value = p.echo * dl.wet;
 
     const ch = chorusOf(mp);
 
@@ -288,11 +313,11 @@ export function useSynth({
     }
 
     const reverbWet = ctx.createGain();
-    reverbWet.gain.value = p.reverb * 0.5;
+    reverbWet.gain.value = p.reverb * rig.send.wet;
     diffused.connect(reverbWet);
 
     const mix = ctx.createGain();
-    mix.gain.value = mixNorm(p, mp);
+    mix.gain.value = mixNorm(p, rig);
 
     const master = ctx.createGain();
     master.gain.value = masterGainFromKnob(p.masterVolume) * SYNTH_HEADROOM;
@@ -304,7 +329,11 @@ export function useSynth({
     input.connect(midEmphasis);
     midEmphasis.connect(preGain);
     preGain.connect(driveNode);
-    driveNode.connect(driveTrim);
+    driveNode.connect(stageHP);
+    stageHP.connect(stageLP);
+    stageLP.connect(stageGain);
+    stageGain.connect(stage2);
+    stage2.connect(driveTrim);
     driveTrim.connect(dcBlock);
     dcBlock.connect(compRect);
     compRect.connect(compEnv);
@@ -344,6 +373,10 @@ export function useSynth({
       preGain,
       drive: driveNode,
       driveTrim,
+      stageHP,
+      stageLP,
+      stageGain,
+      stage2,
       compEnv,
       compMap,
       compGain,
@@ -397,6 +430,14 @@ export function useSynth({
       t,
       0.05,
     );
+    const s2n = dp.stage2;
+    n.stage2.curve = s2n
+      ? createDistortionCurve(s2n.amount * drive, s2n.shape)
+      : createDistortionCurve(0, "clean");
+    n.stage2.oversample = s2n ? "2x" : "none";
+    n.stageGain.gain.setTargetAtTime(s2n ? 1 + (s2n.gain - 1) * drive : 1, t, 0.05);
+    n.stageHP.frequency.setTargetAtTime(s2n ? s2n.hp : 20, t, 0.05);
+    n.stageLP.frequency.setTargetAtTime(s2n ? s2n.lp : 20000, t, 0.05);
     n.compEnv.frequency.setTargetAtTime(rig.comp.speed, t, 0.05);
     n.compMap.curve = createCompCurve(rig.comp);
     n.cabHP.frequency.setTargetAtTime(rig.cab.lowCut, t, 0.05);
@@ -413,12 +454,12 @@ export function useSynth({
     n.delayLoopLP.frequency.setTargetAtTime(dl.loopLp, t, 0.05);
     n.delaySat.curve = createTapeCurve(dl.sat);
     n.feedback.gain.setTargetAtTime(dl.fbMin + echo * (dl.fbMax - dl.fbMin), t, 0.05);
-    n.wet.gain.setTargetAtTime(echo * 0.5, t, 0.05);
+    n.wet.gain.setTargetAtTime(echo * dl.wet, t, 0.05);
     const revFbs = combFeedback(rv.decay);
     n.revDamp.forEach((d) => d.frequency.setTargetAtTime(Math.min(8000, rv.tone), t, 0.05));
     n.revFB.forEach((g, i) => g.gain.setTargetAtTime(revFbs[i], t, 0.05));
     n.revNorm.forEach((g, i) => g.gain.setTargetAtTime(1 - revFbs[i], t, 0.05));
-    n.reverbWet.gain.setTargetAtTime(reverb * 0.5, t, 0.05);
+    n.reverbWet.gain.setTargetAtTime(reverb * rig.send.wet, t, 0.05);
     const ch = chorusOf(mp);
     n.modLfo.frequency.setTargetAtTime(mp.rate, t, 0.1);
     n.modDelay.delayTime.setTargetAtTime(ch.base, t, 0.1);
@@ -429,7 +470,7 @@ export function useSynth({
     const throb = tremoloDepth(mp, mod);
     n.tremDepth.gain.setTargetAtTime(throb, t, 0.08);
     n.trem.gain.setTargetAtTime(1 - throb, t, 0.08);
-    n.mix.gain.setTargetAtTime(mixNorm({ echo, reverb, mod }, mp), t, 0.05);
+    n.mix.gain.setTargetAtTime(mixNorm({ echo, reverb, mod }, rig), t, 0.05);
     n.master.gain.setTargetAtTime(masterGainFromKnob(masterVolume) * SYNTH_HEADROOM, t, 0.05);
   }, [drive, echo, tone, reverb, mod, masterVolume, presetIdx]);
 

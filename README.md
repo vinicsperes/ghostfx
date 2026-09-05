@@ -44,7 +44,7 @@ even the chassis tint.
 | **FROST** | Glassy clean platform with lush chorus. Every note stays articulate.      | clean boost → chorus → crystal delay → plate reverb         |
 | **HEAVY** | Scooped high gain, tight and nearly dry. Palm mutes hit like a wall.      | rectifier drive → tight slap delay → room reverb            |
 | **SMOKE** | A small valve amp on the edge of breakup. Soft it stays clean, dug in it growls. | tube drive → slapback → amp tremolo → spring                 |
-| **FEVER** | The lead voice. Cuts through anything, with repeats to lean on.           | singing drive → mid bump → repeats → open plate             |
+| **FEVER** | Turbo silicon clipping. Notes square off, hang there and snarl.          | turbo clipper → mid honk → slapback → chorus → tight room   |
 
 ## A real pedal, not a picture of one
 

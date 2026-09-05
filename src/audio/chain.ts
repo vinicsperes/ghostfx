@@ -25,6 +25,10 @@ export type ChainNodes = {
   preGain: GainNode;
   drive: WaveShaperNode;
   driveTrim: GainNode;
+  stageHP: BiquadFilterNode;
+  stageLP: BiquadFilterNode;
+  stageGain: GainNode;
+  stage2: WaveShaperNode;
   compRect: WaveShaperNode;
   compEnv: BiquadFilterNode;
   compMap: WaveShaperNode;
@@ -35,6 +39,9 @@ export type ChainNodes = {
   cabLP: BiquadFilterNode;
   toneFilter: BiquadFilterNode;
   delay: DelayNode;
+  delayR: DelayNode;
+  panL: StereoPannerNode;
+  panR: StereoPannerNode;
   lfo: OscillatorNode;
   lfoGain: GainNode;
   feedback: GainNode;
@@ -78,11 +85,14 @@ export function tremoloDepth(mp: ModProfile, mod: number): number {
   return mp.kind === "tremolo" ? mod * mp.depth : 0;
 }
 
-export function mixNorm(p: { echo: number; reverb: number; mod: number }, mp: ModProfile): number {
-  const ch = chorusOf(mp);
-  const wet = p.echo * 0.5 + p.reverb * 0.5 + p.mod * ch.mixMax;
-  const throb = tremoloDepth(mp, p.mod);
-  return 1 / ((1 + 0.55 * wet) * (1 - throb * 0.5));
+export function mixNorm(
+  p: { echo: number; reverb: number; mod: number },
+  rig: { mod: ModProfile; delay: { wet: number }; send: { wet: number } },
+): number {
+  const ch = chorusOf(rig.mod);
+  const wet = p.echo * rig.delay.wet + p.reverb * rig.send.wet + p.mod * ch.mixMax;
+  const throb = tremoloDepth(rig.mod, p.mod);
+  return 1 / (Math.sqrt(1 + wet * wet) * (1 - throb * 0.42));
 }
 
 const irCache = new Map<number, [Float32Array<ArrayBuffer>, Float32Array<ArrayBuffer>][]>();
@@ -120,12 +130,24 @@ export function applyChainParams(
 
   nodes.toneFilter.frequency.setTargetAtTime(600 * Math.pow(20, p.tone), t, ramp);
 
-  nodes.delay.delayTime.setTargetAtTime(dl.timeMin + p.echo * (dl.timeMax - dl.timeMin), t, ramp);
+  const s2 = dp.stage2;
+  nodes.stageGain.gain.setTargetAtTime(s2 ? 1 + (s2.gain - 1) * p.drive : 1, t, ramp);
+  nodes.stageHP.frequency.setTargetAtTime(s2 ? s2.hp : 20, t, ramp);
+  nodes.stageLP.frequency.setTargetAtTime(s2 ? s2.lp : 20000, t, ramp);
+  nodes.stage2.curve = s2
+    ? createDistortionCurve(s2.amount * p.drive, s2.shape)
+    : createDistortionCurve(0, "clean");
+
+  const time = dl.timeMin + p.echo * (dl.timeMax - dl.timeMin);
+  nodes.delay.delayTime.setTargetAtTime(time, t, ramp);
+  nodes.delayR.delayTime.setTargetAtTime(time * dl.bounce, t, ramp);
+  nodes.panL.pan.setTargetAtTime(-dl.spread, t, ramp);
+  nodes.panR.pan.setTargetAtTime(dl.spread, t, ramp);
   nodes.lfoGain.gain.setTargetAtTime(0.003 * p.echo, t, ramp);
   nodes.feedback.gain.setTargetAtTime(dl.fbMin + p.echo * (dl.fbMax - dl.fbMin), t, ramp);
-  nodes.wet.gain.setTargetAtTime(p.echo * 0.5, t, ramp);
+  nodes.wet.gain.setTargetAtTime(p.echo * dl.wet, t, ramp);
 
-  nodes.reverbWet.gain.setTargetAtTime(p.reverb * 0.5, t, ramp);
+  nodes.reverbWet.gain.setTargetAtTime(p.reverb * rig.send.wet, t, ramp);
 
   const ch = chorusOf(mp);
   nodes.modLfo.frequency.setTargetAtTime(mp.rate, t, ramp);
@@ -139,7 +161,7 @@ export function applyChainParams(
   nodes.tremDepth.gain.setTargetAtTime(throb, t, ramp);
   nodes.trem.gain.setTargetAtTime(1 - throb, t, ramp);
 
-  nodes.mix.gain.setTargetAtTime(mixNorm(p, mp), t, ramp);
+  nodes.mix.gain.setTargetAtTime(mixNorm(p, rig), t, ramp);
 }
 
 export function buildChain(
@@ -173,6 +195,27 @@ export function buildChain(
 
   const driveTrim = ctx.createGain();
   driveTrim.gain.value = dp.trim;
+
+  const s2 = dp.stage2;
+
+  const stageHP = ctx.createBiquadFilter();
+  stageHP.type = "highpass";
+  stageHP.frequency.value = s2 ? s2.hp : 20;
+  stageHP.Q.value = 0.707;
+
+  const stageLP = ctx.createBiquadFilter();
+  stageLP.type = "lowpass";
+  stageLP.frequency.value = s2 ? s2.lp : 20000;
+  stageLP.Q.value = 0.707;
+
+  const stageGain = ctx.createGain();
+  stageGain.gain.value = s2 ? 1 + (s2.gain - 1) * p.drive : 1;
+
+  const stage2 = ctx.createWaveShaper();
+  stage2.curve = s2
+    ? createDistortionCurve(s2.amount * p.drive, s2.shape)
+    : createDistortionCurve(0, "clean");
+  stage2.oversample = s2 ? "2x" : "none";
 
   const compRect = ctx.createWaveShaper();
   compRect.curve = createRectifierCurve();
@@ -215,6 +258,12 @@ export function buildChain(
 
   const delay = ctx.createDelay(2.0);
   delay.delayTime.value = dl.timeMin + p.echo * (dl.timeMax - dl.timeMin);
+  const delayR = ctx.createDelay(2.0);
+  delayR.delayTime.value = delay.delayTime.value * dl.bounce;
+  const panL = ctx.createStereoPanner();
+  panL.pan.value = -dl.spread;
+  const panR = ctx.createStereoPanner();
+  panR.pan.value = dl.spread;
 
   const lfo = ctx.createOscillator();
   const lfoGain = ctx.createGain();
@@ -241,7 +290,7 @@ export function buildChain(
   delaySat.oversample = "none";
 
   const wet = ctx.createGain();
-  wet.gain.value = p.echo * 0.5;
+  wet.gain.value = p.echo * dl.wet;
 
   const ch = chorusOf(mp);
 
@@ -293,10 +342,10 @@ export function buildChain(
   reverbWetB.gain.value = 0;
 
   const reverbWet = ctx.createGain();
-  reverbWet.gain.value = p.reverb * 0.5;
+  reverbWet.gain.value = p.reverb * send.wet;
 
   const mix = ctx.createGain();
-  mix.gain.value = mixNorm(p, mp);
+  mix.gain.value = mixNorm(p, rig);
 
   const effects = ctx.createGain();
   effects.gain.value = 1;
@@ -304,7 +353,11 @@ export function buildChain(
   preFilter.connect(midEmphasis);
   midEmphasis.connect(preGain);
   preGain.connect(drive);
-  drive.connect(driveTrim);
+  drive.connect(stageHP);
+  stageHP.connect(stageLP);
+  stageLP.connect(stageGain);
+  stageGain.connect(stage2);
+  stage2.connect(driveTrim);
   driveTrim.connect(compRect);
   compRect.connect(compEnv);
   compEnv.connect(compMap);
@@ -322,12 +375,16 @@ export function buildChain(
   toneFilter.connect(mix);
 
   toneFilter.connect(delay);
-  delay.connect(delayLoopHP);
+  delay.connect(panL);
+  panL.connect(wet);
+  delay.connect(delayR);
+  delayR.connect(delayLoopHP);
   delayLoopHP.connect(delayLoopLP);
   delayLoopLP.connect(delaySat);
+  delaySat.connect(panR);
+  panR.connect(wet);
   delaySat.connect(feedback);
   feedback.connect(delay);
-  delaySat.connect(wet);
   wet.connect(mix);
 
   toneFilter.connect(modDelay);
@@ -357,6 +414,10 @@ export function buildChain(
       preGain,
       drive,
       driveTrim,
+      stageHP,
+      stageLP,
+      stageGain,
+      stage2,
       compRect,
       compEnv,
       compMap,
@@ -367,6 +428,9 @@ export function buildChain(
       cabLP,
       toneFilter,
       delay,
+      delayR,
+      panL,
+      panR,
       lfo,
       lfoGain,
       feedback,
