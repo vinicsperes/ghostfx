@@ -1,4 +1,5 @@
-import { Component, type ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
+import { reportError } from "../lib/monitor";
 
 export class ErrorBoundary extends Component<
   { fallback: ReactNode; children: ReactNode },
@@ -8,6 +9,10 @@ export class ErrorBoundary extends Component<
 
   static getDerivedStateFromError() {
     return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    reportError(error, info);
   }
 
   render() {

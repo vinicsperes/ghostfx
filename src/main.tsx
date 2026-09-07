@@ -4,6 +4,9 @@ import { Analytics } from "@vercel/analytics/react";
 import "./index.css";
 import App from "./App";
 import Studio from "./Studio";
+import { startMonitor } from "./lib/monitor";
+
+startMonitor();
 
 const isStudio = window.location.pathname.replace(/\/+$/, "") === "/studio";
 
