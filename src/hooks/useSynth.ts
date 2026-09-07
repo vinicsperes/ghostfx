@@ -159,11 +159,11 @@ export function useSynth({
     stageLP.Q.value = 0.707;
 
     const stageGain = ctx.createGain();
-    stageGain.gain.value = s2 ? 1 + (s2.gain - 1) * p.drive : 1;
+    stageGain.gain.value = s2 ? 1 + (s2.gain - 1) * Math.pow(p.drive, 1.5) : 1;
 
     const stage2 = ctx.createWaveShaper();
     stage2.curve = s2
-      ? createDistortionCurve(s2.amount * p.drive, s2.shape)
+      ? createDistortionCurve(s2.amount * Math.pow(p.drive, 1.8), s2.shape)
       : createDistortionCurve(0, "clean");
     stage2.oversample = s2 ? "2x" : "none";
 
@@ -432,10 +432,10 @@ export function useSynth({
     );
     const s2n = dp.stage2;
     n.stage2.curve = s2n
-      ? createDistortionCurve(s2n.amount * drive, s2n.shape)
+      ? createDistortionCurve(s2n.amount * Math.pow(drive, 1.8), s2n.shape)
       : createDistortionCurve(0, "clean");
     n.stage2.oversample = s2n ? "2x" : "none";
-    n.stageGain.gain.setTargetAtTime(s2n ? 1 + (s2n.gain - 1) * drive : 1, t, 0.05);
+    n.stageGain.gain.setTargetAtTime(s2n ? 1 + (s2n.gain - 1) * Math.pow(drive, 1.5) : 1, t, 0.05);
     n.stageHP.frequency.setTargetAtTime(s2n ? s2n.hp : 20, t, 0.05);
     n.stageLP.frequency.setTargetAtTime(s2n ? s2n.lp : 20000, t, 0.05);
     n.compEnv.frequency.setTargetAtTime(rig.comp.speed, t, 0.05);

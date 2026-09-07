@@ -309,14 +309,14 @@ export function useEffects({
     const s2 = dp.stage2;
     if (stage2) {
       stage2.curve = s2
-        ? createDistortionCurve(s2.amount * drive, s2.shape)
+        ? createDistortionCurve(s2.amount * Math.pow(drive, 1.8), s2.shape)
         : createDistortionCurve(0, "clean");
       stage2.oversample = s2 ? "2x" : "none";
     }
     const ctx = ctxRef.current;
     if (!ctx) return;
     const t = ctx.currentTime;
-    stageGain?.gain.setTargetAtTime(s2 ? 1 + (s2.gain - 1) * drive : 1, t, 0.05);
+    stageGain?.gain.setTargetAtTime(s2 ? 1 + (s2.gain - 1) * Math.pow(drive, 1.5) : 1, t, 0.05);
     stageHP?.frequency.setTargetAtTime(s2 ? s2.hp : 20, t, 0.05);
     stageLP?.frequency.setTargetAtTime(s2 ? s2.lp : 20000, t, 0.05);
     preGain?.gain.setTargetAtTime(mapDrivePreGain(drive), t, 0.05);

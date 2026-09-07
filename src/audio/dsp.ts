@@ -71,9 +71,9 @@ function shapeTube(x: number, a: number): number {
 }
 
 function shapeTurbo(x: number, a: number): number {
-  const g = 2 + 22 * Math.pow(a, 1.1);
-  const bias = 0.095 * a;
-  return (softClip(g * x + bias, 4.3) - softClip(bias, 4.3)) * (0.63 / (1 + a * 0.34));
+  const g = 1.15 + 26 * Math.pow(a, 1.55);
+  const bias = 0.1 * a;
+  return (softClip(g * x + bias, 4.3) - softClip(bias, 4.3)) * (0.72 / (1 + a * 0.42));
 }
 
 const DRIVE_SHAPES: Record<DriveShape, (x: number, a: number) => number> = {

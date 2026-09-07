@@ -131,11 +131,15 @@ export function applyChainParams(
   nodes.toneFilter.frequency.setTargetAtTime(600 * Math.pow(20, p.tone), t, ramp);
 
   const s2 = dp.stage2;
-  nodes.stageGain.gain.setTargetAtTime(s2 ? 1 + (s2.gain - 1) * p.drive : 1, t, ramp);
+  nodes.stageGain.gain.setTargetAtTime(
+    s2 ? 1 + (s2.gain - 1) * Math.pow(p.drive, 1.5) : 1,
+    t,
+    ramp,
+  );
   nodes.stageHP.frequency.setTargetAtTime(s2 ? s2.hp : 20, t, ramp);
   nodes.stageLP.frequency.setTargetAtTime(s2 ? s2.lp : 20000, t, ramp);
   nodes.stage2.curve = s2
-    ? createDistortionCurve(s2.amount * p.drive, s2.shape)
+    ? createDistortionCurve(s2.amount * Math.pow(p.drive, 1.8), s2.shape)
     : createDistortionCurve(0, "clean");
 
   const time = dl.timeMin + p.echo * (dl.timeMax - dl.timeMin);
@@ -209,11 +213,11 @@ export function buildChain(
   stageLP.Q.value = 0.707;
 
   const stageGain = ctx.createGain();
-  stageGain.gain.value = s2 ? 1 + (s2.gain - 1) * p.drive : 1;
+  stageGain.gain.value = s2 ? 1 + (s2.gain - 1) * Math.pow(p.drive, 1.5) : 1;
 
   const stage2 = ctx.createWaveShaper();
   stage2.curve = s2
-    ? createDistortionCurve(s2.amount * p.drive, s2.shape)
+    ? createDistortionCurve(s2.amount * Math.pow(p.drive, 1.8), s2.shape)
     : createDistortionCurve(0, "clean");
   stage2.oversample = s2 ? "2x" : "none";
 
