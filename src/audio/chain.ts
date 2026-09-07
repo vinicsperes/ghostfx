@@ -48,6 +48,7 @@ export type ChainNodes = {
   delayLoopHP: BiquadFilterNode;
   delayLoopLP: BiquadFilterNode;
   delaySat: WaveShaperNode;
+  pong: GainNode;
   wet: GainNode;
   modDelay: DelayNode;
   modLfo: OscillatorNode;
@@ -149,6 +150,7 @@ export function applyChainParams(
   nodes.panR.pan.setTargetAtTime(dl.spread, t, ramp);
   nodes.lfoGain.gain.setTargetAtTime(0.003 * p.echo, t, ramp);
   nodes.feedback.gain.setTargetAtTime(dl.fbMin + p.echo * (dl.fbMax - dl.fbMin), t, ramp);
+  nodes.pong.gain.setTargetAtTime(dl.pong, t, ramp);
   nodes.wet.gain.setTargetAtTime(p.echo * dl.wet, t, ramp);
 
   nodes.reverbWet.gain.setTargetAtTime(p.reverb * rig.send.wet, t, ramp);
@@ -293,6 +295,9 @@ export function buildChain(
   delaySat.curve = createTapeCurve(dl.sat);
   delaySat.oversample = "none";
 
+  const pong = ctx.createGain();
+  pong.gain.value = dl.pong;
+
   const wet = ctx.createGain();
   wet.gain.value = p.echo * dl.wet;
 
@@ -386,7 +391,8 @@ export function buildChain(
   delayLoopHP.connect(delayLoopLP);
   delayLoopLP.connect(delaySat);
   delaySat.connect(panR);
-  panR.connect(wet);
+  panR.connect(pong);
+  pong.connect(wet);
   delaySat.connect(feedback);
   feedback.connect(delay);
   wet.connect(mix);
@@ -441,6 +447,7 @@ export function buildChain(
       delayLoopHP,
       delayLoopLP,
       delaySat,
+      pong,
       wet,
       modDelay,
       modLfo,

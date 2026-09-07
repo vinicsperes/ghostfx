@@ -68,6 +68,7 @@ export type DelayProfile = {
   sat: number;
   spread: number;
   bounce: number;
+  pong: number;
   wet: number;
 };
 
@@ -182,6 +183,7 @@ export const RIGS: Rig[] = [
       sat: 1.3,
       spread: 0.7,
       bounce: 0.5,
+      pong: 1,
       wet: 0.6,
     },
     mod: {
@@ -236,6 +238,7 @@ export const RIGS: Rig[] = [
       sat: 1.5,
       spread: 0.7,
       bounce: 0.5,
+      pong: 1,
       wet: 0.32,
     },
     mod: {
@@ -284,16 +287,17 @@ export const RIGS: Rig[] = [
       sat: 1.1,
       spread: 1.0,
       bounce: 0.5,
-      wet: 0.5,
+      pong: 0,
+      wet: 0.42,
     },
     mod: {
       kind: "chorus",
       rate: 0.5,
       base: 0.008,
-      depthMin: 0.0025,
-      depthMax: 0.0082,
-      fbMax: 0.12,
-      mixMax: 0.68,
+      depthMin: 0.0015,
+      depthMax: 0.0045,
+      fbMax: 0.06,
+      mixMax: 0.5,
       damp: 5200,
     },
     cab: { lowCut: 95, bodyHz: 100, bodyGain: 0.0, presHz: 3200, presGain: 3.0, topCut: 8500 },
@@ -339,6 +343,7 @@ export const RIGS: Rig[] = [
       sat: 1.2,
       spread: 0.6,
       bounce: 0.75,
+      pong: 1,
       wet: 0.5,
     },
     mod: { kind: "tremolo", rate: 6.2, depth: 0.62 },
@@ -385,6 +390,7 @@ export const RIGS: Rig[] = [
       sat: 1.35,
       spread: 0.55,
       bounce: 0.66,
+      pong: 1,
       wet: 0.38,
     },
     mod: { kind: "tremolo", rate: 4.4, depth: 0.4 },
@@ -431,6 +437,7 @@ export const RIGS: Rig[] = [
       sat: 1.3,
       spread: 0.75,
       bounce: 0.5,
+      pong: 1,
       wet: 0.46,
     },
     mod: {

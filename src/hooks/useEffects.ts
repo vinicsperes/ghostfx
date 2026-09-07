@@ -339,6 +339,7 @@ export function useEffects({
       delayLoopHP,
       delayLoopLP,
       delaySat,
+      pong,
       wet,
     } = nodesRef.current;
     const dl = rigAt(presetIdx).delay;
@@ -353,6 +354,7 @@ export function useEffects({
     delayLoopHP?.frequency.setTargetAtTime(dl.loopHp, t, 0.05);
     delayLoopLP?.frequency.setTargetAtTime(dl.loopLp, t, 0.05);
     if (delaySat) delaySat.curve = createTapeCurve(dl.sat);
+    pong?.gain.setTargetAtTime(dl.pong, t, 0.05);
     wet?.gain.setTargetAtTime(echo * dl.wet, t, 0.05);
   }, [echo, presetIdx]);
 
