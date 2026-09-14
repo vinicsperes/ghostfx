@@ -130,6 +130,11 @@ export type CompProfile = {
   makeup: number;
 };
 
+export type GateProfile = {
+  threshold: number;
+  knee: number;
+};
+
 export type Rig = {
   name: string;
   tag: string;
@@ -143,6 +148,7 @@ export type Rig = {
   knobs: RigKnobs;
   drive: DriveProfile;
   comp: CompProfile;
+  gate: GateProfile;
   delay: DelayProfile;
   mod: ModProfile;
   cab: CabProfile;
@@ -173,6 +179,7 @@ export const RIGS: Rig[] = [
       stage2: { shape: "screamer", gain: 1.7, amount: 0.34, hp: 180, lp: 6000 },
     },
     comp: { threshold: -23, ratio: 2.2, speed: 11, makeup: 2 },
+    gate: { threshold: -62, knee: 14 },
     delay: {
       timeMin: 0.25,
       timeMax: 0.62,
@@ -228,6 +235,7 @@ export const RIGS: Rig[] = [
       trim: 0.46,
     },
     comp: { threshold: -25, ratio: 2.6, speed: 7, makeup: 3 },
+    gate: { threshold: -56, knee: 12 },
     delay: {
       timeMin: 0.1,
       timeMax: 0.28,
@@ -277,6 +285,7 @@ export const RIGS: Rig[] = [
     knobs: { drive: 0.25, echo: 0.35, tone: 0.8, reverb: 0.4, mod: 0.65, master: 0.85 },
     drive: { shape: "clean", preHp: 120, midHz: 2200, midGain: 2.5, trim: 2.63 },
     comp: { threshold: -28, ratio: 3.5, speed: 14, makeup: 4.5 },
+    gate: { threshold: -64, knee: 18 },
     delay: {
       timeMin: 0.16,
       timeMax: 0.46,
@@ -333,6 +342,7 @@ export const RIGS: Rig[] = [
       stage2: { shape: "rectifier", gain: 2.7, amount: 0.62, hp: 225, lp: 5400 },
     },
     comp: { threshold: -24, ratio: 3, speed: 16, makeup: 3 },
+    gate: { threshold: -54, knee: 12 },
     delay: {
       timeMin: 0.1,
       timeMax: 0.4,
@@ -380,6 +390,7 @@ export const RIGS: Rig[] = [
       stage2: { shape: "tube", gain: 1.35, amount: 0.26, hp: 130, lp: 5800 },
     },
     comp: { threshold: -21, ratio: 2.1, speed: 9, makeup: 2 },
+    gate: { threshold: -60, knee: 14 },
     delay: {
       timeMin: 0.09,
       timeMax: 0.3,
@@ -427,6 +438,7 @@ export const RIGS: Rig[] = [
       stage2: { shape: "turbo", gain: 2.1, amount: 0.46, hp: 200, lp: 5000 },
     },
     comp: { threshold: -22, ratio: 2.2, speed: 14, makeup: 2.5 },
+    gate: { threshold: -56, knee: 12 },
     delay: {
       timeMin: 0.14,
       timeMax: 0.42,

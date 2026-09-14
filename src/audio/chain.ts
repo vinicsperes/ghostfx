@@ -1,10 +1,13 @@
 import {
   createCompCurve,
   createDistortionCurve,
+  createGateCurve,
   createRectifierCurve,
   createReverbIR,
   createTapeCurve,
   driveOversample,
+  GATE_ENV_HZ,
+  GATE_LUT_BOOST,
   mapDrivePreGain,
 } from "./dsp";
 import { RIGS, rigAt, type ChorusProfile, type ModProfile } from "../data/presets";
@@ -20,6 +23,12 @@ export type SignalParams = {
 export type ChainParams = SignalParams & { presetIdx: number | null };
 
 export type ChainNodes = {
+  gateIn: GainNode;
+  gateRect: WaveShaperNode;
+  gateEnv: BiquadFilterNode;
+  gateBoost: GainNode;
+  gateMap: WaveShaperNode;
+  gateGain: GainNode;
   preFilter: BiquadFilterNode;
   midEmphasis: BiquadFilterNode;
   preGain: GainNode;
@@ -68,6 +77,11 @@ export type ChainNodes = {
   mix: GainNode;
   effects: GainNode;
 };
+
+// The gate sits ahead of the drive, so it cannot see how hard the stages
+// behind it will lift the noise floor. Track the drive knob instead: the
+// hotter the rig is set, the earlier the gate has to shut.
+const GATE_DRIVE_TRACK = 7;
 
 const IDLE_CHORUS: Omit<ChorusProfile, "kind" | "rate"> = {
   base: 0.003,
@@ -125,6 +139,11 @@ export function applyChainParams(
   const mp = rig.mod;
   const t = ctx.currentTime;
 
+  nodes.gateMap.curve = createGateCurve({
+    threshold: rig.gate.threshold + p.drive * GATE_DRIVE_TRACK,
+    knee: rig.gate.knee,
+  });
+
   nodes.drive.curve = createDistortionCurve(p.drive, dp.shape);
   nodes.drive.oversample = driveOversample(p.drive, dp.shape);
   nodes.preGain.gain.setTargetAtTime(mapDrivePreGain(p.drive), t, ramp);
@@ -181,6 +200,30 @@ export function buildChain(
   const cab = rig.cab;
   const dl = rig.delay;
   const mp = rig.mod;
+
+  const gateIn = ctx.createGain();
+
+  const gateRect = ctx.createWaveShaper();
+  gateRect.curve = createRectifierCurve();
+  gateRect.oversample = "none";
+
+  const gateEnv = ctx.createBiquadFilter();
+  gateEnv.type = "lowpass";
+  gateEnv.frequency.value = GATE_ENV_HZ;
+  gateEnv.Q.value = 0.5;
+
+  const gateBoost = ctx.createGain();
+  gateBoost.gain.value = Math.pow(10, GATE_LUT_BOOST / 20);
+
+  const gateMap = ctx.createWaveShaper();
+  gateMap.curve = createGateCurve({
+    threshold: rig.gate.threshold + p.drive * GATE_DRIVE_TRACK,
+    knee: rig.gate.knee,
+  });
+  gateMap.oversample = "none";
+
+  const gateGain = ctx.createGain();
+  gateGain.gain.value = 0;
 
   const preFilter = ctx.createBiquadFilter();
   preFilter.type = "highpass";
@@ -359,6 +402,14 @@ export function buildChain(
   const effects = ctx.createGain();
   effects.gain.value = 1;
 
+  gateIn.connect(gateRect);
+  gateRect.connect(gateEnv);
+  gateEnv.connect(gateBoost);
+  gateBoost.connect(gateMap);
+  gateMap.connect(gateGain.gain);
+  gateIn.connect(gateGain);
+  gateGain.connect(preFilter);
+
   preFilter.connect(midEmphasis);
   midEmphasis.connect(preGain);
   preGain.connect(drive);
@@ -416,9 +467,15 @@ export function buildChain(
   reverbWet.connect(mix);
 
   return {
-    input: preFilter,
+    input: gateIn,
     output: effects,
     nodes: {
+      gateIn,
+      gateRect,
+      gateEnv,
+      gateBoost,
+      gateMap,
+      gateGain,
       preFilter,
       midEmphasis,
       preGain,

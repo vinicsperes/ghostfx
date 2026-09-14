@@ -246,6 +246,30 @@ export function createCompCurve(comp: CompShape): Float32Array<ArrayBuffer> {
   return curve;
 }
 
+type GateShape = { threshold: number; knee: number };
+
+export const GATE_ENV_HZ = 20;
+
+// A WaveShaper table is linear in amplitude, so a threshold down at -60 dBFS
+// lands within a couple of entries of the 2048-step curve and quantises into a
+// staircase. Lift the envelope by this much before it indexes the table, then
+// subtract it again when reading the level back, so the usable region spans
+// hundreds of entries. Anything hotter than -GATE_LUT_BOOST clamps to the last
+// entry, which is fully open, so the boost has to stay under the lowest
+// threshold the rigs ask for.
+export const GATE_LUT_BOOST = 40;
+
+export function createGateCurve(gate: GateShape): Float32Array<ArrayBuffer> {
+  const curve = new Float32Array(COMP_STEPS);
+  for (let i = 0; i < COMP_STEPS; i++) {
+    const env = Math.max(0, (i / (COMP_STEPS - 1)) * 2 - 1);
+    const db = 20 * Math.log10(Math.max(env, 1e-6)) - GATE_LUT_BOOST;
+    const t = Math.min(1, Math.max(0, 1 + (db - gate.threshold) / gate.knee));
+    curve[i] = t * t * (3 - 2 * t);
+  }
+  return curve;
+}
+
 export const LIMITER_THRESHOLD = 0.82;
 
 export function createLimiterCurve(threshold = LIMITER_THRESHOLD): Float32Array<ArrayBuffer> {
