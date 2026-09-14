@@ -1,4 +1,5 @@
 import {
+  createCabIR,
   createCompCurve,
   createDistortionCurve,
   createGateCurve,
@@ -42,10 +43,11 @@ export type ChainNodes = {
   compEnv: BiquadFilterNode;
   compMap: WaveShaperNode;
   compGain: GainNode;
-  cabHP: BiquadFilterNode;
-  cabBody: BiquadFilterNode;
-  cabPres: BiquadFilterNode;
-  cabLP: BiquadFilterNode;
+  cabConvA: ConvolverNode;
+  cabConvB: ConvolverNode;
+  cabWetA: GainNode;
+  cabWetB: GainNode;
+  cabSum: GainNode;
   toneFilter: BiquadFilterNode;
   delay: DelayNode;
   delayR: DelayNode;
@@ -127,6 +129,22 @@ export function reverbBuffers(ctx: BaseAudioContext): AudioBuffer[] {
   });
 }
 
+const cabCache = new Map<number, Float32Array<ArrayBuffer>[]>();
+
+export function cabBuffers(ctx: BaseAudioContext): AudioBuffer[] {
+  const rate = ctx.sampleRate;
+  let raw = cabCache.get(rate);
+  if (!raw) {
+    raw = RIGS.map(({ cab }) => createCabIR(cab, rate));
+    cabCache.set(rate, raw);
+  }
+  return raw.map((ir) => {
+    const buf = ctx.createBuffer(1, ir.length, rate);
+    buf.copyToChannel(ir, 0);
+    return buf;
+  });
+}
+
 export function applyChainParams(
   ctx: BaseAudioContext,
   nodes: ChainNodes,
@@ -193,11 +211,11 @@ export function buildChain(
   ctx: BaseAudioContext,
   p: ChainParams,
   irBuffers: AudioBuffer[],
+  cabIRs: AudioBuffer[],
 ): { input: AudioNode; output: GainNode; nodes: ChainNodes } {
   const idx = p.presetIdx ?? 0;
   const rig = rigAt(idx);
   const dp = rig.drive;
-  const cab = rig.cab;
   const dl = rig.delay;
   const mp = rig.mod;
 
@@ -282,24 +300,21 @@ export function buildChain(
   const compGain = ctx.createGain();
   compGain.gain.value = 0;
 
-  const cabHP = ctx.createBiquadFilter();
-  cabHP.type = "highpass";
-  cabHP.frequency.value = cab.lowCut;
-  cabHP.Q.value = 0.707;
-  const cabBody = ctx.createBiquadFilter();
-  cabBody.type = "peaking";
-  cabBody.frequency.value = cab.bodyHz;
-  cabBody.Q.value = 0.9;
-  cabBody.gain.value = cab.bodyGain;
-  const cabPres = ctx.createBiquadFilter();
-  cabPres.type = "peaking";
-  cabPres.frequency.value = cab.presHz;
-  cabPres.Q.value = 1.0;
-  cabPres.gain.value = cab.presGain;
-  const cabLP = ctx.createBiquadFilter();
-  cabLP.type = "lowpass";
-  cabLP.frequency.value = cab.topCut;
-  cabLP.Q.value = 0.9;
+  // normalize has to stay off: the IR is built to carry the exact broadband
+  // gain the four biquads had, and each rig's drive trim is calibrated against
+  // that. Letting the convolver rescale it would move every rig's level.
+  const cabConvA = ctx.createConvolver();
+  cabConvA.normalize = false;
+  cabConvA.buffer = cabIRs[idx] ?? null;
+  const cabConvB = ctx.createConvolver();
+  cabConvB.normalize = false;
+
+  const cabWetA = ctx.createGain();
+  cabWetA.gain.value = 1;
+  const cabWetB = ctx.createGain();
+  cabWetB.gain.value = 0;
+
+  const cabSum = ctx.createGain();
 
   const toneFilter = ctx.createBiquadFilter();
   toneFilter.type = "lowpass";
@@ -423,11 +438,13 @@ export function buildChain(
   compEnv.connect(compMap);
   compMap.connect(compGain.gain);
   driveTrim.connect(compGain);
-  compGain.connect(cabHP);
-  cabHP.connect(cabBody);
-  cabBody.connect(cabPres);
-  cabPres.connect(cabLP);
-  cabLP.connect(toneFilter);
+  compGain.connect(cabConvA);
+  compGain.connect(cabConvB);
+  cabConvA.connect(cabWetA);
+  cabConvB.connect(cabWetB);
+  cabWetA.connect(cabSum);
+  cabWetB.connect(cabSum);
+  cabSum.connect(toneFilter);
 
   mix.connect(trem);
   trem.connect(effects);
@@ -489,10 +506,11 @@ export function buildChain(
       compEnv,
       compMap,
       compGain,
-      cabHP,
-      cabBody,
-      cabPres,
-      cabLP,
+      cabConvA,
+      cabConvB,
+      cabWetA,
+      cabWetB,
+      cabSum,
       toneFilter,
       delay,
       delayR,

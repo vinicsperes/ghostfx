@@ -1,4 +1,4 @@
-import { buildChain, reverbBuffers, type SignalParams } from "./chain";
+import { buildChain, cabBuffers, reverbBuffers, type SignalParams } from "./chain";
 import { CLEAN_RIG } from "../data/presets";
 import { createLimiterCurve } from "./dsp";
 
@@ -176,7 +176,7 @@ export async function renderTake({
   if (wet || clean) {
     source.connect(mix);
   } else {
-    const chain = buildChain(ctx, { ...params, presetIdx }, reverbBuffers(ctx));
+    const chain = buildChain(ctx, { ...params, presetIdx }, reverbBuffers(ctx), cabBuffers(ctx));
     const chainOut = limiterNode(ctx);
     source.connect(chain.input);
     chain.output.connect(chainOut);

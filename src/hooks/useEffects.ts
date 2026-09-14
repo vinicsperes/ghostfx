@@ -11,6 +11,7 @@ import {
 import { CLEAN_RIG, rigAt } from "../data/presets";
 import {
   buildChain,
+  cabBuffers,
   chorusOf,
   mixNorm,
   reverbBuffers,
@@ -92,6 +93,9 @@ export function useEffects({
   const irBuffersRef = useRef<AudioBuffer[]>([]);
   const activeConvRef = useRef<"A" | "B">("A");
   const convUnloadRef = useRef<number | null>(null);
+  const cabBuffersRef = useRef<AudioBuffer[]>([]);
+  const activeCabRef = useRef<"A" | "B">("A");
+  const cabUnloadRef = useRef<number | null>(null);
 
   const recordDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
   const dryDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
@@ -154,6 +158,7 @@ export function useEffects({
         ctx,
         { drive, echo, tone, reverb, mod, presetIdx },
         (irBuffersRef.current = reverbBuffers(ctx)),
+        (cabBuffersRef.current = cabBuffers(ctx)),
       );
       effectsGain.gain.value = 0;
 
@@ -377,15 +382,32 @@ export function useEffects({
   useEffect(() => {
     const ctx = ctxRef.current;
     if (!ctx) return;
-    const { cabHP, cabBody, cabPres, cabLP } = nodesRef.current;
-    const cab = rigAt(presetIdx).cab;
+    const buf = cabBuffersRef.current[presetIdx ?? 0];
+    const { cabConvA, cabConvB, cabWetA, cabWetB } = nodesRef.current;
+    if (!buf || !cabConvA || !cabConvB || !cabWetA || !cabWetB) return;
     const t = ctx.currentTime;
-    cabHP?.frequency.setTargetAtTime(cab.lowCut, t, 0.05);
-    cabBody?.frequency.setTargetAtTime(cab.bodyHz, t, 0.05);
-    cabBody?.gain.setTargetAtTime(cab.bodyGain, t, 0.05);
-    cabPres?.frequency.setTargetAtTime(cab.presHz, t, 0.05);
-    cabPres?.gain.setTargetAtTime(cab.presGain, t, 0.05);
-    cabLP?.frequency.setTargetAtTime(cab.topCut, t, 0.05);
+    // The cab carries the whole dry path, so its buffer cannot be swapped under
+    // a running convolver. Load the idle one, fade across, then drop the buffer
+    // left behind once nothing reads from it.
+    if (activeCabRef.current === "A") {
+      cabConvB.buffer = buf;
+      cabWetB.gain.setTargetAtTime(1, t, 0.06);
+      cabWetA.gain.setTargetAtTime(0, t, 0.06);
+      activeCabRef.current = "B";
+    } else {
+      cabConvA.buffer = buf;
+      cabWetA.gain.setTargetAtTime(1, t, 0.06);
+      cabWetB.gain.setTargetAtTime(0, t, 0.06);
+      activeCabRef.current = "A";
+    }
+    cabUnloadRef.current = window.setTimeout(() => {
+      const idle =
+        activeCabRef.current === "A" ? nodesRef.current.cabConvB : nodesRef.current.cabConvA;
+      if (idle) idle.buffer = null;
+    }, 900);
+    return () => {
+      if (cabUnloadRef.current) clearTimeout(cabUnloadRef.current);
+    };
   }, [presetIdx]);
 
   useEffect(() => {

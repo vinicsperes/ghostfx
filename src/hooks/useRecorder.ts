@@ -4,6 +4,7 @@ import { createLimiterCurve, masterGainFromKnob } from "../audio/dsp";
 import {
   applyChainParams,
   buildChain,
+  cabBuffers,
   reverbBuffers,
   type ChainNodes,
   type SignalParams,
@@ -115,6 +116,7 @@ export function useRecorder({
     nodes: ChainNodes;
   } | null>(null);
   const irRef = useRef<AudioBuffer[] | null>(null);
+  const cabIrRef = useRef<AudioBuffer[] | null>(null);
   const playStartRef = useRef(0);
   const playOffsetRef = useRef(0);
   const loopingRef = useRef(false);
@@ -262,7 +264,8 @@ export function useRecorder({
         }
       }
       const irs = (irRef.current ??= reverbBuffers(ctx));
-      const built = buildChain(ctx, { ...signal, presetIdx: rig }, irs);
+      const cabs = (cabIrRef.current ??= cabBuffers(ctx));
+      const built = buildChain(ctx, { ...signal, presetIdx: rig }, irs, cabs);
       const limiter = ctx.createWaveShaper();
       limiter.curve = createLimiterCurve();
       limiter.oversample = "none";

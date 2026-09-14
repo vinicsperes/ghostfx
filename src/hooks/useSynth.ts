@@ -11,6 +11,7 @@ import {
   synthDriveTrim,
   masterGainFromKnob,
 } from "../audio/dsp";
+import { cabBuffers } from "../audio/chain";
 import { rigAt } from "../data/presets";
 import { chorusOf, mixNorm, tremoloDepth } from "../audio/chain";
 
@@ -59,10 +60,11 @@ type SynthNodes = {
   compEnv: BiquadFilterNode;
   compMap: WaveShaperNode;
   compGain: GainNode;
-  cabHP: BiquadFilterNode;
-  cabBody: BiquadFilterNode;
-  cabPres: BiquadFilterNode;
-  cabLP: BiquadFilterNode;
+  cabConvA: ConvolverNode;
+  cabConvB: ConvolverNode;
+  cabWetA: GainNode;
+  cabWetB: GainNode;
+  cabSum: GainNode;
   tone: BiquadFilterNode;
   delay: DelayNode;
   delayLoopHP: BiquadFilterNode;
@@ -109,6 +111,10 @@ export function useSynth({
   const activeRef = useRef(new Map<string, { osc: OscillatorNode; env: GainNode }>());
   const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
 
+  const cabIRsRef = useRef<AudioBuffer[]>([]);
+  const cabIdxRef = useRef<number | null>(null);
+  const activeCabRef = useRef<"A" | "B">("A");
+  const cabUnloadRef = useRef<number | null>(null);
   const paramsRef = useRef({ drive, echo, tone, reverb, mod, masterVolume, presetIdx });
   useEffect(() => {
     paramsRef.current = { drive, echo, tone, reverb, mod, masterVolume, presetIdx };
@@ -183,24 +189,18 @@ export function useSynth({
     const compGain = ctx.createGain();
     compGain.gain.value = 0;
 
-    const cabHP = ctx.createBiquadFilter();
-    cabHP.type = "highpass";
-    cabHP.frequency.value = rig.cab.lowCut;
-    cabHP.Q.value = 0.707;
-    const cabBody = ctx.createBiquadFilter();
-    cabBody.type = "peaking";
-    cabBody.frequency.value = rig.cab.bodyHz;
-    cabBody.Q.value = 0.9;
-    cabBody.gain.value = rig.cab.bodyGain;
-    const cabPres = ctx.createBiquadFilter();
-    cabPres.type = "peaking";
-    cabPres.frequency.value = rig.cab.presHz;
-    cabPres.Q.value = 1.0;
-    cabPres.gain.value = rig.cab.presGain;
-    const cabLP = ctx.createBiquadFilter();
-    cabLP.type = "lowpass";
-    cabLP.frequency.value = rig.cab.topCut;
-    cabLP.Q.value = 0.9;
+    cabIRsRef.current = cabBuffers(ctx);
+    cabIdxRef.current = idx;
+    const cabConvA = ctx.createConvolver();
+    cabConvA.normalize = false;
+    cabConvA.buffer = cabIRsRef.current[idx] ?? null;
+    const cabConvB = ctx.createConvolver();
+    cabConvB.normalize = false;
+    const cabWetA = ctx.createGain();
+    cabWetA.gain.value = 1;
+    const cabWetB = ctx.createGain();
+    cabWetB.gain.value = 0;
+    const cabSum = ctx.createGain();
 
     const dcBlock = ctx.createBiquadFilter();
     dcBlock.type = "highpass";
@@ -340,11 +340,13 @@ export function useSynth({
     compEnv.connect(compMap);
     compMap.connect(compGain.gain);
     dcBlock.connect(compGain);
-    compGain.connect(cabHP);
-    cabHP.connect(cabBody);
-    cabBody.connect(cabPres);
-    cabPres.connect(cabLP);
-    cabLP.connect(toneFilter);
+    compGain.connect(cabConvA);
+    compGain.connect(cabConvB);
+    cabConvA.connect(cabWetA);
+    cabConvB.connect(cabWetB);
+    cabWetA.connect(cabSum);
+    cabWetB.connect(cabSum);
+    cabSum.connect(toneFilter);
     toneFilter.connect(mix);
     toneFilter.connect(delayNode);
     delayNode.connect(delayLoopHP);
@@ -380,10 +382,11 @@ export function useSynth({
       compEnv,
       compMap,
       compGain,
-      cabHP,
-      cabBody,
-      cabPres,
-      cabLP,
+      cabConvA,
+      cabConvB,
+      cabWetA,
+      cabWetB,
+      cabSum,
       tone: toneFilter,
       delay: delayNode,
       delayLoopHP,
@@ -440,12 +443,28 @@ export function useSynth({
     n.stageLP.frequency.setTargetAtTime(s2n ? s2n.lp : 20000, t, 0.05);
     n.compEnv.frequency.setTargetAtTime(rig.comp.speed, t, 0.05);
     n.compMap.curve = createCompCurve(rig.comp);
-    n.cabHP.frequency.setTargetAtTime(rig.cab.lowCut, t, 0.05);
-    n.cabBody.frequency.setTargetAtTime(rig.cab.bodyHz, t, 0.05);
-    n.cabBody.gain.setTargetAtTime(rig.cab.bodyGain, t, 0.05);
-    n.cabPres.frequency.setTargetAtTime(rig.cab.presHz, t, 0.05);
-    n.cabPres.gain.setTargetAtTime(rig.cab.presGain, t, 0.05);
-    n.cabLP.frequency.setTargetAtTime(rig.cab.topCut, t, 0.05);
+    // This effect also runs on every knob move, so the cab may only cross over
+    // when the rig itself changed - otherwise each turn would restart the fade.
+    const cabBuf = cabIRsRef.current[idx];
+    if (cabBuf && cabIdxRef.current !== idx) {
+      cabIdxRef.current = idx;
+      if (activeCabRef.current === "A") {
+        n.cabConvB.buffer = cabBuf;
+        n.cabWetB.gain.setTargetAtTime(1, t, 0.06);
+        n.cabWetA.gain.setTargetAtTime(0, t, 0.06);
+        activeCabRef.current = "B";
+      } else {
+        n.cabConvA.buffer = cabBuf;
+        n.cabWetA.gain.setTargetAtTime(1, t, 0.06);
+        n.cabWetB.gain.setTargetAtTime(0, t, 0.06);
+        activeCabRef.current = "A";
+      }
+      if (cabUnloadRef.current) clearTimeout(cabUnloadRef.current);
+      cabUnloadRef.current = window.setTimeout(() => {
+        const idle = activeCabRef.current === "A" ? n.cabConvB : n.cabConvA;
+        idle.buffer = null;
+      }, 900);
+    }
     n.midEmphasis.frequency.setTargetAtTime(dp.midHz, t, 0.05);
     n.midEmphasis.gain.setTargetAtTime(dp.midGain + 2, t, 0.05);
     n.tone.frequency.setTargetAtTime(600 * Math.pow(20, tone), t, 0.05);

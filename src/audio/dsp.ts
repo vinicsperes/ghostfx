@@ -217,6 +217,137 @@ export function cabTrim(cab: CabShape, rate = 48000): number {
   return Math.sqrt(flat / Math.max(shaped, 1e-12));
 }
 
+const CAB_DESIGN_N = 16384;
+const CAB_IR_LEN = 2048;
+const CAB_MODES = 7;
+
+// Radix-2 in-place complex FFT. `inverse` also applies the 1/N scale.
+function fft(re: Float64Array, im: Float64Array, inverse: boolean): void {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) {
+      [re[i], re[j]] = [re[j], re[i]];
+      [im[i], im[j]] = [im[j], im[i]];
+    }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = ((inverse ? 2 : -2) * Math.PI) / len;
+    const wr = Math.cos(ang);
+    const wi = Math.sin(ang);
+    const half = len >> 1;
+    for (let i = 0; i < n; i += len) {
+      let cr = 1;
+      let ci = 0;
+      for (let k = 0; k < half; k++) {
+        const ur = re[i + k];
+        const ui = im[i + k];
+        const vr = re[i + k + half] * cr - im[i + k + half] * ci;
+        const vi = re[i + k + half] * ci + im[i + k + half] * cr;
+        re[i + k] = ur + vr;
+        im[i + k] = ui + vi;
+        re[i + k + half] = ur - vr;
+        im[i + k + half] = ui - vi;
+        const ncr = cr * wr - ci * wi;
+        ci = cr * wi + ci * wr;
+        cr = ncr;
+      }
+    }
+  }
+  if (inverse) for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+}
+
+// Small deterministic PRNG. The cab has to sound identical on every reload, so
+// the breakup modes cannot come from Math.random the way the reverb tail does.
+function lcg(seed: number): () => number {
+  let s = (seed >>> 0) || 1;
+  return () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
+// A speaker is not four biquads: the cone breaks into modes that put a fine
+// ripple across the mids, and the whole thing is minimum phase. Build the
+// target magnitude from the same cascade the biquad nodes used - so the voicing
+// and the broadband gain carry over untouched - add the breakup ripple those
+// four filters cannot express, then realise it as a minimum-phase impulse so
+// the pick attack stays tight instead of smearing.
+export function createCabIR(cab: CabShape, rate: number): Float32Array<ArrayBuffer> {
+  const N = CAB_DESIGN_N;
+  const stages: Biquad[] = [
+    biquadCoef("highpass", cab.lowCut, 0.707, 0, rate),
+    biquadCoef("peaking", cab.bodyHz, 0.9, cab.bodyGain, rate),
+    biquadCoef("peaking", cab.presHz, 1.0, cab.presGain, rate),
+    biquadCoef("lowpass", cab.topCut, 0.9, 0, rate),
+  ];
+  const rnd = lcg(Math.round(cab.bodyHz * 7 + cab.presHz * 3 + cab.topCut));
+  const modes: Biquad[] = [];
+  for (let m = 0; m < CAB_MODES; m++) {
+    modes.push(
+      biquadCoef("peaking", 900 * Math.pow(5, rnd()), 5 + rnd() * 7, (rnd() * 2 - 1) * 3, rate),
+    );
+  }
+
+  const half = N / 2;
+  const baseLog = new Float64Array(half + 1);
+  const modeLog = new Float64Array(half + 1);
+  for (let k = 0; k <= half; k++) {
+    const f = (k * rate) / N;
+    let g = 1;
+    for (const c of stages) g *= biquadMag(c, f, rate);
+    baseLog[k] = Math.log(Math.max(g, 1e-7));
+    let mg = 1;
+    for (const c of modes) mg *= biquadMag(c, f, rate);
+    modeLog[k] = Math.log(mg);
+  }
+
+  // Left alone, seven resonances land wherever the seed puts them and several
+  // can stack inside the same octave, which drags the voicing off the profile
+  // the four filters describe. Subtract their own octave-wide average so what
+  // survives is fine grain either side of zero, not a tilt.
+  const pre = new Float64Array(half + 2);
+  for (let k = 0; k <= half; k++) pre[k + 1] = pre[k] + modeLog[k];
+
+  const re = new Float64Array(N);
+  const im = new Float64Array(N);
+  for (let k = 0; k <= half; k++) {
+    let v = baseLog[k];
+    if (k > 0) {
+      const lo = Math.max(1, Math.round(k / Math.SQRT2));
+      const hi = Math.min(half, Math.round(k * Math.SQRT2));
+      v += modeLog[k] - (pre[hi + 1] - pre[lo]) / (hi - lo + 1);
+    }
+    re[k] = v;
+    if (k > 0 && k < half) re[N - k] = v;
+  }
+
+  fft(re, im, true);
+  const fre = new Float64Array(N);
+  const fim = new Float64Array(N);
+  fre[0] = re[0];
+  for (let n = 1; n < N / 2; n++) fre[n] = 2 * re[n];
+  fre[N / 2] = re[N / 2];
+  fft(fre, fim, false);
+  for (let k = 0; k < N; k++) {
+    const m = Math.exp(fre[k]);
+    fre[k] = m * Math.cos(fim[k]);
+    fim[k] = m * Math.sin(fim[k]);
+  }
+  fft(fre, fim, true);
+
+  const ir = new Float32Array(CAB_IR_LEN);
+  const fade = Math.floor(CAB_IR_LEN * 0.25);
+  const fadeFrom = CAB_IR_LEN - fade;
+  for (let i = 0; i < CAB_IR_LEN; i++) {
+    const w = i < fadeFrom ? 1 : 0.5 * (1 + Math.cos((Math.PI * (i - fadeFrom)) / fade));
+    ir[i] = fre[i] * w;
+  }
+  return ir;
+}
+
 const COMP_STEPS = 2048;
 const COMP_KNEE_DB = 8;
 
