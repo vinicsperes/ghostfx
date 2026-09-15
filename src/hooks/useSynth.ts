@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  AMP_ENV_HZ,
   cabTrim,
+  createBiasCurve,
   createCompCurve,
   createDistortionCurve,
   createRectifierCurve,
@@ -51,6 +53,9 @@ type SynthNodes = {
   input: GainNode;
   midEmphasis: BiquadFilterNode;
   preGain: GainNode;
+  ampRect: WaveShaperNode;
+  ampEnv: BiquadFilterNode;
+  biasMap: WaveShaperNode;
   drive: WaveShaperNode;
   driveTrim: GainNode;
   stageHP: BiquadFilterNode;
@@ -144,6 +149,21 @@ export function useSynth({
 
     const preGain = ctx.createGain();
     preGain.gain.value = mapDrivePreGain(p.drive);
+
+    const amp0 = { bias: rig.amp.bias * p.drive };
+
+    const ampRect = ctx.createWaveShaper();
+    ampRect.curve = createRectifierCurve();
+    ampRect.oversample = "none";
+
+    const ampEnv = ctx.createBiquadFilter();
+    ampEnv.type = "lowpass";
+    ampEnv.frequency.value = AMP_ENV_HZ;
+    ampEnv.Q.value = 0.5;
+
+    const biasMap = ctx.createWaveShaper();
+    biasMap.curve = createBiasCurve(amp0);
+    biasMap.oversample = "none";
 
     const driveNode = ctx.createWaveShaper();
     driveNode.curve = createDistortionCurve(p.drive, dp.shape);
@@ -328,7 +348,11 @@ export function useSynth({
 
     input.connect(midEmphasis);
     midEmphasis.connect(preGain);
+    preGain.connect(ampRect);
+    ampRect.connect(ampEnv);
+    ampEnv.connect(biasMap);
     preGain.connect(driveNode);
+    biasMap.connect(driveNode);
     driveNode.connect(stageHP);
     stageHP.connect(stageLP);
     stageLP.connect(stageGain);
@@ -373,6 +397,9 @@ export function useSynth({
       input,
       midEmphasis,
       preGain,
+      ampRect,
+      ampEnv,
+      biasMap,
       drive: driveNode,
       driveTrim,
       stageHP,
@@ -426,6 +453,7 @@ export function useSynth({
     const rv = rig.reverb;
     const t = ctx.currentTime;
     n.preGain.gain.setTargetAtTime(mapDrivePreGain(drive), t, 0.05);
+    n.biasMap.curve = createBiasCurve({ bias: rig.amp.bias * drive });
     n.drive.curve = createDistortionCurve(drive, dp.shape);
     n.drive.oversample = driveOversample(drive, dp.shape);
     n.driveTrim.gain.setTargetAtTime(

@@ -135,6 +135,10 @@ export type GateProfile = {
   knee: number;
 };
 
+export type AmpProfile = {
+  bias: number;
+};
+
 export type Rig = {
   name: string;
   tag: string;
@@ -149,6 +153,7 @@ export type Rig = {
   drive: DriveProfile;
   comp: CompProfile;
   gate: GateProfile;
+  amp: AmpProfile;
   delay: DelayProfile;
   mod: ModProfile;
   cab: CabProfile;
@@ -180,6 +185,7 @@ export const RIGS: Rig[] = [
     },
     comp: { threshold: -23, ratio: 2.2, speed: 11, makeup: 2 },
     gate: { threshold: -62, knee: 14 },
+    amp: { bias: 0.06 },
     delay: {
       timeMin: 0.25,
       timeMax: 0.62,
@@ -236,6 +242,7 @@ export const RIGS: Rig[] = [
     },
     comp: { threshold: -25, ratio: 2.6, speed: 7, makeup: 3 },
     gate: { threshold: -56, knee: 12 },
+    amp: { bias: 0.14 },
     delay: {
       timeMin: 0.1,
       timeMax: 0.28,
@@ -286,6 +293,7 @@ export const RIGS: Rig[] = [
     drive: { shape: "clean", preHp: 120, midHz: 2200, midGain: 2.5, trim: 2.63 },
     comp: { threshold: -28, ratio: 3.5, speed: 14, makeup: 4.5 },
     gate: { threshold: -64, knee: 18 },
+    amp: { bias: 0.03 },
     delay: {
       timeMin: 0.16,
       timeMax: 0.46,
@@ -343,6 +351,7 @@ export const RIGS: Rig[] = [
     },
     comp: { threshold: -24, ratio: 3, speed: 16, makeup: 3 },
     gate: { threshold: -54, knee: 12 },
+    amp: { bias: 0.08 },
     delay: {
       timeMin: 0.1,
       timeMax: 0.4,
@@ -391,6 +400,7 @@ export const RIGS: Rig[] = [
     },
     comp: { threshold: -21, ratio: 2.1, speed: 9, makeup: 2 },
     gate: { threshold: -60, knee: 14 },
+    amp: { bias: 0.10 },
     delay: {
       timeMin: 0.09,
       timeMax: 0.3,
@@ -439,6 +449,7 @@ export const RIGS: Rig[] = [
     },
     comp: { threshold: -22, ratio: 2.2, speed: 14, makeup: 2.5 },
     gate: { threshold: -56, knee: 12 },
+    amp: { bias: 0.07 },
     delay: {
       timeMin: 0.14,
       timeMax: 0.42,

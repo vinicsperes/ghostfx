@@ -401,6 +401,27 @@ export function createGateCurve(gate: GateShape): Float32Array<ArrayBuffer> {
   return curve;
 }
 
+type AmpShape = { bias: number };
+
+// Bias moves with the note.
+export const AMP_ENV_HZ = 15;
+
+// A WaveShaper has no memory: at a given input level it always returns the
+// same harmonics, which is the one thing that reads as "digital" no matter how
+// good the curve is. Sliding a DC offset in front of it with the envelope ties
+// the harmonic mix to how hard the last few notes were. The offset grows with
+// level, feeding in even harmonics exactly while hard clipping is crowding the
+// spectrum with odd ones, so the tone thickens under attack instead of
+// squaring off. tanh bounds it so a hot input cannot run it away.
+export function createBiasCurve(amp: AmpShape): Float32Array<ArrayBuffer> {
+  const curve = new Float32Array(COMP_STEPS);
+  for (let i = 0; i < COMP_STEPS; i++) {
+    const env = Math.max(0, (i / (COMP_STEPS - 1)) * 2 - 1);
+    curve[i] = amp.bias * Math.tanh(env * 2);
+  }
+  return curve;
+}
+
 export const LIMITER_THRESHOLD = 0.82;
 
 export function createLimiterCurve(threshold = LIMITER_THRESHOLD): Float32Array<ArrayBuffer> {

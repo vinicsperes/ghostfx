@@ -1,4 +1,6 @@
 import {
+  AMP_ENV_HZ,
+  createBiasCurve,
   createCabIR,
   createCompCurve,
   createDistortionCurve,
@@ -33,6 +35,9 @@ export type ChainNodes = {
   preFilter: BiquadFilterNode;
   midEmphasis: BiquadFilterNode;
   preGain: GainNode;
+  ampRect: WaveShaperNode;
+  ampEnv: BiquadFilterNode;
+  biasMap: WaveShaperNode;
   drive: WaveShaperNode;
   driveTrim: GainNode;
   stageHP: BiquadFilterNode;
@@ -162,6 +167,8 @@ export function applyChainParams(
     knee: rig.gate.knee,
   });
 
+  nodes.biasMap.curve = createBiasCurve({ bias: rig.amp.bias * p.drive });
+
   nodes.drive.curve = createDistortionCurve(p.drive, dp.shape);
   nodes.drive.oversample = driveOversample(p.drive, dp.shape);
   nodes.preGain.gain.setTargetAtTime(mapDrivePreGain(p.drive), t, ramp);
@@ -255,6 +262,21 @@ export function buildChain(
 
   const preGain = ctx.createGain();
   preGain.gain.value = mapDrivePreGain(p.drive);
+
+  const amp0 = { bias: rig.amp.bias * p.drive };
+
+  const ampRect = ctx.createWaveShaper();
+  ampRect.curve = createRectifierCurve();
+  ampRect.oversample = "none";
+
+  const ampEnv = ctx.createBiquadFilter();
+  ampEnv.type = "lowpass";
+  ampEnv.frequency.value = AMP_ENV_HZ;
+  ampEnv.Q.value = 0.5;
+
+  const biasMap = ctx.createWaveShaper();
+  biasMap.curve = createBiasCurve(amp0);
+  biasMap.oversample = "none";
 
   const drive = ctx.createWaveShaper();
   drive.curve = createDistortionCurve(p.drive, dp.shape);
@@ -427,7 +449,12 @@ export function buildChain(
 
   preFilter.connect(midEmphasis);
   midEmphasis.connect(preGain);
+  // Tapped after preGain, so the dynamics grow with the drive knob.
+  preGain.connect(ampRect);
+  ampRect.connect(ampEnv);
+  ampEnv.connect(biasMap);
   preGain.connect(drive);
+  biasMap.connect(drive);
   drive.connect(stageHP);
   stageHP.connect(stageLP);
   stageLP.connect(stageGain);
@@ -496,6 +523,9 @@ export function buildChain(
       preFilter,
       midEmphasis,
       preGain,
+      ampRect,
+      ampEnv,
+      biasMap,
       drive,
       driveTrim,
       stageHP,
