@@ -1,5 +1,6 @@
 import {
   AMP_ENV_HZ,
+  AMP_SAG_HZ,
   createBiasCurve,
   createCabIR,
   createCompCurve,
@@ -7,6 +8,7 @@ import {
   createGateCurve,
   createRectifierCurve,
   createReverbIR,
+  createSagCurve,
   createTapeCurve,
   driveOversample,
   GATE_ENV_HZ,
@@ -38,6 +40,9 @@ export type ChainNodes = {
   ampRect: WaveShaperNode;
   ampEnv: BiquadFilterNode;
   biasMap: WaveShaperNode;
+  sagEnv: BiquadFilterNode;
+  sagMap: WaveShaperNode;
+  sagGain: GainNode;
   drive: WaveShaperNode;
   driveTrim: GainNode;
   stageHP: BiquadFilterNode;
@@ -167,7 +172,9 @@ export function applyChainParams(
     knee: rig.gate.knee,
   });
 
-  nodes.biasMap.curve = createBiasCurve({ bias: rig.amp.bias * p.drive });
+  const amp = { bias: rig.amp.bias * p.drive, sag: rig.amp.sag * p.drive };
+  nodes.biasMap.curve = createBiasCurve(amp);
+  nodes.sagMap.curve = createSagCurve(amp);
 
   nodes.drive.curve = createDistortionCurve(p.drive, dp.shape);
   nodes.drive.oversample = driveOversample(p.drive, dp.shape);
@@ -263,7 +270,7 @@ export function buildChain(
   const preGain = ctx.createGain();
   preGain.gain.value = mapDrivePreGain(p.drive);
 
-  const amp0 = { bias: rig.amp.bias * p.drive };
+  const amp0 = { bias: rig.amp.bias * p.drive, sag: rig.amp.sag * p.drive };
 
   const ampRect = ctx.createWaveShaper();
   ampRect.curve = createRectifierCurve();
@@ -277,6 +284,18 @@ export function buildChain(
   const biasMap = ctx.createWaveShaper();
   biasMap.curve = createBiasCurve(amp0);
   biasMap.oversample = "none";
+
+  const sagEnv = ctx.createBiquadFilter();
+  sagEnv.type = "lowpass";
+  sagEnv.frequency.value = AMP_SAG_HZ;
+  sagEnv.Q.value = 0.5;
+
+  const sagMap = ctx.createWaveShaper();
+  sagMap.curve = createSagCurve(amp0);
+  sagMap.oversample = "none";
+
+  const sagGain = ctx.createGain();
+  sagGain.gain.value = 0;
 
   const drive = ctx.createWaveShaper();
   drive.curve = createDistortionCurve(p.drive, dp.shape);
@@ -449,11 +468,16 @@ export function buildChain(
 
   preFilter.connect(midEmphasis);
   midEmphasis.connect(preGain);
-  // Tapped after preGain, so the dynamics grow with the drive knob.
+  // Tapped after preGain, so the dynamics grow with the drive knob, and ahead
+  // of sagGain, so the envelope never feeds back on what it is controlling.
   preGain.connect(ampRect);
   ampRect.connect(ampEnv);
   ampEnv.connect(biasMap);
-  preGain.connect(drive);
+  ampEnv.connect(sagEnv);
+  sagEnv.connect(sagMap);
+  sagMap.connect(sagGain.gain);
+  preGain.connect(sagGain);
+  sagGain.connect(drive);
   biasMap.connect(drive);
   drive.connect(stageHP);
   stageHP.connect(stageLP);
@@ -526,6 +550,9 @@ export function buildChain(
       ampRect,
       ampEnv,
       biasMap,
+      sagEnv,
+      sagMap,
+      sagGain,
       drive,
       driveTrim,
       stageHP,

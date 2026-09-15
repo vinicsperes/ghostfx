@@ -401,10 +401,11 @@ export function createGateCurve(gate: GateShape): Float32Array<ArrayBuffer> {
   return curve;
 }
 
-type AmpShape = { bias: number };
+type AmpShape = { bias: number; sag: number };
 
-// Bias moves with the note.
+// Bias moves with the note; the supply behind it recovers slower.
 export const AMP_ENV_HZ = 15;
+export const AMP_SAG_HZ = 5;
 
 // A WaveShaper has no memory: at a given input level it always returns the
 // same harmonics, which is the one thing that reads as "digital" no matter how
@@ -418,6 +419,18 @@ export function createBiasCurve(amp: AmpShape): Float32Array<ArrayBuffer> {
   for (let i = 0; i < COMP_STEPS; i++) {
     const env = Math.max(0, (i / (COMP_STEPS - 1)) * 2 - 1);
     curve[i] = amp.bias * Math.tanh(env * 2);
+  }
+  return curve;
+}
+
+// Supply droop, ahead of the shaper rather than behind it. The compressor
+// after the drive only changes how loud the distortion is; pulling the level
+// down before the drive changes how much distortion there is at all.
+export function createSagCurve(amp: AmpShape): Float32Array<ArrayBuffer> {
+  const curve = new Float32Array(COMP_STEPS);
+  for (let i = 0; i < COMP_STEPS; i++) {
+    const env = Math.max(0, (i / (COMP_STEPS - 1)) * 2 - 1);
+    curve[i] = 1 - amp.sag * Math.tanh(env * 1.6);
   }
   return curve;
 }

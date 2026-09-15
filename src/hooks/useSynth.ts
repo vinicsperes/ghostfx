@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AMP_ENV_HZ,
+  AMP_SAG_HZ,
   cabTrim,
   createBiasCurve,
+  createSagCurve,
   createCompCurve,
   createDistortionCurve,
   createRectifierCurve,
@@ -56,6 +58,9 @@ type SynthNodes = {
   ampRect: WaveShaperNode;
   ampEnv: BiquadFilterNode;
   biasMap: WaveShaperNode;
+  sagEnv: BiquadFilterNode;
+  sagMap: WaveShaperNode;
+  sagGain: GainNode;
   drive: WaveShaperNode;
   driveTrim: GainNode;
   stageHP: BiquadFilterNode;
@@ -150,7 +155,7 @@ export function useSynth({
     const preGain = ctx.createGain();
     preGain.gain.value = mapDrivePreGain(p.drive);
 
-    const amp0 = { bias: rig.amp.bias * p.drive };
+    const amp0 = { bias: rig.amp.bias * p.drive, sag: rig.amp.sag * p.drive };
 
     const ampRect = ctx.createWaveShaper();
     ampRect.curve = createRectifierCurve();
@@ -164,6 +169,18 @@ export function useSynth({
     const biasMap = ctx.createWaveShaper();
     biasMap.curve = createBiasCurve(amp0);
     biasMap.oversample = "none";
+
+    const sagEnv = ctx.createBiquadFilter();
+    sagEnv.type = "lowpass";
+    sagEnv.frequency.value = AMP_SAG_HZ;
+    sagEnv.Q.value = 0.5;
+
+    const sagMap = ctx.createWaveShaper();
+    sagMap.curve = createSagCurve(amp0);
+    sagMap.oversample = "none";
+
+    const sagGain = ctx.createGain();
+    sagGain.gain.value = 0;
 
     const driveNode = ctx.createWaveShaper();
     driveNode.curve = createDistortionCurve(p.drive, dp.shape);
@@ -351,7 +368,11 @@ export function useSynth({
     preGain.connect(ampRect);
     ampRect.connect(ampEnv);
     ampEnv.connect(biasMap);
-    preGain.connect(driveNode);
+    ampEnv.connect(sagEnv);
+    sagEnv.connect(sagMap);
+    sagMap.connect(sagGain.gain);
+    preGain.connect(sagGain);
+    sagGain.connect(driveNode);
     biasMap.connect(driveNode);
     driveNode.connect(stageHP);
     stageHP.connect(stageLP);
@@ -400,6 +421,9 @@ export function useSynth({
       ampRect,
       ampEnv,
       biasMap,
+      sagEnv,
+      sagMap,
+      sagGain,
       drive: driveNode,
       driveTrim,
       stageHP,
@@ -453,7 +477,9 @@ export function useSynth({
     const rv = rig.reverb;
     const t = ctx.currentTime;
     n.preGain.gain.setTargetAtTime(mapDrivePreGain(drive), t, 0.05);
-    n.biasMap.curve = createBiasCurve({ bias: rig.amp.bias * drive });
+    const amp = { bias: rig.amp.bias * drive, sag: rig.amp.sag * drive };
+    n.biasMap.curve = createBiasCurve(amp);
+    n.sagMap.curve = createSagCurve(amp);
     n.drive.curve = createDistortionCurve(drive, dp.shape);
     n.drive.oversample = driveOversample(drive, dp.shape);
     n.driveTrim.gain.setTargetAtTime(
