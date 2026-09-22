@@ -1,6 +1,12 @@
 {
   "redirects": [
     {
+      "source": "/",
+      "has": [{ "type": "host", "value": "ghostfx-chi.vercel.app" }],
+      "destination": "https://ghostfx.app/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "ghostfx-chi.vercel.app" }],
       "destination": "https://ghostfx.app/:path*",
