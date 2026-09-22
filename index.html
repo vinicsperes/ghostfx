@@ -4,10 +4,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>GHOSTFX</title>
-  <meta name="description" content="Browser guitar FX — drive, echo, tone, mod & reverb. Zero install." />
+  <title>GHOSTFX · Free guitar effects pedal in your browser</title>
+  <meta name="description" content="Plug in your guitar and play through six amp and pedal rigs right in the browser. Drive, delay, modulation, reverb, a tuner and a recorder. Free, no install." />
+  <link rel="canonical" href="https://ghostfx.app/" />
 
-  <!-- icons / pwa -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
@@ -15,20 +15,37 @@
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#060a08" />
 
-  <!-- social: Open Graph. TODO: trocar o domínio abaixo pela origem de produção antes do deploy -->
   <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="GHOSTFX" />
   <meta property="og:url" content="https://ghostfx.app/" />
-  <meta property="og:title" content="GHOSTFX — haunted tones" />
-  <meta property="og:description" content="Browser guitar FX — drive, echo, tone, mod & reverb. Zero install." />
+  <meta property="og:title" content="GHOSTFX · A guitar pedal that lives in your browser" />
+  <meta property="og:description" content="Plug in your guitar and play through six amp and pedal rigs right in the browser. Drive, delay, modulation, reverb, a tuner and a recorder. Free, no install." />
   <meta property="og:image" content="https://ghostfx.app/og.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
 
-  <!-- social: Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="GHOSTFX — haunted tones" />
-  <meta name="twitter:description" content="Browser guitar FX — drive, echo, tone, mod & reverb. Zero install." />
+  <meta name="twitter:title" content="GHOSTFX · A guitar pedal that lives in your browser" />
+  <meta name="twitter:description" content="Plug in your guitar and play through six amp and pedal rigs right in the browser. Drive, delay, modulation, reverb, a tuner and a recorder. Free, no install." />
   <meta name="twitter:image" content="https://ghostfx.app/og.png" />
+
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "GHOSTFX",
+      "url": "https://ghostfx.app/",
+      "description": "Plug in your guitar and play through six amp and pedal rigs right in the browser. Drive, delay, modulation, reverb, a tuner and a recorder. Free, no install.",
+      "image": "https://ghostfx.app/og.png",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Any",
+      "browserRequirements": "Requires JavaScript, Web Audio and microphone access",
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+      "sameAs": ["https://github.com/vinicsperes/ghostfx"]
+    }
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -38,6 +55,20 @@
 </head>
 
 <body>
+  <noscript>
+    <div style="max-width: 40rem; margin: 3rem auto; padding: 0 1rem; color: #d8e0da; font-family: system-ui, sans-serif; line-height: 1.5">
+      <h1>GHOSTFX: a free guitar effects pedal in your browser</h1>
+      <p>Plug your guitar into an audio interface and play through six amp and pedal rigs in real time, with nothing to install.</p>
+      <ul>
+        <li>Six rigs, each its own chain of drive, delay, modulation, cabinet and reverb</li>
+        <li>A 3D pedal whose knobs you actually turn</li>
+        <li>Tuner, metronome and a keyboard synth</li>
+        <li>Record takes, re-amp them through any rig and export to MP3</li>
+        <li>Free and open source under GPL-3.0</li>
+      </ul>
+      <p>GHOSTFX runs on JavaScript and the Web Audio API. Turn JavaScript on to play.</p>
+    </div>
+  </noscript>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
